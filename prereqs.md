@@ -28,7 +28,7 @@ https://chocolatey.org/docs/installation
 
 https://brew.sh/
 
-####After installing homebrew
+#### After installing homebrew
 
 Create a file in users home directory with name .curlrc with content “-k”
 (-k without quotes and give a new line character after -k.)
