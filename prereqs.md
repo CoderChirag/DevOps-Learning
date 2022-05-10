@@ -1,5 +1,7 @@
 #Windows Tools
+
 ####Install chocolatey from the instructions given in the link below.
+
 https://chocolatey.org/docs/installation
 
 ####Run all the below commands on Powershell (Open Powershell as Admin)
@@ -21,10 +23,13 @@ https://chocolatey.org/docs/installation
 > choco install sublimetext3.app
 
 #MacOS Tools
+
 ####Install brew from the instructions given in the link below.
+
 https://brew.sh/
 
 ####After installing homebrew
+
 Create a file in users home directory with name .curlrc with content “-k”
 (-k without quotes and give a new line character after -k.)
 
