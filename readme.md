@@ -1,39 +1,15 @@
-# Learning DevOps
-
-This is going to be my journey to learn Devops from very basics to advanced level. I will try to share each and every step of it so it can also benefit others.
-
-I am making this repo so that you don't have to go and search at different different places and you can find every topic here only.
-
-I will try to provide complete notes and practical projects in complete detailed and in an easy to understand manner.
-
 # Contents
 
 ---
 
--   [Learning DevOps](#learning-devops)
--   [Contents](#contents)
--   [1. Introduction to DevOps](#1-introduction-to-devops)
-    -   [Transforming an Idea into Application](#transforming-an-idea-into-application)
-        -   [Software Development Life Cycle (SLDC)](#software-development-life-cycle-sldc)
-            -   [Models in SLDC](#models-in-sldc)
-        -   [DevOps Lifecycle](#devops-lifecycle)
-        -   [Continous Integration (CI)](#continous-integration-ci)
-        -   [Continous Delivery (CD)](#continous-delivery-cd)
--   [2. Virtualization](#2-virtualization)
-    -   [Life before Virtualization](#life-before-virtualization)
-    -   [Virtualization](#virtualization)
-    -   [Basic Terminologies](#basic-terminologies)
--   [3. Vagrant](#3-vagrant)
-    -   [VM Management Problems](#vm-management-problems)
-    -   [Vagrant for VMs](#vagrant-for-vms)
-    -   [Vagrant Architecture](#vagrant-architecture)
--   [4. Basics of Linux](#4-basics-of-linux)
-    -   [Open Source](#open-source)
-    -   [Linux History](#linux-history)
-    -   [Linux principles](#linux-principles)
-    -   [Why Linux?](#why-linux)
-    -   [Linux Architecture](#linux-architecture)
-    -   [Popular Linux distros](#popular-linux-distros)
+- [Contents](#contents)
+- [1. Basics of Linux](#1-basics-of-linux)
+  - [Open Source](#open-source)
+  - [Linux History](#linux-history)
+  - [Linux principles](#linux-principles)
+  - [Why Linux?](#why-linux)
+  - [Linux Architecture](#linux-architecture)
+  - [Popular Linux distros](#popular-linux-distros)
 
 ---
 
