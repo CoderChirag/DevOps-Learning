@@ -6,11 +6,42 @@ I am making this repo so that you don't have to go and search at different diffe
 
 I will try to provide complete notes and practical projects in complete detailed and in an easy to understand manner.
 
+# Contents
+
 ---
 
-## 1. Introduction to DevOps
+- [Learning DevOps](#learning-devops)
+- [Contents](#contents)
+- [1. Introduction to DevOps](#1-introduction-to-devops)
+  - [Transforming an Idea into Application](#transforming-an-idea-into-application)
+    - [Software Development Life Cycle (SLDC)](#software-development-life-cycle-sldc)
+      - [Models in SLDC](#models-in-sldc)
+    - [DevOps Lifecycle](#devops-lifecycle)
+    - [Continous Integration (CI)](#continous-integration-ci)
+    - [Continous Delivery (CD)](#continous-delivery-cd)
+- [2. Virtualization](#2-virtualization)
+    - [Life before Virtualization](#life-before-virtualization)
+  - [Virtualization](#virtualization)
+  - [Basic Terminologies](#basic-terminologies)
+- [3. Vagrant](#3-vagrant)
+  - [VM Management Problems](#vm-management-problems)
+  - [Vagrant for VMs](#vagrant-for-vms)
+  - [Vagrant Architecture](#vagrant-architecture)
+- [4. Basics of Linux](#4-basics-of-linux)
+  - [Open Source](#open-source)
+  - [Linux History](#linux-history)
+  - [Linux principles](#linux-principles)
+  - [Why Linux?](#why-linux)
+  - [Linux Architecture](#linux-architecture)
+  - [Popular Linux distros](#popular-linux-distros)
 
-### Transforming an Idea into Application - Software Development Life Cycle (SLDC)
+---
+
+# 1. Introduction to DevOps
+
+## Transforming an Idea into Application
+
+### Software Development Life Cycle (SLDC)
 
 Development of any software comes up with a life cycle of certain steps which are executed in a cyclic manner.
 The steps are:
@@ -73,7 +104,7 @@ It is basically the extension of CI.
 
 </div>
 
-## 2. Virtualization
+# 2. Virtualization
 
 ### Life before Virtualization
 
@@ -84,7 +115,7 @@ It is basically the extension of CI.
 -   Servers resources were mostly underutilized
 -   Huge capital expenditure and operational expenditure
 
-### Virtualization
+## Virtualization
 
 -   Allows one computer to run multiple OS
 -   Partition physical resource in virtual resources
@@ -95,7 +126,7 @@ It is basically the extension of CI.
 
 </div>
 
-### Basic Terminologies
+## Basic Terminologies
 
 1. **Host OS** => OS of the physical machine in which virtualization is going to take place.
 2. **Guest OS** => Os of the Virtual Machine.
@@ -107,11 +138,11 @@ Hypervisor is of 2 types
 : 1. **Type 1** - Runs as a base OS, used for production. Eg: VMWare ESXI, XEN Hypervisor
 : 2. **Type 2** - Runs as a software, ideal for learning and testing purposes. Eg: Oracle Virtualbox, VMWare Server / Player.
 
-## 3. Vagrant
+# 3. Vagrant
 
 It is an automation tool to manage VM lifecycle
 
-### VM Management Problems
+## VM Management Problems
 
 -   OS installations
 -   Time consuming
@@ -119,7 +150,7 @@ It is an automation tool to manage VM lifecycle
 -   Tough replication for multi VM
 -   Documentations for multi VM
 
-### Vagrant for VMs
+## Vagrant for VMs
 
 -   No OS installations
 -   VM setupp through images (vagrant boxes)
@@ -129,10 +160,80 @@ It is an automation tool to manage VM lifecycle
 -   Vagrant commands to manage VMs
 -   Provisioning VM/Executing commands and scripts
 
-### Vagrant Architecture
+## Vagrant Architecture
 
 <div align="center">
 
 ![vagrant-architecture](images/vagrant.jpg)
 
 </div>
+
+To study vagrant in more detail with its practical implementation refer to the [vagrant branch](https://github.com/CoderChirag/DevOps-Learning/tree/vagrant)
+
+# 4. Basics of Linux
+
+## Open Source
+
+Open source software is a software which have its entire source code open, and anybody can inspect, modify, and enhance the software.
+
+<div align="center">
+
+![open source](./images/open_source.png)
+
+</div>
+
+## Linux History
+
+-   **1984**: The GNU Project and the Free Software Foundation
+    -   Creates open source version of UNIX utilities
+    -   Creates the General Public License (GPL)
+        -   Software license enforcing open source principles
+-   **1991**: Linus Torvalds
+    -   Creates open source, UNIX-like kernel, release under the GPL
+    -   Ports some GNU utilities, solicits assistance online
+-   **Today**:
+    -   Linux kernel + GNU utilities = complete, open source, UNIX-like operating system
+        -   Packaged for targeted audiences and distributions
+
+## Linux principles
+
+-   Everything is a file (including hardware)
+-   Small Single purpose Programs
+-   Ability to chain programs together for complex operations
+-   Avoid Captive User Interfaces (GUI which waits for user interaction)
+-   Configuration data stored in files
+
+## Why Linux?
+
+-   Opensource
+-   Community Support
+-   Support Wide Variety of hardware
+-   Customization
+-   Most Servers run on Linux
+-   Automation
+-   Security
+
+## Linux Architecture
+
+<div align="center">
+
+![architecture](images/linux_architecture.jpg)
+
+</div>
+
+## Popular Linux distros
+
+-   **Desktop based**
+    -   Ubuntu Linux
+    -   Linux Mint
+    -   Arch Linux
+    -   Fedora
+    -   Debian
+    -   OpenSuse
+-   **Server based**
+    -   Red Hat Enterprise Linux
+    -   Ubuntu Server
+    -   Centos
+    -   SUSE Enterprise Linux
+
+For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
