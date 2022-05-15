@@ -1,3 +1,17 @@
+# Contents
+
+---
+
+- [Contents](#contents)
+- [Vagrant](#vagrant)
+  - [VM Management Problems](#vm-management-problems)
+  - [Vagrant for VMs](#vagrant-for-vms)
+  - [Vagrant Architecture](#vagrant-architecture)
+  - [VM Setup with Vagrant](#vm-setup-with-vagrant)
+  - [Basic Commands](#basic-commands)
+
+---
+
 # Vagrant
 
 Vagrant is an automation tool to manage VM lifecycle
