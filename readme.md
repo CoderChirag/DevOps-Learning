@@ -3,17 +3,18 @@
 ---
 
 - [Contents](#contents)
-- [1. Basics of Linux](#1-basics-of-linux)
+- [Basics of Linux](#basics-of-linux)
   - [Open Source](#open-source)
   - [Linux History](#linux-history)
   - [Linux principles](#linux-principles)
   - [Why Linux?](#why-linux)
   - [Linux Architecture](#linux-architecture)
   - [Popular Linux distros](#popular-linux-distros)
+  - [Some Important Directories](#some-important-directories)
 
 ---
 
-# 1. Basics of Linux
+# Basics of Linux
 
 ## Open Source
 
@@ -80,3 +81,16 @@ Open source software is a software which have its entire source code open, and a
     -   SUSE Enterprise Linux
 
 For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
+
+## Some Important Directories
+
+-   **Home Directories**: /root, /home/username
+-   **User Executables**: /bin, /usr/bin, usr/local/bin
+-   **System Executables**: /sbin, /usr/sbin, /usr/local/sbin
+-   **Other Mountpoints**: /media, /mnt
+-   **Configuration**: /etc
+-   **Temporary Files**: /tmp
+-   **Kernels and Bootloader**: /boot
+-   **Server Data**: /var, /srv
+-   **System Information**: /proc, /sys
+-   **Shared Libraries**: /lib, /usr/lib, /usr/local/lib
