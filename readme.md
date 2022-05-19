@@ -106,16 +106,16 @@ Open source software is a software which have its entire source code open, and a
 
 ### Some Important Directories
 
--   **Home Directories**: /root, /home/username
--   **User Executables**: /bin, /usr/bin, usr/local/bin
--   **System Executables**: /sbin, /usr/sbin, /usr/local/sbin
--   **Other Mountpoints**: /media, /mnt
--   **Configuration**: /etc
--   **Temporary Files**: /tmp
--   **Kernels and Bootloader**: /boot
--   **Server Data**: /var, /srv
--   **System Information**: /proc, /sys
--   **Shared Libraries**: /lib, /usr/lib, /usr/local/lib
+-   **Home Directories**: `/root`, `/home/username`
+-   **User Executables**: `/bin`, `/usr/bin`, `usr/local/bin`
+-   **System Executables**: `/sbin`, `/usr/sbin`, `/usr/local/sbin`
+-   **Other Mountpoints**: `/media`, `/mnt`
+-   **Configuration**: `/etc`
+-   **Temporary Files**: `/tmp`
+-   **Kernels and Bootloader**: `/boot`
+-   **Server Data**: `/var`, `/srv`
+-   **System Information**: `/proc`, `/sys`
+-   **Shared Libraries**: `/lib`, `/usr/lib`, `/usr/local/lib`
 
 ## Basic File Directory and Related Commands
 
@@ -278,20 +278,51 @@ Open source software is a software which have its entire source code open, and a
     -   **Example:** Consider the following text file as the input file for all cases below:
         `$ cat > employee.txt`
         <br>
-        `ajay manager account 45000 sunil clerk account 25000 varun manager sales 50000 amit manager account 47000 tarun peon sales 15000 deepak clerk sales 23000 sunil peon sales 13000 satvik director purchase 80000`
+        ```
+        ajay manager account 45000
+        sunil clerk account 25000
+        varun manager sales 50000
+        amit manager account 47000
+        tarun peon sales 15000
+        deepak clerk sales 23000
+        sunil peon sales 13000
+        satvik director purchase 80000
+        ```
     1.  **Default behaviour of Awk:** By default Awk prints every line of data from the specified file.
         `$ awk {print} employee.txt`
         **Output:**
-        `ajay manager account 45000 sunil clerk account 25000 varun manager sales 50000 amit manager account 47000 tarun peon sales 15000 deepak clerk sales 23000 sunil peon sales 13000 satvik director purchase 80000`
+        ```
+        ajay manager account 45000
+        sunil clerk account 25000
+        varun manager sales 50000
+        amit manager account 47000
+        tarun peon sales 15000
+        deepak clerk sales 23000
+        sunil peon sales 13000
+        satvik director purchase 80000
+        ```
     2.  Print the lines which match the given pattern
         `$ awk '/manager/ {print}' employee.txt`
         **Output:**
-        `ajay manager account 45000 varun manager sales 50000 amit manager account 47000`
+        ```
+        ajay manager account 45000
+        varun manager sales 50000
+        amit manager account 47000
+        ```
     3.  **Splitting a line into fields:** For each record, i.e, line, the awk command splits the record delimited by whitespace character by default and stores it in the `$n` variables.
         Also, `$0` represents the whole line.
         `$ awk '{print $1,$4}' employee.txt`
         **Output:**
-        `ajay 45000 sunil 25000 varun 50000 amit 47000 tarun 15000 deepak 23000 sunil 13000 satvik 80000`
+        ```
+        ajay 45000
+        sunil 25000
+        varun 50000
+        amit 47000
+        tarun 15000
+        deepak 23000
+        sunil 13000
+        satvik 80000
+        ```
 
 #### Built-In Variables in Awk
 
@@ -318,30 +349,30 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
             7 sunil peon sales 13000
             8 satvik director purchase 80000
 
-        -   **Use of NF built-in variables (Display Last Field)**
-            `$ awk '{print $1,$NF}' employee.txt`
-            **Output:**
-            ```
-            ajay 45000
-            sunil 25000
-            varun 50000
-            amit 47000
-            tarun 15000
-            deepak 23000
-            sunil 13000
-            satvik 80000
-            ```
-        -   **Another use of NR built-in variables (Display Line From 3 to 6)**
-            `$ awk 'NR==3, NR==6 {print NR,$0}' employee.txt`
-            **Output:**
-            ```
-            3 varun manager sales 50000
-            4 amit manager account 47000
-            5 tarun peon sales 15000
-            6 deepak clerk sales 23000
-            ```
-        -   **Practical Example:** Finding all the usernames from `/etc/passwd` file
-            `$ awk -F':' '{print $1}' /etc/passwd`
+    -   **Use of NF built-in variables (Display Last Field)**
+        `$ awk '{print $1,$NF}' employee.txt`
+        **Output:**
+        ```
+        ajay 45000
+        sunil 25000
+        varun 50000
+        amit 47000
+        tarun 15000
+        deepak 23000
+        sunil 13000
+        satvik 80000
+        ```
+    -   **Another use of NR built-in variables (Display Line From 3 to 6)**
+        `$ awk 'NR==3, NR==6 {print NR,$0}' employee.txt`
+        **Output:**
+        ```
+        3 varun manager sales 50000
+        4 amit manager account 47000
+        5 tarun peon sales 15000
+        6 deepak clerk sales 23000
+        ```
+    -   **Practical Example:** Finding all the usernames from `/etc/passwd` file
+        `$ awk -F':' '{print $1}' /etc/passwd`
 
 ### sed
 
@@ -365,58 +396,95 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
     1.  **Replacing or substituting string :** Sed command is mostly used to replace the text in a file. The below simple sed command replaces the word “unix” with “linux” in the file.
         `$ sed 's/unix/linux' inputfile.txt #Changes the 1st occurence of 'unix' in every line `
         **Output:**
-        `linux is great os. unix is opensource. unix is free os. learn operating system. linux linux which one you choose. linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerfu`
+        ```
+        linux is great os. unix is opensource. unix is free os.
+        learn operating system.
+        linux linux which one you choose.
+        linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful
+        ```
         Here the`s` specifies the substitution operation. The `/` are delimiters. The `unix` is the search pattern and the `linux` is the replacement string.
     2.  **Replacing the nth occurrence of a pattern in a line :** Use the /1, /2 etc flags to replace the first, second occurrence of a pattern in a line.
         `$ sed 's/unix/linux/2' inputfile.txt`
         **Output:**
-        `unix is great os. linux is opensource. unix is free os. learn operating system. unix linux which one you choose. unix is easy to learn.linux is a multiuser os.Learn unix .unix is a powerful.`
+        ```
+        unix is great os. linux is opensource. unix is free os.
+        learn operating system.
+        unix linux which one you choose.
+        unix is easy to learn.linux is a multiuser os.Learn unix .unix is a powerful.
+        ```
     3.  **Replacing all the occurrence of the pattern in a line :** The substitute flag /g (global replacement) specifies the sed command to replace all the occurrences of the string in the line.
         `$ sed 's/unix/linux/g' inputfile.txt`
         **Output:**
-        `linux is great os. linux is opensource. linux is free os. learn operating system. linux linux which one you choose. linux is easy to learn.linux is a multiuser os.Learn linux .linux is a powerful.`
+        ```
+        linux is great os. linux is opensource. linux is free os.
+        learn operating system.
+        linux linux which one you choose.
+        linux is easy to learn.linux is a multiuser os.Learn linux .linux is a powerful.
+        ```
     4.  **Replacing from nth occurrence to all occurrences in a line :** Use the combination of /1, /2 etc and /g to replace all the patterns from the nth occurrence of a pattern in a line. The following sed command replaces the third, fourth, fifth… “unix” word with “linux” word in a line.
         `$ sed 's/unix/linux/3g' inputfile.txt`
         **Output:**
-        `unix is great os. unix is opensource. linux is free os. learn operating system. unix linux which one you choose. unix is easy to learn.unix is a multiuser os.Learn linux .linux is a powerful.`
+        ```
+        unix is great os. unix is opensource. linux is free os.
+        learn operating system.
+        unix linux which one you choose.
+        unix is easy to learn.unix is a multiuser os.Learn linux .linux is a powerful.
+        ```
     5.  **Parenthesize first character of each word**
         `$ echo "Welocme To The Family" | sed 's/\(\b[A-Z]\)/\(\1\)/g'`
         **Explaination: **
 
-        ````
+        ```
         sed 's/\b(pattern1)/pattern2/g' --- Does " A word by word search"
 
             sed 's/\(\b[A-Z]\)/pattern2/g'  --- Does " Matches a single uppercase letter"
             sed 's/\(\b[A-Z]\)/\(\1\)/g'     --- Does " sed 's/\(\b[A-Z]\)/\([A-Z]\)/g' "
                                             \1 is a back reference.
-            ```
+        ```
 
         **Output:**
         `(W)elcome (T)o (T)he (G)eek (S)tuff`
-
-        ````
 
     6.  **Replacing string on a specific line number :**
         `$ sed '3 s/unix/linux' inputfile.txt`
         **Output:**
 
-            unix is great os. unix is opensource. unix is free os.
-            learn operating system.
-            linux linux which one you choose.
-            unix is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        ```
+        unix is great os. unix is opensource. unix is free os.
+        learn operating system.
+        linux linux which one you choose.
+        unix is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        ```
 
     7.  **Duplicating the replaced line with /p flag :** The /p print flag prints the replaced line twice on the terminal. If a line does not have the search pattern and is not replaced, then the /p prints that line only once.
         `$ sed 's/unix/linux/p' inputfile.txt`
         **Output:**
-        `linux is great os. unix is opensource. unix is free os. linux is great os. unix is opensource. unix is free os. learn operating system. linux linux which one you choose. linux linux which one you choose. linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful. linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.`
+        ```
+        linux is great os. unix is opensource. unix is free os.
+        linux is great os. unix is opensource. unix is free os.
+        learn operating system.
+        linux linux which one you choose.
+        linux linux which one you choose.
+        linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        ```
     8.  **Printing only the replaced lines :** Use the -n option along with the /p print flag to display only the replaced lines. Here the -n option suppresses the duplicate rows generated by the /p flag and prints the replaced lines only one time.
         `$ sed -n 's/unix/linux/p' inputfile.txt`
         **Output:**
-        `linux is great os. unix is opensource. unix is free os. linux linux which one you choose. linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.`
+        ```
+        linux is great os. unix is opensource. unix is free os.
+        linux linux which one you choose.
+        linux is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        ```
     9.  **Replacing string on a range of lines :**
         `$ sed '1,3 s/unix/linux' inputfile.txt`
         **Output:**
-        `linux is great os. unix is opensource. unix is free os. learn operating system. linux linux which one you choose. unix is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.`
+        ```
+        linux is great os. unix is opensource. unix is free os.
+        learn operating system.
+        linux linux which one you choose.
+        unix is easy to learn.unix is a multiuser os.Learn unix .unix is a powerful.
+        ```
     10. **Deleting lines from a particular file :** SED command can also be used for deleting lines from a particular file. SED command is used for performing deletion operation without even opening the file
         Examples: 1. To Delete a particular line say n in this example
         **Syntax:**
