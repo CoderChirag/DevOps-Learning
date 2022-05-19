@@ -31,6 +31,8 @@
       - [Built-In Variables in Awk](#built-in-variables-in-awk)
     - [sed](#sed)
   - [Redirections](#redirections)
+  - [Pipelines](#pipelines)
+    - [tee](#tee)
 
 ---
 
@@ -101,8 +103,6 @@ Open source software is a software which have its entire source code open, and a
     -   Ubuntu Server
     -   Centos
     -   SUSE Enterprise Linux
-
-For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
 
 ### Some Important Directories
 
@@ -440,17 +440,47 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 
 ## Redirections
 
-|                         |                                                                 |
-| ----------------------- | --------------------------------------------------------------- |
-| `command > file`        | redirect **stdout** to **overwrite** a file                     |
-| `command >> file`       | redirect **stdout** to **append** a file                        |
-| `command 2> file`       | redirect **stderr** to **overwrite** a file                     |
-| `command 2>> file`      | redirect **stderr** to **append** a file                        |
-| `command > /dev/null`   | discard / dump **stdout** messages                              |
-| `command 2> /dev/null`  | discard / dump **stderr** messages                              |
-| `command &> file`       | redirect both **stdout** and **stderr** to **overwrite** a file |
-| `command &>> file`      | redirect both **stdout** and **stderr** to **append** a file    |
-| `command &>> /dev/null` | dump / discard all the output                                   |
+|                           |                                                                 |
+| ------------------------- | --------------------------------------------------------------- |
+| `$ command > file`        | redirect **stdout** to **overwrite** a file                     |
+| `$ command >> file`       | redirect **stdout** to **append** a file                        |
+| `$ command 2> file`       | redirect **stderr** to **overwrite** a file                     |
+| `$ command 2>> file`      | redirect **stderr** to **append** a file                        |
+| `$ command > /dev/null`   | discard / dump **stdout** messages                              |
+| `$ command 2> /dev/null`  | discard / dump **stderr** messages                              |
+| `$ command &> file`       | redirect both **stdout** and **stderr** to **overwrite** a file |
+| `$ command &>> file`      | redirect both **stdout** and **stderr** to **append** a file    |
+| `$ command &>> /dev/null` | dump / discard all the output                                   |
 
 -   `/dev/null` is a dump file. We can dump any content in it and it would always be empty.
 -   `>file` is equivalent to `1>file` and `>>file` is equivalent to `1>>file`
+
+## Pipelines
+
+-   A **pipeline** is a sequence of one or more commands seperated by the pipe character `|`.
+-   A pipe connects the standard output of the 1st command to the standard input of the next command.
+
+<div align='center'>
+
+![pipelines](./images/pipe-redirection-1.png)
+
+</div>
+
+-   **Examples:**
+    -   `$ ls -l /usr/bin | less`
+    -   `$ ls | wc -l`
+
+### tee
+
+-   **Limitation of pipelining:** When redirection is combined with a pipeline, the shell sets up the entire pipeline first, then it redirects input / output.
+    If output redirection is used in the middle of a pipeline, the output will go to the file and **not** to the next command in the pipeline.
+
+-   **Example:** `$ ls > /tmp/saved-output | less #output goes to the file and less displays nothing on the screen`
+-   The **_tee_** command overcomes this limitation.
+<div align='center'>
+
+![tee](./images/tee.png)
+
+</div>
+
+-   **Example:** `$ ls -l | tee /tmp/seved-output | less`
