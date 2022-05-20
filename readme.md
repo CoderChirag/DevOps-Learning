@@ -60,6 +60,8 @@
     - [Basic commands](#basic-commands-1)
   - [Processes](#processes)
     - [Killing Processes](#killing-processes)
+  - [Archiving Data](#archiving-data)
+  - [Ubuntu Commands](#ubuntu-commands)
 
 ---
 
@@ -813,3 +815,12 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 
 -   Signals can be specified to `kill` command as options either by name (eg -HUP or -SIGHUP) or by number (the related -1).
 -   Users can kill their own processes, but root privilige is required to kill processes owned by others.
+
+## Archiving Data
+
+-   `$ tar -czvf <archivename>.tar.gz file1 file2...` - Archiving Data
+-   `$ tar -xzvf archivename.tar.gz -C /opt/ #-C is for giving a path where we want to unzip files` - Unziping data
+
+## Ubuntu Commands
+
+-   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
