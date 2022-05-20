@@ -33,6 +33,33 @@
   - [Redirections](#redirections)
   - [Pipelines](#pipelines)
     - [tee](#tee)
+  - [Users and Groups](#users-and-groups)
+    - [Users](#users)
+      - [Some Important Points](#some-important-points)
+      - [Types of User](#types-of-user)
+      - [`/etc/passwd` file](#etcpasswd-file)
+      - [`/etc/group` file](#etcgroup-file)
+    - [Groups](#groups)
+      - [Basic commands](#basic-commands)
+      - [Switching users](#switching-users)
+  - [File Permissions](#file-permissions)
+    - [Changing Permissions](#changing-permissions)
+      - [Symbolic Method](#symbolic-method)
+      - [Numeric Method](#numeric-method)
+    - [Changing ownership](#changing-ownership)
+    - [Special Permissions](#special-permissions)
+      - [setuid permission](#setuid-permission)
+      - [setgid permission](#setgid-permission)
+      - [sticky permission](#sticky-permission)
+    - [Default File Permissions - umask](#default-file-permissions---umask)
+  - [Sudo](#sudo)
+  - [Package Management](#package-management)
+    - [Basic way of installing any package in CentOS](#basic-way-of-installing-any-package-in-centos)
+    - [yum](#yum)
+  - [Services](#services)
+    - [Basic commands](#basic-commands-1)
+  - [Processes](#processes)
+    - [Killing Processes](#killing-processes)
 
 ---
 
@@ -499,3 +526,290 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 </div>
 
 -   **Example:** `$ ls -l | tee /tmp/seved-output | less`
+
+## Users and Groups
+
+### Users
+
+#### Some Important Points
+
+-   Users and groups are used to control access to files and resources
+-   Users login to the system by supplying their username and password
+-   Every file on the system is owned by a user and associated with a group
+-   Every process has an owner and group affiliation, and can only access the resources its owner or group can access
+    <br>
+
+-   Every user of the system is assigned a **unique user ID number (the UID)**
+-   Users name and UID are stored in `/etc/passwd`
+-   User's password is stored in `/etc/shadow` in encrypted form
+-   Users are assigned a **home directory** and a program that is run when they login (Usually a shell)
+-   Users cannot read, write or execute each other's files without permission
+
+#### Types of User
+
+| Type        | Example              | User ID (ID)  | Group ID (GID) | Home Dir         | Shell           |
+| ----------- | -------------------- | ------------- | -------------- | ---------------- | --------------- |
+| **Root**    | root                 | 0             | 0              | `/root`          | `/bin/bash`     |
+| **Regular** | coderchirag, vagrant | 1000 to 60000 | 1000 to 60000  | `/home/username` | `/bin/bash`     |
+| **Service** | ftp, ssh, apache     | 1 to 999      | 1 to 999       | `/var/ftp etc`   | `/sbin/nologin` |
+
+#### `/etc/passwd` file
+
+-   Total 7 columns seperated by colon (`:`)
+-   user_name:pwd(link to shadow file):uid:gid:comment:home_dir:login_shell
+
+#### `/etc/group` file
+
+-   Total 4 columns seperated by colon (`:`)
+-   group_name:pwd(link to shadow file):gid:users_list(separated by commas (`,`)
+
+### Groups
+
+-   A **group** is a collection of users that need to share acess to fiiles and other system resources.
+-   Every user has exactly one **primary group** and zero or more **supplementary groups**.
+
+#### Basic commands
+
+-   `$ id <username>` - outputs uid, gid, and groups
+-   `$ useradd <username>` - creates new user
+-   `$ groupadd <groupname>` - create new group
+-   `$ usermod [-g group: primary group] [-G groups: supplementary groups] [-c comment] <username>` - modify the user config
+-   `$ userdel [-r: delete the home directory also] <username>` - delete a user
+-   `passwd <username>` - set the password of user
+-   `$ groupmod [-n name: new name] [-g gid: new gid] <groupname>` - modify the group
+-   `$ groupdel <groupname>` - delete the group (cannot delete a group if it is a primary group for any existing user).
+-   `$ last` - give the details of which user logged in at what time
+-   `$ who` - which user is currently logged in
+-   `$ lsof -u <user>` - list files opened by the user (to install `$ yum install lsof -y`).
+
+#### Switching users
+
+-   Firstly create a password for **root** user - `$ sudo passwd`.
+-   The `su` command allows you to switch users
+    -   switching as root user - `$ sudo su -` or `$ sudo -i #Switch to root acount properly` or `$ sudo -s #Just run the root shell only`.
+    -   switching to other users - `$ sudo su - user01`.
+
+## File Permissions
+
+-   Four symbols are used when displaying permissions:
+    -   **r :** permission to read a file or list a directory's contents
+    -   **w :** permission to write to a file or create and remove files from a directory
+    -   **x :** permission to execute a program or change into a directory and do a long listing of the directory
+    -   **- :** no permission (in place of the r, w or x)
+-   File permissions may be viewed using `ls -l`<br>`$ ls -l /bin/login`
+
+    ```
+    -rwxr-xr-x. 1 root root 19080 Apr 1 18:26 /bin/login
+
+    - => filetype
+    rw- => user
+    r-x => group
+    r-x => others
+    1 => link count
+    root => owner user
+    root => owner group
+    19080 => filesize
+    Apr 1 18:26 => Last modification date & time
+    /bin/login => filename
+    ```
+
+### Changing Permissions
+
+#### Symbolic Method
+
+-   To change access modes :
+    -   `$ chmod [-option]... mode[,mode] file|directory...`
+-   **mode** includes :
+    -   **u**, **g** or **o** for user, group and other
+    -   **+**, **-** or **=** for grant, deny or set
+    -   **r**, **w**, or **x** for read, write and execute
+-   Options include :
+    -   **-R** Recursive
+    -   **-v** Verbose
+    -   **--reference** Reference another file for its mode
+-   Examples :
+    -   `$ chmod ugo+r file` - Grant read access to all for file
+    -   `$ chmod o-wx dir` - Deny write and execute to others for dir
+
+#### Numeric Method
+
+-   Uses a three-digit mode nummber
+    -   first digit specifies **owner's** permissions
+    -   second digit specifies **group** permissions
+    -   third digit represents **others'** permissions
+-   Permissions are calculated by adding :
+    -   4 (for read)
+    -   2 (for write)
+    -   1 (for execute)
+-   Example :
+    -   `$ chmod 640 myfile`
+
+### Changing ownership
+
+-   To change ownership :
+    -   `$ chown [-option]... user:group file|directory`
+-   Options include :
+    -   **-R** Recursive
+    -   **-v** Verbose
+-   Examples :
+    -   `$ chown -R student dir` - Changes the user ownership to _student_ recursively
+    -   `$ chown :admins file` - Changesthe group ownership to _admins_
+    -   `$ chown aws:devops file` - Changes the user ownership to _aws_ and group ownership to _devops_
+
+### Special Permissions
+
+| Special Permission | Effect on files                                                              | Effect on directories                                                                               |
+| ------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **u+s** (suid)     | File executes as the user that owns the file, not the user that ran the file | No effect                                                                                           |
+| **g+s** (guid)     | Files executes as the group that owns the file                               | Files newly created in the directory have their owner set to match the group owner of the directory |
+| **o+t** (sticky)   | No effect                                                                    | Users with write access to directory can only remove files they own                                 |
+
+-   Can be set as follows :
+    -   **Symbolically** : **setuid** = `u+s`; **setgid** = `g+s`; **sticky** = `o+t`
+    -   **Numerically** (4th preceding digit) : **setuid** = 4; **setgid** = 2; **sticky** = 1
+    -   Examples :
+        -   `$ chmod g+s directory`
+        -   `$ chmod 2770 directory #equivalent to g+s as 2 is written`
+
+#### setuid permission
+
+-   The **setuid** (suid) permission on an executable means that commands run as the user owning the file, not as the user that ran the command.
+-   Example :
+    -   `$ ls -l /usr/bin/passwd`
+        ```
+        -rwsr-xr-x. 1 root root 35504 Jul 16 2010 /usr/bin/passwd
+        ```
+    -   Here **s** is the **setuid** permission, written where normally execute (x) permission is written.
+-   If the owner does not have execute permission, it will be replaced by an uppercase **S**.
+
+#### setgid permission
+
+-   The **setgid** (sgid) permission on a directory means that files created in the directory inherit their group ownership from the directory, rather than inheriting it from the creating user.
+-   Example :
+    -   `$ ls -ld /run/log/journal`
+        ```
+        drwxr-sr-x 3 root systemd-journal 60 May 18 09:15 /run/log/journal
+        ```
+    -   Here **s** is the **setgid** permission, written where normally execute (x) permission is written.
+-   If the group does not have execute permission, it will be replaced by an uppercase **S**.
+
+#### sticky permission
+
+-   The **sticky bit** for a directory sets a special restriction on deletion of files.
+-   Only the owner of the file (and root) can delete files within the directory.
+-   Example :
+    -   `$ ls -ld /tmp`
+        ```
+        drwxrwxrwt 39 root 4096 Feb 8 20:52 /tmp
+        ```
+    -   Here **t** is the **sticky** permission, written where normally execute (x) permission is written.
+-   If others do not have execute permission, it will be replaced by an uppercase **T**.
+
+### Default File Permissions - umask
+
+-   If we create a new directory, default permissions are : 0777 (drwxrwxrwx)
+-   If we create a new regular file, default permissions are : 0666 (-rw-rw-rw-)
+    <br>
+-   However, we can change it using **umask**
+-   If a bit is set in **umask**, then corresponding permission will be cleared on new file.
+-   For eg, the `$ umask 0002` clears the wirte bit for other users.
+-   The `umask ` command without arguments will display the current value of the shell's umask. `$ umask` - `002`
+
+## Sudo
+
+-   sudo gives power to a normal user to execue commands which is owned by root user.
+-   Not every user have the privilige to do sudo.
+-   For giving any user or group acces to sudo we have to add them in `/etc/sudoers` file.
+    -   `$ ls -l /etc/sudoers` - `-r--r-----. 1 root root 4328 Feb 12 17:54 /etc/sudoers`
+    -   So event root user don't have write access to this file
+    -   We **should not** change this file's permissions, instead we should write command `$ visudo` which will open this file in write mode.
+    -   Search for the line `root ALL=(ALL) ALL` and insert new line below it to give any other user or group sudo privilige.
+    -   For giving privilige to group, add a percentage sign (%) before the name.
+    -   For giving privilige to a user or group so that password is not required for doing sudo, write `NOPASSWD:`
+    -   Example :
+        ```
+        ....
+        root        ALL=(ALL)       ALL
+        ansible     ALL=(ALL)       NOPASSWD:       ALL
+        %aws        ALL=(ALL)       ALL
+        ...
+        ```
+-   For preventing any human error in `/etc/sudoers` file, we make a new file for the user or group we want to give sudo privilige in the `/etc/sudoers.d` directory.
+
+## Package Management
+
+### Basic way of installing any package in CentOS
+
+-   Go to browser, search for package and copy the link
+-   `$ curl <package_link> -o <package_name>.rpm`
+-   `rpm [-i: interactive] [-v: verbose] [-h: human readable] <package_name>.rpm`
+
+|                                                   |                                                                                |                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ | ----- |
+| `$ rpm -qa`                                       | Display list of all installed packages                                         | `$ rpm -qa                                                   | less` |
+| `$ rpm -qi {package}`                             | Display installed information along with package version and short description | `$ rpm -qi mozilla-mail`                                     |
+| `$ rpm -qf {/path/to/file}`                       | Find out what package a file belongs to, i.e., find what package owns the file | `$ rpm -qf /etc/passwd`                                      |
+| `$ rpm -qc {package-name} `                       | Display list of configuration file(s) for a package                            | `$ rpm -qc httpd`                                            |
+| `$ rpm -qcf {/path/to/file}`                      | Display list of configuration files for a command                              | `$ rpm -qcf /usr/X11R6/bin/xeyes`                            |
+| `$ rpm -qa --last`                                | Display list of all recently installed RPMs                                    | `$ rpm -qa --last                                            | less` |
+| `$ rpm -qpR {.rpm-file}`<br>`$ rpm -qR {package}` | Find out what dependencies a rpm file has                                      | `$ rpm -qpR mediawiki-1.4rc1-4.i586.rpm`<br>`$ rpm -qR bash` |
+
+### yum
+
+-   **yum** is a package manager which manages and downloads all the dependencies along with the required package
+
+|                                              |                                            |
+| -------------------------------------------- | ------------------------------------------ |
+| `$ yum search PACKAGE`                       | search from available repositories         |
+| `$ yum -y install PACKAGE`                   |
+| `$ yum reinstall PACKAGE`                    |
+| `$ yum remove package`                       |
+| `$ yum update`                               | update all packages                        |
+| `$ yum updata PACKAGE`                       | update only a package                      |
+| `$ yum grouplist`                            | List all available Group Packages          |
+| `yum group install "GROUPNAME"`              | Installs all the packages in a group       |
+| `$ yum repolist`                             | List enabled yum repositories              |
+| `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
+| `$ yum clean all`                            | Clean yum cache                            |
+| `$ yum history`                              | View history of yum                        |
+| `$ yum info packagename`                     |
+
+## Services
+
+-   A service is a program that runs in the background otuside the interactive control of system users as they lack an interface.
+-   `systemctl` command is used for managing services in linux
+
+### Basic commands
+
+-   `$ systemctl status httpd`
+-   `$ systemctl start httpd`
+-   `$ systemctl restart httpd`
+-   `$ systemctl reload httpd` - reloads the config without restarting it
+-   `$ systemctl stop httpd`
+-   `$ systemctl enable httpd` - enables the service to start at boot time.
+-   `$ systemctl is-active httpd`
+-   `$ systemctl is-enabled httpd`
+
+## Processes
+
+-   `$ top` - show all the process running on realtime basis
+-   `$ ps aux` - similar to top but displays info and quits
+-   `$ps -ef` - shows Parent Process ID (PPID) but don't show the CPU and MEM Utilization
+
+### Killing Processes
+
+-   `kill` command is used to kill the processes.
+
+| Signal Number | Short Name | Definition         | Purpose                                                                                                                                                  |
+| ------------- | ---------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1             | HUP        | Hangup             | Used to report termination of the controlling of a terminal. Also used to request process reinitialization (config reload) without termination           |
+| 2             | INT        | Keyboard Interrupt | Causes program termination. Can be blocked or handled. Sent by pressing INTR key sequence (Ctrl + c)                                                     |
+| 3             | QUIT       | Keyboard Quit      | Similar to SIGINT; adds a process dump at termination. Sent by pressing QUIT key sequence (Ctrl + \\)                                                    |
+| 9             | KILL       | Kill, unblockable  | Causes abruoot program termination. Cannot be blocked, ignored, or handled; always fatal                                                                 |
+| 15 default    | TERM       | Terminate          | Causes program termination. Unlike SIGKILLm can be blocked, ignored, or handled. The "polite" way to use ask a program to terminate; allows self-cleanup |
+| 18            | CONT       | Continue           | Sent to a process to resume, if stopped. Cannot be blocked. Even if handled, always resumes the process                                                  |
+| 19            | STOP       | Stop, unblockable  | Suspends the process. Cannot be bolocked or handled                                                                                                      |
+| 20            | TSIP       | keyboard Stop      | Unlike SIGSTOP, can be blocked, ignored or handled. Sent by pressing SUSP key sequence (Ctrl + z)                                                        |
+
+-   Signals can be specified to `kill` command as options either by name (eg -HUP or -SIGHUP) or by number (the related -1).
+-   Users can kill their own processes, but root privilige is required to kill processes owned by others.
