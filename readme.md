@@ -745,13 +745,13 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 -   `rpm [-i: interactive] [-v: verbose] [-h: human readable] <package_name>.rpm`
 
 |                                                   |                                                                                |                                                              |
-| ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ | ----- |
-| `$ rpm -qa`                                       | Display list of all installed packages                                         | `$ rpm -qa                                                   | less` |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `$ rpm -qa`                                       | Display list of all installed packages                                         | `$ rpm -qa`                                                  |
 | `$ rpm -qi {package}`                             | Display installed information along with package version and short description | `$ rpm -qi mozilla-mail`                                     |
 | `$ rpm -qf {/path/to/file}`                       | Find out what package a file belongs to, i.e., find what package owns the file | `$ rpm -qf /etc/passwd`                                      |
 | `$ rpm -qc {package-name} `                       | Display list of configuration file(s) for a package                            | `$ rpm -qc httpd`                                            |
 | `$ rpm -qcf {/path/to/file}`                      | Display list of configuration files for a command                              | `$ rpm -qcf /usr/X11R6/bin/xeyes`                            |
-| `$ rpm -qa --last`                                | Display list of all recently installed RPMs                                    | `$ rpm -qa --last                                            | less` |
+| `$ rpm -qa --last`                                | Display list of all recently installed RPMs                                    | `$ rpm -qa --last`                                           |
 | `$ rpm -qpR {.rpm-file}`<br>`$ rpm -qR {package}` | Find out what dependencies a rpm file has                                      | `$ rpm -qpR mediawiki-1.4rc1-4.i586.rpm`<br>`$ rpm -qR bash` |
 
 ### yum
