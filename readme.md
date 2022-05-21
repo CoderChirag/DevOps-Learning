@@ -78,7 +78,7 @@
         - [Setting up MongoDb database](#setting-up-mongodb-database)
           - [Installing MongoDB](#installing-mongodb)
           - [Starting the MongoDB Service and Testing the Database](#starting-the-mongodb-service-and-testing-the-database)
-          - [Setting up the Node.js application](#setting-up-the-nodejs-application)
+        - [Setting up the Node.js application](#setting-up-the-nodejs-application)
           - [Installing PM2](#installing-pm2)
           - [Configuring Apche Server for Node.js](#configuring-apche-server-for-nodejs)
 
@@ -1124,7 +1124,7 @@ $ systemctl status mongod       # Check if mongod is running
 -   We can further verify that the database is operational by connecting to the database server and executing a diagnostic command. The following command will connect to the database and output its current version, server address, and port. It will also return the result of MongoDB’s internal connectionStatus command:
     `$ mongo --eval 'db.runCommand({connectionStatus: 1})'`
 
-###### Setting up the Node.js application
+##### Setting up the Node.js application
 
 -   `$ cd /srv/www/`
 -   Clone the repository from GitHub : `$ git clone https://github.com/debemenitammy/API_for_a_Store.git`
