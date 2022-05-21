@@ -70,6 +70,13 @@
       - [Configuring Apache for WordPress](#configuring-apache-for-wordpress)
       - [Configuring database](#configuring-database)
       - [Configuring Wordpress to connect to the database](#configuring-wordpress-to-connect-to-the-database)
+    - [Setting up a Nodejs Application](#setting-up-a-nodejs-application)
+      - [Using Apache2](#using-apache2)
+        - [Configuring VM](#configuring-vm)
+        - [Installing and Starting Apache server](#installing-and-starting-apache-server)
+        - [Installing Nodejs](#installing-nodejs)
+        - [Setting up MongoDb database](#setting-up-mongodb-database)
+          - [Installing MongoDB](#installing-mongodb)
 
 ---
 
@@ -1016,3 +1023,50 @@ Bye
     <br><br>
 
 With this we have hosted wordpress in a VM server successfuly :sunglasses:.
+
+### Setting up a Nodejs Application
+
+#### Using Apache2
+
+##### Configuring VM
+
+```
+$ mkdir nodejs
+$ cd nodejs
+$ vagrant init ubuntu/bionic64
+$ vim VagrantFile       # Configure the bridged and static IP address
+$ vagrant up
+$ vagrant ssh
+```
+
+##### Installing and Starting Apache server
+
+```
+$ sudo -i
+$ apt-get update
+$ apt-get install apache2
+```
+
+-   Open the browser and go to bridged or static IP and check if default page of apache2 is showing.
+-   Confirm the status of apache2 : `$ systemctl status apache2`
+
+##### Installing Nodejs
+
+-   First, install the NodeSource PPA in order to get access to its contents. Make sure you’re in your home directory, and use `curl` to retrieve the installation script for the Node.js 16.x archives:
+    ```
+    $ cd ~
+    $ curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
+    ```
+-   We can inspect the contents of this script with `vim` : `$ vim nodesource_setup.sh`
+-   Run the script : `$ bash nodesource_setup.sh`
+-   The PPA will be added to our configuration and our local package cache will be updated automatically. After running the setup script from Nodesource, we can install the Node.js package : `$ apt install nodejs`.
+-   To check which version of Node.js you have installed after these initial steps, type :
+    ```
+    $ nodejs -v
+    v8.11.3
+    ```
+-   In order for some npm packages to work (those that require compiling code from source, for example), we will need to install the build-essential package: <br> `$ apt install build-essential`
+
+##### Setting up MongoDb database
+
+###### Installing MongoDB
