@@ -886,6 +886,13 @@ $ systemctl enable httpd
 ```
 
 -   Now run `$ ifconfig` command, copy the bridged network IP and paste in the browser to check if default page appears.
+
+<div align='center'>
+
+![apache_default_page](./images/default_page_apache.png)
+
+</div>
+
 -   Now go to the `/var/www` directory and creat an `index.html` file to show the content you want, instead of the default page.
 
 **Serving a website by downloading a template**
