@@ -9,6 +9,8 @@
   - [Vagrant Architecture](#vagrant-architecture)
   - [VM Setup with Vagrant](#vm-setup-with-vagrant)
   - [Basic Commands](#basic-commands)
+  - [Vagrant IP, RAM and CPU](#vagrant-ip-ram-and-cpu)
+  - [Vagrant Sync Directories](#vagrant-sync-directories)
 
 ---
 
@@ -70,3 +72,39 @@ $ vagrant up
     > $ vagrant destroy
 -   To reload the VM
     > $ vagrant reload
+-   To view information about all known Vagrant environments on the machine
+    > vagrant global-status
+-   To view the status of current machine
+    > vagrabt status
+
+## Vagrant IP, RAM and CPU
+
+-   To configure a bridge network adapter for the VM, uncomment the following line in Vagrantfile :<br>`# config.vm.network "public_network"`
+-   This bridged adapter would help the VM to fetch an IP address from the host WiFi Router, and thus the VM would behave like it is an independent machine connected to the same network as of the host machine.
+    <br>
+-   To give the VM a static IP address, uncomment the following linr in Vagrantfile :<br>`# config.vm.network "private_network", ip: "192.168.25.12"`
+-   Make sure that the network address of the IP is not same as the network address of the host machine.
+    <br>
+-   To change the RAM Size or No. of CPUs given to the VM, go to the following block of code in Vagrantfile and uncomment and change accordingly :
+    ```
+    ...
+    config.vm.provider "virtualbox" do |vb|
+    #    # Display the VirtualBox GUI when booting the machine
+    #    vb.gui = true
+    #
+    #    # Customize the amount of memory on the VM:
+        vb.memory = "1600"
+        vb.cpus = 2
+    end
+    ...
+    ```
+    <br>
+-   After the required changes are done in Vagrantfile, run `$ vagrant reload` if vagrant was already running, to see the changes.
+
+## Vagrant Sync Directories
+
+-   The directory where your Vagrantfile is present is by default synced with the `/vagrant` directory in the VM.
+-   To create a custom synced directory, uncomment and change accordingly the following line in the Vagrantfile : <br> `# config.vm.synced_folder "F:\\myshellscripts", "/opt/scripts"`
+    <br>
+-   **NOTE :** If you have created a script in Windows using any editor, and tryingg to run in Linux and are getting error, make sure that your editor is writing the script in `LF` format instead of `CRLF`.
+-   After the required changes are done in Vagrantfile, run `$ vagrant reload` if vagrant was already running, to see the changes.
