@@ -63,7 +63,7 @@
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
-    - [Setting up a wbesite in CentOS7](#setting-up-a-wbesite-in-centos7)
+    - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack](#setting-up-a-wordpress-website-using-lamp-linux-apache-mysql-php-stack)
       - [Configuring VM and Installing Dependencies](#configuring-vm-and-installing-dependencies)
       - [Installing WordPress](#installing-wordpress)
@@ -846,7 +846,13 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 
 ## Server Management in Linux
 
-### Setting up a wbesite in CentOS7
+**NOTE, Before going forward to this section make sure :**
+
+-   You have learnt about **vagrant** from the [vagrant branch](https://github.com/CoderChirag/DevOps-Learning/tree/vagrant)
+-   Have learnt about **apache** from the [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
+-   Have learnt about **nginx** from the [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
+
+### Setting up a website in CentOS7
 
 ```
 $ mkdir crispy_kitchen
