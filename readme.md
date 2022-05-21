@@ -36,6 +36,8 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Popular Linux distros](#popular-linux-distros)
 - [5. Apache Web Server](#5-apache-web-server)
   - [Introduction](#introduction)
+- [6. Nginx Web Server](#6-nginx-web-server)
+  - [Introduction](#introduction-1)
 
 ---
 
@@ -248,3 +250,12 @@ For more detailed study of linux refer to the [Linux branch](https://github.com/
 -   It provides many powerful features including dynamically loadable modules, robust media support, and extensive integration with other popular software.
 
 For more details about apache and its implementation, go to [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
+
+# 6. Nginx Web Server
+
+## Introduction
+
+-   Nginx is one of the most popular web servers in the world and is responsible for hosting some of the largest and highest-traffic sites on the internet.
+-   It is more resource-friendly than Apache in most cases and can be used as a web server or reverse proxy.
+
+For more details about apache and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
