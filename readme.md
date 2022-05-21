@@ -81,10 +81,10 @@ $ vagrant up
 
 -   To configure a bridge network adapter for the VM, uncomment the following line in Vagrantfile :<br>`# config.vm.network "public_network"`
 -   This bridged adapter would help the VM to fetch an IP address from the host WiFi Router, and thus the VM would behave like it is an independent machine connected to the same network as of the host machine.
-    <br>
+    <br><br>
 -   To give the VM a static IP address, uncomment the following linr in Vagrantfile :<br>`# config.vm.network "private_network", ip: "192.168.25.12"`
 -   Make sure that the network address of the IP is not same as the network address of the host machine.
-    <br>
+    <br><br>
 -   To change the RAM Size or No. of CPUs given to the VM, go to the following block of code in Vagrantfile and uncomment and change accordingly :
     ```
     ...
