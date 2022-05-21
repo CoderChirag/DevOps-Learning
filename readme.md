@@ -77,6 +77,10 @@
         - [Installing Nodejs](#installing-nodejs)
         - [Setting up MongoDb database](#setting-up-mongodb-database)
           - [Installing MongoDB](#installing-mongodb)
+          - [Starting the MongoDB Service and Testing the Database](#starting-the-mongodb-service-and-testing-the-database)
+          - [Setting up the Node.js application](#setting-up-the-nodejs-application)
+          - [Installing PM2](#installing-pm2)
+          - [Configuring Apche Server for Node.js](#configuring-apche-server-for-nodejs)
 
 ---
 
@@ -1070,3 +1074,87 @@ $ apt-get install apache2
 ##### Setting up MongoDb database
 
 ###### Installing MongoDB
+
+-   To obtain the most recent version of this software, we must include MongoDB’s dedicated package repository to our APT sources. Then, we’ll be able to install `mongodb-org`, a meta-package that always points to the latest version of MongoDB.
+-   To start, import the public GPG key for the latest stable version of MongoDB by running the following command.
+    `$ curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -`
+    -   cURL prints the content of the GPG key file and then pipes it into the following `sudo apt-key add -` command, thereby adding the GPG key to our list of trusted keys.
+    -   Also, note that this `curl` command uses the options `-fsSL` which, together, essentially tell cURL to fail silently. This means that if for some reason cURL isn’t able to contact the GPG server or the GPG server is down, it won’t accidentally add the resulting error code to your list of trusted keys.
+    -   If you’d like to double check that the key was added correctly, you can do so with the following command:
+        `$ apt-key list`
+-   At this point, our APT installation still doesn’t know where to find the `mongodb-org` package we need to install the latest version of MongoDB.
+-   There are two places on our server where APT looks for online sources of packages to download and install: the `sources.list` file and the `sources.list.d` directory. `sources.list` is a file that lists active sources of APT data, with one source per line and the most preferred sources listed first. The `sources.list.d` directory allows us to add such `sources.list` entries as separate files.
+    `$ echo "deb [ arch=amd64,arm64 ] https://repo.monoodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse"`
+    This single line tells APT everything it needs to know about what the source is and where to find it
+-   ```
+    $ apt update
+    $ apt install mongodb-org -y
+    ```
+
+###### Starting the MongoDB Service and Testing the Database
+
+```
+$ systemctl start mongod.service
+$ systemctl status mongod       # Check if mongod is running
+```
+
+-   If it is showing the following error :
+
+    ```
+    ● mongod.service - MongoDB Database Server
+     Loaded: loaded (/lib/systemd/system/mongod.service; disabled; vendor preset: enabled)
+     Active: failed (Result: exit-code) since Sat 2022-05-21 17:30:45 UTC; 4min 10s ago
+       Docs: https://docs.mongodb.org/manual
+    Process: 2887 ExecStart=/usr/bin/mongod --config /etc/mongod.conf (code=exited, status=14)
+    Main PID: 2887 (code=exited, status=14)
+
+    May 21 17:30:45 ubuntu-bionic systemd[1]: Started MongoDB Database Server.
+    May 21 17:30:45 ubuntu-bionic systemd[1]: mongod.service: Main process exited, code=exited, status=14/n/a
+    May 21 17:30:45 ubuntu-bionic systemd[1]: mongod.service: Failed with result 'exit-code'.
+    ```
+
+    Change the owner of `.sock` file to `mongodb` user :
+
+    ```
+    $ chown -R mongodb:mongodb /var/lib/mongodb
+    $ chown mongodb:mongodb /tmp/mongodb-27017.sock
+    ```
+
+-   `$ systemctl enable mongod`
+-   We can further verify that the database is operational by connecting to the database server and executing a diagnostic command. The following command will connect to the database and output its current version, server address, and port. It will also return the result of MongoDB’s internal connectionStatus command:
+    `$ mongo --eval 'db.runCommand({connectionStatus: 1})'`
+
+###### Setting up the Node.js application
+
+-   `$ cd /srv/www/`
+-   Clone the repository from GitHub : `$ git clone https://github.com/debemenitammy/API_for_a_Store.git`
+-   `cd API_for_a_Store`
+-   Run `$ npm install` command
+-   Make a new `.env` file and write `DB_CONNECTION=mongodb://127.0.0.1:27017`
+
+###### Installing PM2
+
+-   **PM2** is a process manager for Node.js applications. PM2 makes it possible to daemonize applications so that they will run in the background as a service.
+-   ```
+    $ npm install pm2@latest -g
+    $ pm2 start app.js
+    $ pm2 startup sytemd
+    ```
+
+###### Configuring Apche Server for Node.js
+
+-   `$ cd /etc/apache2/sites-available`
+-   Open the `000-default.conf` default configuration file in order to make edits:
+    `$ vim 000-default.conf`
+-   We’ll configure the `000-default.conf` file so that all requests coming in via `port 80` will be proxied, or forwarded, to the Node application running on `port 3000`. We use `ProxyPass` to map the root URL at the specified address: `http://localhost:3000/`
+-   Copy the following into the `000-default.conf` file inside `VirtualHost` tag: `ProxyPass / http://localhost:3000/`
+-   Enable `proxy` and `proxy_http` modules :
+    ```
+    $ a2enmod proxy
+    $ a2enmod proxy_http
+    ```
+-   Restart apache2 to apply the config : `$ systemctl reload apche2`
+-   To check ifApche config is configured correctly, go to bbrowser and paste bridged or static IP, you'll see the node application redirecting you to postman documentation page.
+    <br><br><br>
+
+With this we have configure Node.js application for the apache server successfully :sunglasses:.
