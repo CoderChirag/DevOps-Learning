@@ -62,6 +62,14 @@
     - [Killing Processes](#killing-processes)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
+  - [Server Management in Linux](#server-management-in-linux)
+    - [Setting up a wbesite in CentOS7](#setting-up-a-wbesite-in-centos7)
+    - [Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack](#setting-up-a-wordpress-website-using-lamp-linux-apache-mysql-php-stack)
+      - [Configuring VM and Installing Dependencies](#configuring-vm-and-installing-dependencies)
+      - [Installing WordPress](#installing-wordpress)
+      - [Configuring Apache for WordPress](#configuring-apache-for-wordpress)
+      - [Configuring database](#configuring-database)
+      - [Configuring Wordpress to connect to the database](#configuring-wordpress-to-connect-to-the-database)
 
 ---
 
@@ -824,3 +832,187 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 ## Ubuntu Commands
 
 -   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
+
+## Server Management in Linux
+
+### Setting up a wbesite in CentOS7
+
+```
+$ mkdir crispy_kitchen
+$ cd crispy_kitchen/
+$ vagrant init geerlingguy/centos7
+$ vim Vagrantfile
+```
+
+-   Give Bridged IP and required RAM by uncommenting and changing the following blocks in **Vagrantfile** accordingly :
+    ```
+    ...
+    config.vm.network "public_network"
+    ...
+     config.vm.provider "virtualbox" do |vb|
+    #    # Display the VirtualBox GUI when bootin the machine
+    #    vb.gui = true
+    #
+    #    # Customize the amount of memory on tthe VM:
+        vb.memory = "1024"
+    end
+    ...
+    ```
+
+```
+$ vagrant up
+$ vagrant ssh
+$ sudo -i
+$ yum install httpd wget unzip -y
+$ systemctl start httpd
+$ systemctl enable httpd
+```
+
+-   Now run `$ ifconfig` command, copy the bridged network IP and paste in the browser to check if default page appears.
+-   Now go to the `/var/www` directory and creat an `index.html` file to show the content you want, instead of the default page.
+
+**Serving a website by downloading a template**
+
+```
+$ cd /tmp/
+$ wget https://www.tooplate.com/zip-templates/2129_crispy_kitchen.zip
+$ unzip 2129_crispy_kitchen.zip
+$ cd 2129_crispy_kitchen
+$ cp -r * /var/www/html
+$ systemctl restart httpd
+```
+
+-   And with this we have hosted a website :sunglasses: . Go to browser, type the bridged IP and check if it shows the website.
+
+### Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack
+
+#### Configuring VM and Installing Dependencies
+
+```
+$ mkdir wordpress
+$ cd wordpress
+$ vagrant init ubuntu/bionic64
+$ vim Vagrantfile
+```
+
+-   Give Static IP and bridged IP by uncommenting and changing the following blocks in **Vagrantfile** accordingly :
+    ```
+    ...
+    config.vm.network "private_network", ip: "192.168.33.11"
+    config.vm.network "public_network"
+    ...
+    ```
+
+```
+$ vagrant up
+$ vagrant ssh
+$ sudo -i
+$ apt update
+$ apt install apache2 \
+              ghostscript \
+              libapache2-mod-php \
+              mysql-server \
+              php \
+              php-bcmath \
+              php-curl \
+              php-imagick \
+              php-intl \
+              php-json \
+              php-mbstring \
+              php-mysql \
+              php-xml \
+              php-zip -y
+```
+
+#### Installing WordPress
+
+```
+$ mkdir -p /srv/www
+$ chown www-data: /srv/www
+$ curl https://wordpress.org/latest.tar.gz | sudo -u www-data tar zx -C /srv/www
+```
+
+#### Configuring Apache for WordPress
+
+-   Create Apache site for Wordpress. Create `/etc/apache2/sites-available/wordpress.conf` with following lines :
+    ```
+    <VirtualHost *:80>
+        DocumentRoot /srv/www/wordpress
+        <Directory /srv/www/wordpress>
+            Options FollowSymLinks
+            AllowOverride Limit Options FileInfo
+            DirectoryIndex index.php
+            Require all granted
+        </Directory>
+        <Directory /srv/www/wordpress/wp-content>
+            Options FollowSymLinks
+            Require all granted
+        </Directory>
+    </VirtualHost>
+    ```
+-   Enable the site with `$ sudo a2ensite wordpress`. Now if we check there will be a link in `/etc/apache2/sites-enabled` to the `wordpess.conf` file present in the `/etc/apache2/sites-available` directory.
+-   Enable URL rewriting with : `$ sudo a2enmod rewrite`. This will enable the URL rewriting rules.
+-   Disable the default "It Works site with : `$ sudo a2dissite 000-default`. Now the link of file `000-default.conf` file would be gone from `/etc/apache2/sites-enabled` directory, which means we have disabled the default page of apache2.
+-   Finally reload apache2 to apply the changes `$ sudo service apache2 reload`
+
+#### Configuring database
+
+```
+$ sudo mysql -u root
+Welcome to the MySQL monitor. Commands end with ; or \g.
+Your MySQL connection id is 7
+Server version: 5.7.20-0ubuntu0.16.04.1 (Ubuntu)
+
+Copyright (c) 2000, 2017, Oracle and/or it affiliates. All rights reserved.
+
+Oracle is a registered trademark of oracle Corporation and/or its affiliates. Other names may be trademarks of thier respective owners.
+
+Type 'help;' or '\h' for help. type '\c' to clear the current input statement.
+
+mysql> CREATE DATABASE wordpress;
+Query Ok, 1 row affected (0,00 sec)
+
+mysql> CREATE USER wordpress@localhost IDENTIFIED by '<your-password>';
+Query OK, 1 row affected (0,00 sec)
+
+mysql> GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER
+    -> ON wordpress.*
+    -> TO wordpress@localhost;
+Query OK, 1 row affected (0,00 sec)
+
+mysql> FLUSH PRIVILEGES;
+Query OK, 1 row affected (0,00 sec)
+
+mysql> quit
+Bye
+```
+
+#### Configuring Wordpress to connect to the database
+
+-   First, copy the sample configuration file to wp-config.php : <br> `$ sudo -u www-data cp /srv/www/wordpress/wp-config-sample.php /srv/www/wordpress/wp-config.php`
+-   Now, set the database credentials in the configuration file (do not replace **database_name_here** or **username_here** in the commands below.) Do replace **\<your-password>** with your database password :
+    ```
+    $ sudo -u www-data sed -i 's/database_name_here/wordpress/' /srv/www/wordpress/wp-config.php
+    $ sudo -u www-data sed -i 's/username_here/wordpress/' /srv/www/wordpress/wp-config.php
+    $ sudo -u www-data sed -i 's/password_here/<your-password>/' /srv/www/wordpress/wp-config.php
+    ```
+-   Finally, in a terminal session open the connfig file in vim : `$ sudo -u www-data nano /srv/www/wordpress/wp-config.php`
+-   Find the following :
+    ```
+    define('AUTH_KEY',         'put your unique phrase here');
+    define('SECURE_AUTH_KEY',  'put your unique phrase here');
+    define('LOGGED_IN_KEY',    'put your unique phrase here');
+    define('NONCE_KEY',        'put your unique phrase here');
+    define('AUTH_SALT',        'put your unique phrase here');
+    define('SECURE_AUTH_SALT', 'put your unique phrase here');
+    define('LOGGED_IN_SALT',   'put your unique phrase here');
+    define('NONCE_SALT',       'put your unique phrase here');
+    ```
+    Delete those line (8dd will delete all lines). Then replace with the content of [this](https://api.wordpress.org/secret-key/1.1/salt). (This adress is a randomiser that returns completely random keys each time it is opened.) This step is impoortant to ensure that our site is not vulnerable to "known secrets" attacks.
+    <br><br>
+    Save and close the configuration file by hitting `esc` and then writing `:wq` and pressing `enter`.
+    <br><br>
+-   Now go to the bridged IP or static IP in the browser and configure the owrdpress there.
+    <br><br>
+
+With this we have hosted wordpress in a VM server successfuly :sunglasses:.
