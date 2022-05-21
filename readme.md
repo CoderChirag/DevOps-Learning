@@ -91,6 +91,12 @@ For more detailed study about the `ufw` and firewall settings, go to the [ufw br
     ```
 -   For checking, go to browser and visit the bridged or static IP and verify that it is showing the Apache Ubuntu default page.
 
+<div align='center'>
+
+![default_page](./images/default_page_apache.png)
+
+</div>
+
 ## Step 4 - Managing the Apache Process
 
 -   Stop the web server : `$ sudo systemctl stop apache2`
