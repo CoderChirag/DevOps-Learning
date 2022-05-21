@@ -11,6 +11,7 @@
   - [Basic Commands](#basic-commands)
   - [Vagrant IP, RAM and CPU](#vagrant-ip-ram-and-cpu)
   - [Vagrant Sync Directories](#vagrant-sync-directories)
+  - [Provisioning](#provisioning)
 
 ---
 
@@ -99,12 +100,28 @@ $ vagrant up
     ...
     ```
     <br><br>
--   After the required changes are done in **Vagrantfile**, run `$ vagrant reload` if vagrant was already running, to see the changes.
+-   After the required changes are done in **Vagrantfile**, run `$ vagrant reload` if VM was already running, to see the changes.
 
 ## Vagrant Sync Directories
 
 -   The directory where your **Vagrantfile** is present is by default synced with the `/vagrant` directory in the VM.
 -   To create a custom **synced directory**, uncomment and change accordingly the following line in the **Vagrantfile** : <br> `# config.vm.synced_folder "F:\\myshellscripts", "/opt/scripts"`
     <br><br><br>
--   **NOTE :** If you have created a script in Windows using any editor, and tryingg to run in Linux and are getting error, make sure that your editor is writing the script in `LF` format instead of `CRLF`.
--   After the required changes are done in **Vagrantfile**, run `$ vagrant reload` if vagrant was already running, to see the changes.
+-   **NOTE :** If you have created a script in Windows using any editor, and trying to run in Linux and are getting error, make sure that your editor is writing the script in `LF` format instead of `CRLF`.
+-   After the required changes are done in **Vagrantfile**, run `$ vagrant reload` if VM was already running, to see the changes.
+
+## Provisioning
+
+-   **Provisioning** in vagrant means executing your commands when the VM starts, or is booted up.
+-   Also called **bootstraping** in other technologies.
+-   Can be done by uncommenting and changing the following lines accordingly in the **Vagrantfile** :
+    ```
+    ...
+    config.vm.provision "shell", inline: <<-SHELL
+       apt-get update
+       apt-get install -y apache2
+    SHELL
+    ...
+    ```
+    <br><br>
+-   After the required changes are done in **Vagrantfile**, run `$ vagrant reload --provision` if VM was already running, to see the changes.
