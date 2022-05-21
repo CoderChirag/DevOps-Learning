@@ -34,6 +34,8 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Why Linux?](#why-linux)
   - [Linux Architecture](#linux-architecture)
   - [Popular Linux distros](#popular-linux-distros)
+- [5. Apache Web Server](#5-apache-web-server)
+  - [Introduction](#introduction)
 
 ---
 
@@ -237,3 +239,12 @@ Open source software is a software which have its entire source code open, and a
     -   SUSE Enterprise Linux
 
 For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
+
+# 5. Apache Web Server
+
+## Introduction
+
+-   The Apache HTTP server is the most widely-used web server in the world.
+-   It provides many powerful features including dynamically loadable modules, robust media support, and extensive integration with other popular software.
+
+For more details about apache and its implementation, go to [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
