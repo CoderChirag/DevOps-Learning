@@ -258,4 +258,4 @@ For more details about apache and its implementation, go to [apache2 branch](htt
 -   Nginx is one of the most popular web servers in the world and is responsible for hosting some of the largest and highest-traffic sites on the internet.
 -   It is more resource-friendly than Apache in most cases and can be used as a web server or reverse proxy.
 
-For more details about apache and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
+For more details about nginx and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
