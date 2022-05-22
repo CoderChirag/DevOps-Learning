@@ -2,9 +2,19 @@
 
 ---
 
--   [Contents](#contents)
--   [Nginx Web Server](#nginx-web-server)
-    -   [Introduction](#introduction)
+- [Contents](#contents)
+- [Nginx Web Server](#nginx-web-server)
+  - [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Step 1 - Installing Nginx](#step-1---installing-nginx)
+  - [Step 2 - Adjusting the Firewall](#step-2---adjusting-the-firewall)
+  - [Step 3 - Checking the Web Server](#step-3---checking-the-web-server)
+  - [Step 4 - Managing the Nginx Process](#step-4---managing-the-nginx-process)
+  - [Step 5 - Setting up Server Blocks (Recommended)](#step-5---setting-up-server-blocks-recommended)
+  - [Step 6 – Getting Familiar with Important Nginx Files and Directories](#step-6--getting-familiar-with-important-nginx-files-and-directories)
+    - [Content](#content)
+    - [Server Configuration](#server-configuration)
+    - [Sever Logs](#sever-logs)
 
 ---
 
