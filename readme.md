@@ -36,9 +36,10 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Popular Linux distros](#popular-linux-distros)
 - [5. Initial Server Setup with Ubuntu 18.04](#5-initial-server-setup-with-ubuntu-1804)
   - [Introduction](#introduction)
-- [6. Apache Web Server](#6-apache-web-server)
+- [6. UFW Essentials: Common Firewall Rules and Commands](#6-ufw-essentials-common-firewall-rules-and-commands)
+- [7. Apache Web Server](#7-apache-web-server)
   - [Introduction](#introduction-1)
-- [7. Nginx Web Server](#7-nginx-web-server)
+- [8. Nginx Web Server](#8-nginx-web-server)
   - [Introduction](#introduction-2)
 
 ---
@@ -251,7 +252,14 @@ For more detailed study of linux refer to the [Linux branch](https://github.com/
 -   After creating a new Ubuntu 18.04 server (on Physical Machine, **not** on vagrant VM), you should take some configuration steps as part of an initial server setup in order to increase security and facilitate management later.
 -   For the details of the Initial Server Setup when using a physical machine instead of a Vagrant VM, go to [ubuntu-server-setup branch](https://github.com/CoderChirag/DevOps-Learning/tree/ubuntu-server-setup)
 
-# 6. Apache Web Server
+# 6. UFW Essentials: Common Firewall Rules and Commands
+
+-   **UFW (uncomplicated firewall)** is a firewall configuration tool that runs on top of `iptables`, included by default within Ubuntu distributions.
+-   It provides a streamlined interface for configuring common firewall use cases via the command line.
+
+For detailed study of _UFW_ refer to the [ufw branch](https://github.com/CoderChirag/DevOps-Learning/tree/ufw)
+
+# 7. Apache Web Server
 
 ## Introduction
 
@@ -260,7 +268,7 @@ For more detailed study of linux refer to the [Linux branch](https://github.com/
 
 For more details about apache and its implementation, go to [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
 
-# 7. Nginx Web Server
+# 8. Nginx Web Server
 
 ## Introduction
 
