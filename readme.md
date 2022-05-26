@@ -17,6 +17,8 @@
       - [Tomcat Setup](#tomcat-setup)
       - [Setup systemd for tomcat](#setup-systemd-for-tomcat)
       - [Code Build & Deploy (app01)](#code-build--deploy-app01)
+    - [Nginx Setup](#nginx-setup)
+    - [Validate](#validate)
 
 ---
 
@@ -398,6 +400,46 @@
     $ sleep 300
 
     $ chown tomcat.tomcat usr/local/tomcat8/webapps -R
-    systemctl restart tomcat
+    $ systemctl restart tomcat
 
     ```
+
+### Nginx Setup
+
+-   ```
+    $ vagrant ssh web01
+    $ sudo -i
+    $ apt update
+    $ apt upgrade
+
+    # Install Nginx
+    $ apt install nginx -y
+
+    # Create Nginx conf file with below content
+    $ vim /etc/nginx/sites-available/vproapp
+
+        upstream vproapp{
+            server app01:8080;
+            # for multiple servers, just add them here
+            # server app02:8080;
+        }
+        server{
+            listen 80;
+            location / {
+                proxy_pass http://vproapp;
+            }
+        }
+
+    # Remove default nginx conf
+    $ rm -rf /etc/nginx/sotes-enabled/default
+
+    # Create link to activate website
+    $ ln -s /etc/nginx/sites-available/vproapp /etc/nginx/site-enabled/vproapp
+
+    # Restart Nginx
+    $ systemctl restart nginx
+    ```
+
+### Validate
+
+-   Now go to the IP address of web01 (`192.168.56.11` in this case) and login with `username`: `admin_vp` and `password`: `admin_vp`
