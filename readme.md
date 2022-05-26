@@ -11,6 +11,7 @@
     - [VM Setup](#vm-setup)
     - [DB, Queue & Cache Setup](#db-queue--cache-setup)
       - [MySQL Setup](#mysql-setup)
+      - [MemCache Setup](#memcache-setup)
 
 ---
 
@@ -184,7 +185,9 @@
 
 #### MySQL Setup
 
--   ```
+-   Install, start, enable and configure MariaDB on `port 3306`
+
+    ```
     $ vagrant ssh db01                    # ssh to vm
     $ sudo -i                             # Switch to Root user
     $ yum update -y                       # update the OS
@@ -201,13 +204,37 @@
     mysql> exit;
 
     $ git clone -b vprofile-project https://github.com/CoderChirag/DevOps-Learning.git         #Download Source Code
-    $ cd vprofile-setup
-    $ mysql -u root -p"<your_password>" accounts < resources/db_backup/sql                     # Initialize DB
+    $ cd DevOps-Learning
+    $ mysql -u root -p"<your_password>" accounts < resources/db_backup.sql                     # Initialize DB
     $ mysql -u root -p"<your_password>" -e "FLUSH PRIVILEGES"
     $ mysql -u root -p"<your_password>" accounts
     mysql> show databases;
+    +--------------------+
+    | Database           |
+    +--------------------+
+    | information_schema |
+    | accounts           |
+    | mysql              |
+    | performance_schema |
+    +--------------------+
+    4 rows in set (0.00 sec)
+
     mysql> use accounts;
+    Reading table information for completion of table and column names
+    You can turn off this feature to get a quicker startup with -A
+
+    Database changed
+
     mysql> show tables;
+    +--------------------+
+    | Tables_in_accounts |
+    +--------------------+
+    | role               |
+    | user               |
+    | user_role          |
+    +--------------------+
+    3 rows in set (0.01 sec)
+
     mysql> exit;
 
     $ systemctl restart mariadb           # Restart maria-db Server
@@ -218,4 +245,25 @@
     $ firewall-cmd --zone=public --add-port=3306/tcp --permanent
     $ firewall-cmd --reload
     $ systemctl restart mariadb
+    ```
+
+#### MemCache Setup
+
+-   Install, start & enable **MemCached** on `port 11211`
+
+    ```
+    $ vagrant ssh mc01
+    $ yum install epel-release -y
+    $ yum install memcached -y
+
+    $ sytemctl start memcached
+    $ systemctl enable memcached
+    $ memcached -p 11211 -U 11111 -u memcached -d       # Run memcached on tcp port: 11211 and udp port 11111
+    $ ss -tunlp | grep 11211        # To validate if memcachedis setup correctly
+
+    $ systemctl enable firewalld
+    $ systemctl start firewalld
+    $ firewall-cmd --add-port=11211/tcp --permanent
+    $ firewall-cmd --reload
+    $  memcached -p 11211 -U 11111 -u memcached -d
     ```
