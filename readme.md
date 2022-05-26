@@ -12,6 +12,11 @@
     - [DB, Queue & Cache Setup](#db-queue--cache-setup)
       - [MySQL Setup](#mysql-setup)
       - [MemCache Setup](#memcache-setup)
+      - [RabbitMQ Setup](#rabbitmq-setup)
+    - [App Setup](#app-setup)
+      - [Tomcat Setup](#tomcat-setup)
+      - [Setup systemd for tomcat](#setup-systemd-for-tomcat)
+      - [Code Build & Deploy (app01)](#code-build--deploy-app01)
 
 ---
 
@@ -203,9 +208,9 @@
     mysql>
     mysql> exit;
 
-    $ git clone -b vprofile-project https://github.com/CoderChirag/DevOps-Learning.git         #Download Source Code
+    $ git clone -b vprofile-project(local) https://github.com/CoderChirag/DevOps-Learning.git         #Download Source Code
     $ cd DevOps-Learning
-    $ mysql -u root -p"<your_password>" accounts < resources/db_backup.sql                     # Initialize DB
+    $ mysql -u root -p"<your_password>" accounts < src/main/resources/db_backup.sql                     # Initialize DB
     $ mysql -u root -p"<your_password>" -e "FLUSH PRIVILEGES"
     $ mysql -u root -p"<your_password>" accounts
     mysql> show databases;
@@ -253,6 +258,7 @@
 
     ```
     $ vagrant ssh mc01
+    $ sudo -i
     $ yum install epel-release -y
     $ yum install memcached -y
 
@@ -266,4 +272,132 @@
     $ firewall-cmd --add-port=11211/tcp --permanent
     $ firewall-cmd --reload
     $  memcached -p 11211 -U 11111 -u memcached -d
+    ```
+
+#### RabbitMQ Setup
+
+-   Install, enable and start **RabbitMQ**
+
+    ```
+    $ vagrant ssh rmq01
+    $ sudo -i
+    $ yum update -y                   # Update OS
+    $ yum install epel-release -y     # Set EPEL Repository
+
+    $ yum install wget -y             # Install Dependencies
+    $ cd /tmp/
+    $ wget http://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
+    $ rpm -Uvh erlang-solutions-2.0.1.noarch.rpm
+    $ yum -y install erlang socat
+
+    $ curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | sudo bash      # Install RabbitMQ Server
+    $ yum install rabbitmq-server -y
+
+    $ systemctl start rabbitmq-server     # Start and Enable RabbitMQ Server
+    $ systemctl enable rabbitmq-server
+
+    $ echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config        # Change the config
+    $ rabbitmqctl add_user test test        # Add a new user 'test'
+    $ rabbitmqctl set_user_tags test administrator      # Give test user admin privileges
+
+    $ systemctl restart rabbitmq-server
+
+    $ systemctl start firewalld
+    $ sytemctl enable firewalld
+    $ firewall-cmd --get-active-zones
+    $ firewall-cmd --zone=public --add-port=25672/tcp --permanent
+    $ firewall-cmd --reload
+    ```
+
+### App Setup
+
+#### Tomcat Setup
+
+-   ```
+    $ vagrant ssh app01
+    $ yum update -y
+    $ yum install epel-release -y
+
+    # Install Dependencies
+    $ yum install java-1.8.0-openjdk -y
+    $ yum install git maven wget -y
+
+    $ cd /tmp/
+
+    # Download & install Tomcat package
+    $ wget https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.tar.gz
+    $ tar xzvf apache-tomcat-8.5.37.tar.gz
+
+    # Add Tomcat user
+    $ useradd --home-dir /usr/local/tomcat8 --shell /sbin/nologin tomcat
+
+    # Copy data to tomcat home dir
+    $ cp -r /tmp/apache-tomcat-8.5.37/* /usr/local/tomcat8
+
+    # Make Tomcat user owner of the tomcat home dir
+    $ chown -R tomcat.tomcat /usr/local/tomcat8
+
+    ```
+
+#### Setup systemd for tomcat
+
+-   ```
+    # Update file with the folllowing content.
+    $ vi /etc/sytemd/system/tomcat.service
+    [Unit]
+    Description=Tomcat
+    After=network.target
+
+    [Service]
+    User=tomcat
+    WorkingDirectory=/usr/local/tomcat8
+    Environment=JRE_HOME=/usr/lib/jvm/jre
+    Environment=JAVA_HOME=/usr/lib/jvm/jre
+    Environment=CATALINA_HOME=/usr/local/tomcat8
+    Environment=CATALINE_BASE=/usr/local/tomcat8
+    ExecStart=/usr/local/tomcat8/bin/catalina.sh run
+    ExecStop=/usr/local/tomcat8/bin/shutdown.sh
+    SyslogIdentifier=tomcat-%i
+
+    [Install]
+    WantedBy=multi-user.target
+
+    $ systemctl daemon-reload
+    $ systemctl start tomcat
+    $ sytemctl enable tomcat
+
+    # Enabling the firewall and allowing port 8080 to access the tomcat
+    $ systemctl enable firewalld
+    $ systemctl start firewalld
+    $ firewall-cmd --get-active-zones
+    $ firewall-cmd --zone=public --add-port=8080/tcp --permanent
+    $ firewall-cmd --reload
+    ```
+
+#### Code Build & Deploy (app01)
+
+-   ```
+    # Download Source Code
+    $ git clone -b vprofile-project https://github.com/CoderChirag/DevOps-Learning.git
+
+    # Update Configuration
+    $ cd DevOps-Learning/
+    $ vim src/main/`resources/application.properties
+    # Update file with backend server details
+
+    # Build Code
+    # Run below command inside the repository (DevOps-Learning)
+    $ mvn install
+
+    # Deploy artifact
+    $ systemctl stop tomcat
+    $ sleep 120
+    $ rm -rf /usr/local/tomcat8/webapps/ROOT*
+    $ cp target/vprofile-v2.war usr/local/tomcat8/webapps/ROOT.war
+    $ systemctl start tomcat
+    $ sleep 300
+
+    $ chown tomcat.tomcat usr/local/tomcat8/webapps -R
+    systemctl restart tomcat
+
     ```
