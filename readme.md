@@ -208,7 +208,7 @@
     mysql>
     mysql> exit;
 
-    $ git clone -b vprofile-project(local) https://github.com/CoderChirag/DevOps-Learning.git         #Download Source Code
+    $ git clone -b vprofile-project-local https://github.com/CoderChirag/DevOps-Learning.git         #Download Source Code
     $ cd DevOps-Learning
     $ mysql -u root -p"<your_password>" accounts < src/main/resources/db_backup.sql                     # Initialize DB
     $ mysql -u root -p"<your_password>" -e "FLUSH PRIVILEGES"
@@ -378,11 +378,11 @@
 
 -   ```
     # Download Source Code
-    $ git clone -b vprofile-project https://github.com/CoderChirag/DevOps-Learning.git
+    $ git clone -b vprofile-project-local https://github.com/CoderChirag/DevOps-Learning.git
 
     # Update Configuration
     $ cd DevOps-Learning/
-    $ vim src/main/`resources/application.properties
+    $ vim src/main/resources/application.properties
     # Update file with backend server details
 
     # Build Code
