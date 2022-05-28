@@ -64,12 +64,14 @@
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
+    - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
     - [Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack](#setting-up-a-wordpress-website-using-lamp-linux-apache-mysql-php-stack)
       - [Configuring VM and Installing Dependencies](#configuring-vm-and-installing-dependencies)
       - [Installing WordPress](#installing-wordpress)
       - [Configuring Apache for WordPress](#configuring-apache-for-wordpress)
       - [Configuring database](#configuring-database)
       - [Configuring Wordpress to connect to the database](#configuring-wordpress-to-connect-to-the-database)
+    - [Automating Wordpress Website Setup using IAAC](#automating-wordpress-website-setup-using-iaac)
     - [Setting up a Nodejs Application](#setting-up-a-nodejs-application)
       - [Using Apache2](#using-apache2)
         - [Configuring VM](#configuring-vm)
@@ -908,6 +910,35 @@ $ systemctl restart httpd
 
 -   And with this we have hosted a website :sunglasses: . Go to browser, type the bridged IP and check if it shows the website.
 
+### Automating the Static Website Setup - Infrastucture as a Code (IAAC)
+
+-   We can use Vagrant provisioning to automate the setup
+-   `vim Vagrantfile`
+-   ```
+    Vagrant.configure("2") do |config|
+
+      config.vm.box = "geerlingguy/centos7"
+
+      config.vm.network "private_network", ip: "192.168.33.10"
+
+      config.vm.network "public_network"
+
+      config.vm.provision "shell", inline: <<-SHELL
+          yum install httpd wget unzip -y
+          systemctl start httpd
+          systemctl enable httpd
+          cd /tmp/
+          wget https://www.tooplate.com/zip-templates/2129_crispy_kitchen.zip
+          unzip -o 2129_crispy_kitchen.zip
+          cp -r 2129_crispy_kitchen.zip/* /var/www/html
+          systemctl restart httpd
+      SHELL
+    end
+    ```
+
+-   Now, just do `vagrant up`, and our website would be hosted automatically
+-   This process is called **Infrastructure as a Code (IAAC)**.
+
 ### Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack
 
 #### Configuring VM and Installing Dependencies
@@ -1040,6 +1071,60 @@ Bye
     <br><br>
 
 With this we have hosted wordpress in a VM server successfuly :sunglasses:.
+
+### Automating Wordpress Website Setup using IAAC
+
+-   `vim Vagrantfile`
+-   ```
+    Vagrant.configure("2") do |config|
+
+      config.vm.box = "ubuntu/bionic64"
+
+      config.vm.network "private_network", ip: "192.168.33.11"
+
+      config.vm.network "public_network"
+
+      config.vm.provision "shell", inline: <<-SHELL
+          sudo apt update
+          sudo apt install apache2 \
+                           ghostscript \
+                           libapache2-mod-php \
+                           mysql-server \
+                           php \
+                           php-bcmath \
+                           php-curl \
+                           php-imagick \
+                           php-intl \
+                           php-json \
+                           php-mbstring \
+                           php-mysql \
+                           php-xml \
+                           php-zip -y
+
+          sudo mkdir -p /srv/www
+          sudo chown www-data: /srv/www
+          curl https://wordpress.org/latest.tar.gz | sudo -u www-data tar zx -C /srv/www
+
+          cp /vagrant/wordpress.conf /etc/apache2/sites-available/wordpress.conf
+          sudo a2ensite wordpress
+          sudo a2enmod rewrite
+          sudo a2dissite 000-default
+          sudo service apache2 reload
+
+          mysql -u root -e 'CREATE DATABASE wordpress;'
+          mysql -u root -e 'CREATE USER wordpress@localhost IDENTIFIED BY "admin123";'
+          mysql -u root -e 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER ON wordpress.* TO wordpress@localhost;'
+          mysql -u root -e 'FLUSH PRIVILEGES;'
+
+          sudo -u www-data cp /srv/www/wordpress/wp-config-sample.php /srv/www/wordpress/wp-config.php
+          sudo -u www-data sed -i 's/database_name_here/wordpress/' /srv/www/wordpress/wp-config.php
+          sudo -u www-data sed -i 's/username_here/wordpress/' /srv/www/wordpress/wp-config.php
+          sudo -u www-data sed -i 's/password_here/admin123/' /srv/www/wordpress/wp-config.php
+      SHELL
+    end
+    ```
+
+-   Now simply do `vagrant up` and you are good to go :sunglasses:
 
 ### Setting up a Nodejs Application
 
