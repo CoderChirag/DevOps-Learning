@@ -1068,6 +1068,7 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 -   Show / Manipulate the IP routing table
 -   ```
     $ route -n    #[--numeric|-n]: Show numerical addresses
+
     Kernel IP routing table
     Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
     0.0.0.0         10.0.2.2        0.0.0.0         UG    100    0        0 enp0s3
