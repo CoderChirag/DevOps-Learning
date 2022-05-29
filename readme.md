@@ -62,6 +62,16 @@
     - [Killing Processes](#killing-processes)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
+  - [Basic Networking Commands](#basic-networking-commands)
+    - [Protocols & Port Numbers](#protocols--port-numbers)
+    - [ifconfig](#ifconfig)
+    - [ip addr show](#ip-addr-show)
+    - [ping](#ping)
+    - [netstat](#netstat)
+    - [ss](#ss)
+    - [nmap](#nmap)
+    - [dig](#dig)
+    - [route](#route)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -845,6 +855,229 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 ## Ubuntu Commands
 
 -   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
+
+## Basic Networking Commands
+
+### Protocols & Port Numbers
+
+| Protocol | Service Name              | UDP & TCP Port No.s        |
+| -------- | ------------------------- | -------------------------- |
+| DNS      | Domain Name Service - UDP | UDP 53                     |
+| DNS TCP  | Domain Name Service - TCP | TCP 53                     |
+| HTTP     | Web                       | TCP 80                     |
+| HTTPS    | Secure Web (SSL)          | TCP 443                    |
+| SMTP     | Simple Mail Transport     | TCP 25                     |
+| POP      | Post Office Protocol      | TCP 109, 110               |
+| SNMP     | Simple Network Management | TCP 161, 162, UDP 161, 162 |
+| TELNET   | Telnet Terminal           | TCP 23                     |
+| FTP      | File Transfer Protocol    | TCP 20, 21                 |
+| SSH      | Secure Shell (terminal)   | TCP 22                     |
+| AFP IP   | Apple File Protocol/IP    | TCP 447, 548               |
+
+### ifconfig
+
+-   Shows the active network interfaces, their names, and IP Addresses.
+-   ```
+    $ ifconfig
+
+      enp0s3: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+              inet 10.0.2.15  netmask 255.255.255.0  broadcast 10.0.2.255
+              inet6 fe80::50:97ff:feae:4744  prefixlen 64  scopeid 0x20<link>
+              ether 02:50:97:ae:47:44  txqueuelen 1000  (Ethernet)
+              RX packets 592  bytes 70109 (70.1 KB)
+              RX errors 0  dropped 0  overruns 0  frame 0
+              TX packets 419  bytes 75825 (75.8 KB)
+              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+      enp0s8: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+              inet 192.168.33.10  netmask 255.255.255.0  broadcast 192.168.33.255
+              inet6 fe80::a00:27ff:fe2c:8992  prefixlen 64  scopeid 0x20<link>
+              ether 08:00:27:2c:89:92  txqueuelen 1000  (Ethernet)
+              RX packets 0  bytes 0 (0.0 B)
+              RX errors 0  dropped 0  overruns 0  frame 0
+              TX packets 8  bytes 656 (656.0 B)
+              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+      enp0s9: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+              inet 192.168.1.33  netmask 255.255.255.0  broadcast 192.168.1.255
+              inet6 fe80::a00:27ff:fe94:7c  prefixlen 64  scopeid 0x20<link>
+              ether 08:00:27:94:00:7c  txqueuelen 1000  (Ethernet)
+              RX packets 4  bytes 1300 (1.3 KB)
+              RX errors 0  dropped 0  overruns 0  frame 0
+              TX packets 10  bytes 1342 (1.3 KB)
+              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+      lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+              inet 127.0.0.1  netmask 255.0.0.0
+              inet6 ::1  prefixlen 128  scopeid 0x10<host>
+              loop  txqueuelen 1000  (Local Loopback)
+              RX packets 0  bytes 0 (0.0 B)
+              RX errors 0  dropped 0  overruns 0  frame 0
+              TX packets 0  bytes 0 (0.0 B)
+              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+    ```
+
+### ip addr show
+
+-   In newer linux systems, `ifconfig` command is not available.
+-   ```
+    $ ip addr show
+
+      1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+          link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+          inet 127.0.0.1/8 scope host lo
+          valid_lft forever preferred_lft forever
+          inet6 ::1/128 scope host
+          valid_lft forever preferred_lft forever
+      2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+          link/ether 02:50:97:ae:47:44 brd ff:ff:ff:ff:ff:ff
+          inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic enp0s3
+          valid_lft 86302sec preferred_lft 86302sec
+          inet6 fe80::50:97ff:feae:4744/64 scope link
+          valid_lft forever preferred_lft forever
+      3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+          link/ether 08:00:27:2c:89:92 brd ff:ff:ff:ff:ff:ff
+          inet 192.168.33.10/24 brd 192.168.33.255 scope global enp0s8
+          valid_lft forever preferred_lft forever
+          inet6 fe80::a00:27ff:fe2c:8992/64 scope link
+          valid_lft forever preferred_lft forever
+      4: enp0s9: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+          link/ether 08:00:27:94:00:7c brd ff:ff:ff:ff:ff:ff
+          inet 192.168.1.33/24 brd 192.168.1.255 scope global dynamic enp0s9
+          valid_lft 86303sec preferred_lft 86303sec
+          inet6 fe80::a00:27ff:fe94:7c/64 scope link
+          valid_lft forever preferred_lft forever
+    ```
+
+### ping
+
+-   Sends `icmp` packets to the specified IP.
+-   ```
+    $ ping 192.168.33.10
+
+      PING 192.168.33.10 (192.168.33.10) 56(84) bytes of data.
+      64 bytes from 192.168.33.10: icmp_seq=1 ttl=64 time=0.054 ms
+      64 bytes from 192.168.33.10: icmp_seq=2 ttl=64 time=0.057 ms
+      64 bytes from 192.168.33.10: icmp_seq=3 ttl=64 time=0.052 ms
+      64 bytes from 192.168.33.10: icmp_seq=4 ttl=64 time=0.091 ms
+      ^C
+      --- 192.168.33.10 ping statistics ---
+      4 packets transmitted, 4 received, 0% packet loss, time 3079ms
+    ```
+
+### netstat
+
+-   Prints network connections, routing tables, interface statistics, masquerade connections, and multicast memberships.
+-   ```
+    # Basic Options for netstat :
+        # [--all|-a]: Show both listening and non-listening sockets
+        # [--numeric|-n]: Show numerical addresses instead of trying to determine symbolic host, port or user names.
+        # [--tcp|-t]
+        # [--program|-p]: Show th PID and name of the program to which each socket belongs.
+
+    $ sudo -i       # So that below command shows the PID
+    $ netstat -antp
+
+        Active Internet connections (servers and established)
+        Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+        tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      650/systemd-resolve
+        tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      851/sshd
+        tcp        0      0 10.0.2.15:51362         91.189.91.39:80         TIME_WAIT   -
+        tcp        0      0 10.0.2.15:22            10.0.2.2:63898          ESTABLISHED 1599/sshd: vagrant
+        tcp6       0      0 :::22                   :::*                    LISTEN      851/sshd
+        tcp6       0      0 :::80                   :::*                    LISTEN      2425/apache2
+    ```
+
+-   A **Practical Usecase**, finding the port no for **Apache2** Service:
+
+    ```
+    $ ps -ef | grep apache2
+
+      root      2425     1  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
+      www-data  2426  2425  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
+      www-data  2428  2425  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
+      root      6091  1815  0 12:23 pts/0    00:00:00 grep --color=auto apache2
+
+    $ netstat -antp | grep 2425          # PID obtained using above command
+
+      tcp6       0      0 :::80                   :::*                    LISTEN      2425/apache2
+    ```
+
+### ss
+
+-   Another utility to investigate sockets
+-   ```
+    $ ss -tunlp
+
+      NetidState  Recv-Q Send-Q         Local Address:Port   Peer Address:Port
+      udp  UNCONN 0      0              127.0.0.53%lo:53          0.0.0.0:*     users:(("systemd-resolve",pid=650,fd=12))
+      udp  UNCONN 0      0        192.168.1.33%enp0s9:68          0.0.0.0:*     users:(("systemd-network",pid=1432,fd=25))
+      udp  UNCONN 0      0           10.0.2.15%enp0s3:68          0.0.0.0:*     users:(("systemd-network",pid=1432,fd=22))
+      tcp  LISTEN 0      128            127.0.0.53%lo:53          0.0.0.0:*     users:(("systemd-resolve",pid=650,fd=13))
+      tcp  LISTEN 0      128                  0.0.0.0:22          0.0.0.0:*     users:(("sshd",pid=851,fd=3))
+      tcp  LISTEN 0      128                     [::]:22             [::]:*     users:(("sshd",pid=851,fd=4))
+      tcp  LISTEN 0      128                        *:80                *:*     users:(("apache2",pid=2428,fd=4),("apache2",pid=2426,fd=4),("apache2",pid=2425,fd=4))
+    ```
+
+### nmap
+
+-   Network exploration tool and security / port explorer
+-   Can be used to detect all open ports of a machine
+-   ```
+    $ nmap localhost
+
+      Starting Nmap 7.60 ( https://nmap.org ) at 2022-05-29 12:34 UTC
+      Nmap scan report for localhost (127.0.0.1)
+      Host is up (0.0000090s latency).
+      Not shown: 998 closed ports
+      PORT   STATE SERVICE
+      22/tcp open  ssh
+      80/tcp open  http
+    ```
+
+### dig
+
+-   A **DNS** Lookup Utility
+-   ```
+    $ dig www.coderchirag.tech
+      ; <<>> DiG 9.11.3-1ubuntu1.17-Ubuntu <<>> www.coderchirag.tech
+      ;; global options: +cmd
+      ;; Got answer:
+      ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 23161
+      ;; flags: qr rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 1
+
+      ;; OPT PSEUDOSECTION:
+      ; EDNS: version: 0, flags:; udp: 65494
+      ;; QUESTION SECTION:
+      ;www.coderchirag.tech.          IN      A
+
+      ;; ANSWER SECTION:
+      www.coderchirag.tech.   28800   IN      CNAME   cname.vercel-dns.com.
+      cname.vercel-dns.com.   46      IN      A       76.76.21.164
+      cname.vercel-dns.com.   46      IN      A       76.76.21.93
+
+      ;; Query time: 511 msec
+      ;; SERVER: 127.0.0.53#53(127.0.0.53)
+      ;; WHEN: Sun May 29 12:37:05 UTC 2022
+      ;; MSG SIZE  rcvd: 115
+    ```
+
+### route
+
+-   Show / Manipulate the IP routing table
+-   ```
+    $ route -n    #[--numeric|-n]: Show numerical addresses
+    Kernel IP routing table
+    Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+    0.0.0.0         10.0.2.2        0.0.0.0         UG    100    0        0 enp0s3
+    0.0.0.0         192.168.1.1     0.0.0.0         UG    100    0        0 enp0s9
+    10.0.2.0        0.0.0.0         255.255.255.0   U     0      0        0 enp0s3
+    10.0.2.2        0.0.0.0         255.255.255.255 UH    100    0        0 enp0s3
+    192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 enp0s9
+    192.168.1.1     0.0.0.0         255.255.255.255 UH    100    0        0 enp0s9
+    192.168.33.0    0.0.0.0         255.255.255.0   U     0      0        0 enp0s8
+    ```
 
 ## Server Management in Linux
 
