@@ -41,6 +41,7 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Introduction](#introduction-1)
 - [8. Nginx Web Server](#8-nginx-web-server)
   - [Introduction](#introduction-2)
+- [9. Dockers and Containers](#9-dockers-and-containers)
 
 ---
 
@@ -276,3 +277,7 @@ For more details about apache and its implementation, go to [apache2 branch](htt
 -   It is more resource-friendly than Apache in most cases and can be used as a web server or reverse proxy.
 
 For more details about nginx and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
+
+# 9. Dockers and Containers
+
+For the detailed study about Containers and Dockers, refer to the [docker branch](https://github.com/CoderChirag/DevOps-Learning/tree/docker).
