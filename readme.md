@@ -1,278 +1,168 @@
-# Learning DevOps
-
-This is going to be my journey to learn Devops from very basics to advanced level. I will try to share each and every step of it so it can also benefit others.
-
-I am making this repo so that you don't have to go and search at different different places and you can find every topic here only.
-
-I will try to provide complete notes and practical projects in complete detailed and in an easy to understand manner.
-
 # Contents
 
 ---
 
-- [Learning DevOps](#learning-devops)
 - [Contents](#contents)
-- [1. Introduction to DevOps](#1-introduction-to-devops)
-  - [Transforming an Idea into Application](#transforming-an-idea-into-application)
-    - [Software Development Life Cycle (SLDC)](#software-development-life-cycle-sldc)
-      - [Models in SLDC](#models-in-sldc)
-    - [DevOps Lifecycle](#devops-lifecycle)
-    - [Continous Integration (CI)](#continous-integration-ci)
-    - [Continous Delivery (CD)](#continous-delivery-cd)
-- [2. Virtualization](#2-virtualization)
-    - [Life before Virtualization](#life-before-virtualization)
-  - [Virtualization](#virtualization)
-  - [Basic Terminologies](#basic-terminologies)
-- [3. Vagrant](#3-vagrant)
-  - [VM Management Problems](#vm-management-problems)
-  - [Vagrant for VMs](#vagrant-for-vms)
-  - [Vagrant Architecture](#vagrant-architecture)
-- [4. Basics of Linux](#4-basics-of-linux)
-  - [Open Source](#open-source)
-  - [Linux History](#linux-history)
-  - [Linux principles](#linux-principles)
-  - [Why Linux?](#why-linux)
-  - [Linux Architecture](#linux-architecture)
-  - [Popular Linux distros](#popular-linux-distros)
-- [5. Initial Server Setup with Ubuntu 18.04](#5-initial-server-setup-with-ubuntu-1804)
-  - [Introduction](#introduction)
-- [6. UFW Essentials: Common Firewall Rules and Commands](#6-ufw-essentials-common-firewall-rules-and-commands)
-- [7. Apache Web Server](#7-apache-web-server)
-  - [Introduction](#introduction-1)
-- [8. Nginx Web Server](#8-nginx-web-server)
-  - [Introduction](#introduction-2)
+- [Containers](#containers)
+- [Docker](#docker)
+  - [Overview](#overview)
+  - [The Docker Platform](#the-docker-platform)
+  - [Docker Architecture](#docker-architecture)
+    - [The Docker daemon](#the-docker-daemon)
+    - [The Docker client](#the-docker-client)
+    - [Docker Desktop](#docker-desktop)
+    - [Docker registries](#docker-registries)
+    - [Docker objects](#docker-objects)
+      - [Images](#images)
+      - [Containers](#containers-1)
+  - [Hands on Docker Containers](#hands-on-docker-containers)
+    - [Basic Docker Commands](#basic-docker-commands)
 
 ---
 
-# 1. Introduction to DevOps
+# Containers
 
-## Transforming an Idea into Application
+-   Containers are an **operating system virtualization** technology used to package applications and their dependencies and run them in isolated environments.
+-   A single container might be used to run anything from a small microservice or software process to a larger application.
+-   They provide a lightweight method of packaging and deploying applications in a standardized way across many different types of infrastructure.
 
-### Software Development Life Cycle (SLDC)
+# Docker
 
-Development of any software comes up with a life cycle of certain steps which are executed in a cyclic manner.
-The steps are:
+## Overview
 
-1. Requirement Gathering
-2. Planning
-3. Designing
-4. Development
-5. Testing
-6. Deploy and Maintain
- <div align="center">
+-   Docker is an open platform for developing, shipping, and running applications.
+-   It enables us to separate our applications from our infrastructure so we can deliver software quickly.
+-   With Docker, we can manage our infrastructure in the same ways we manage our applications.
+-   By taking advantage of Docker’s methodologies for shipping, testing, and deploying code quickly, we can significantly reduce the delay between writing code and running it in production.
 
-![sldc](./images/sldc.png)
+## The Docker Platform
 
-</div>
+-   Docker provides the ability to package and run an application in a loosely isolated environment called a **container**.
+-   The isolation and security allows to run many containers simultaneously on a given host.
+-   Containers are lightweight and contain everything needed to run the application, so we do not need to rely on what is currently installed on the host.
+    <br>
 
-#### Models in SLDC
+-   Docker provides tooling and a platform to manage the lifecycle of our containers :
+    -   Develop application and its supporting components using containers.
+    -   The container becomes the unit for distributing and testing the application.
+    -   Deploy application into production environment, as a container or an orchestrated service. This works the same whether production environment is a local data center, a cloud provider, or a hybrid of the two.
 
--   Waterfall Model - Each phase begins only when previous is completed.
--   Agile Model - Work is divided into smallet lists of several tasks, several iterations of SLDC for each list
--   Spiral Model
--   Big Bang Model
--   etc...
+## Docker Architecture
 
-### DevOps Lifecycle
+-   Docker uses a **client-server architecture**.
+-   The Docker _client_ talks to the Docker _daemon_, which does the heavy lifting of building, running, and distributing Docker containers.
+-   The Docker client and daemon can run on the same system, or you can connect a Docker client to a remote Docker daemon.
+-   The Docker client and daemon communicate using a REST API, over UNIX sockets or a network interface.
+-   Another Docker client is **Docker Compose**, that lets you work with applications consisting of a set of containers.
 
-1. Code - Developers commit code
-2. Code Test - Unit and Integration test
-3. Code Analysis - Vulnerability and best practices analysis
-4. Delivery - Deploy changes to staging
-5. DB/sec changes - Every other ops changes
-6. Software Testing - QA / Functional tests
-7. Deploy to production - Go live, user traffic diverted to new changes
-8. User Approval - User feedback
-9. Keep Monitoring
+<div align='center'>
 
-### Continous Integration (CI)
-
-Continous Integration is the practice of automating the integration of code changes from multiple contributors into a single software project.
-
-In simpler words, it is the process that automates the build and tests after every commit and sends notifications to developers accordingly.
-If the code committed by developer is passed by automated tested the developer is notified and if it doesn't the developer is notified and he commits again and the issues are fixed.
-
-<div align="center">
-
-![CI](images/ci.png)
+![architecture](./images/architecture.svg)
 
 </div>
 
-### Continous Delivery (CD)
+### The Docker daemon
 
-Continous Delivery is a strategy for software releases wherein any code commit that passes the automated testing phase is automatically released into the production environment, making changes that are visible to the software's users.
+-   The **Docker daemon** (`dockerd`) listens for Docker API requests and manages Docker objects such as images, containers, networks, and volumes.
+-   A daemon can also communicate with other daemons to manage Docker services.
 
-In simpler words, it is the process that automates the deployment process so that every deployment request generated by CI is fulfilled.
-It is basically the extension of CI.
+### The Docker client
 
-<div align="center">
+-   The **Docker client** (`docker`) is the primary way that many Docker users interact with Docker.
+-   When we use commands such as `docker run`, the client sends these commands to `dockerd`, which carries them out.
+-   The `docker` command uses the **Docker API**.
+-   The Docker client can communicate with more than one daemon.
 
-![CI/CD](images/ci-cd.png)
+### Docker Desktop
 
-</div>
+-   **Docker Desktop** is an easy-to-install application for Mac or Windows environment that enables to build and share containerized applications and microservices.
+-   **Docker Desktop** includes the **Docker daemon** (`dockerd`), the **Docker client** (`docker`), **Docker Compose**, **Docker Content Trust**, **Kubernetes**, and **Credential Helper**.
 
-# 2. Virtualization
+### Docker registries
 
-### Life before Virtualization
+-   A **Docker registry** stores **Docker images**.
+-   **Docker Hub** is a public registry that anyone can use, and Docker is configured to look for images on Docker Hub by default.
+-   When we use the `docker pull` or `docker run` commands, the required images are pulled from the configured registry.
+-   When we use the `docker push` command, our image is pushed to our configured registry.
 
--   To run App/Services we needed servers
--   Physical Computer (Servers in Data Centers)
--   One service - one server
--   Servers were always overprovisioned
--   Servers resources were mostly underutilized
--   Huge capital expenditure and operational expenditure
+### Docker objects
 
-## Virtualization
+-   When we use Docker, we are creating and using images, containers, networks, volumes, plugins, and other objects.
 
--   Allows one computer to run multiple OS
--   Partition physical resource in virtual resources
--   Virtual machines run in completely isolated manner, so no more one server - one service rule
-<div align="center">
+#### Images
 
-![vt](images/vt.png)
+-   An _image_ is a read-only template with instructions for creating a Docker container.
 
-</div>
+#### Containers
 
-## Basic Terminologies
+-   A container is a runnable instance of an image.
+-   We can create, start, stop, move, or delete a container using the Docker API or CLI.
+-   We can connect a container to one or more networks, attach storage to it, or even create a new image based on its current state.
+    <br>
 
-1. **Host OS** => OS of the physical machine in which virtualization is going to take place.
-2. **Guest OS** => Os of the Virtual Machine.
-3. **Virtual Machine (VM)** => The machine which is virtual running on anothe machine(called host machine) and is isolated from all other virtual machines running on the same host.
-4. **Snapshot** => Way of taking a backup of VM.
-5. **Hypervisor** => Tool or software which enables the Virtualization and lets us create a VM.
+-   By default, a container is relatively well isolated from other containers and its host machine.
 
-Hypervisor is of 2 types
-: 1. **Type 1** - Runs as a base OS, used for production. Eg: VMWare ESXI, XEN Hypervisor
-: 2. **Type 2** - Runs as a software, ideal for learning and testing purposes. Eg: Oracle Virtualbox, VMWare Server / Player.
+## Hands on Docker Containers
 
-# 3. Vagrant
+-   Copy the contents of the `docker/Vagrantfile` file and run `vagrant up`.
+-   The `Vagrantfile` is configured to provision the installation of Docker and run the service.
+-   Now ssh to the VM and run the commands below :
+-   ```
+    $ vagrant ssh
+    $ sudo -i
+    $ systemctl status docker     # Check the status of docker service
+      ● docker.service - Docker Application Container Engine
+          Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+          Active: active (running) since Sun 2022-05-29 18:44:02 UTC; 2min 26s ago
+      TriggeredBy: ● docker.socket
+          Docs: https://docs.docker.com
+      Main PID: 3112 (dockerd)
+          Tasks: 8
+          Memory: 30.1M
+          CGroup: /system.slice/docker.service
+                  └─3112 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
 
-It is an automation tool to manage VM lifecycle
+    $ docker run hello-world      # test docker by downloading and running a container
 
-## VM Management Problems
+      Unable to find image 'hello-world:latest' locally
+      latest: Pulling from library/hello-world
+      2db29710123e: Pull complete
+      Digest: sha256:80f31da1ac7b312ba29d65080fddf797dd76acfb870e677f390d5acba9741b17
+      Status: Downloaded newer image for hello-world:latest
 
--   OS installations
--   Time consuming
--   Manual Setup
--   Tough replication for multi VM
--   Documentations for multi VM
+      Hello from Docker!
+      This message shows that your installation appears to be working correctly.
 
-## Vagrant for VMs
+      To generate this message, Docker took the following steps:
+      1. The Docker client contacted the Docker daemon.
+      2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+          (amd64)
+      3. The Docker daemon created a new container from that image which runs the
+          executable that produces the output you are currently reading.
+      4. The Docker daemon streamed that output to the Docker client, which sent it
+          to your terminal.
 
--   No OS installations
--   VM setupp through images (vagrant boxes)
--   Images (Boxes available in Vagrant Cloud)
--   Manage VM's with a file (Vagrant file)
--   VM changes automatic through Vagrantfile
--   Vagrant commands to manage VMs
--   Provisioning VM/Executing commands and scripts
+      To try something more ambitious, you can run an Ubuntu container with:
+      $ docker run -it ubuntu bash
 
-## Vagrant Architecture
+      Share images, automate workflows, and more with a free Docker ID:
+      https://hub.docker.com/
 
-<div align="center">
+      For more examples and ideas, visit:
+      https://docs.docker.com/get-started/
+    ```
 
-![vagrant-architecture](images/vagrant.jpg)
+### Basic Docker Commands
 
-</div>
-
-To study vagrant in more detail with its practical implementation refer to the [vagrant branch](https://github.com/CoderChirag/DevOps-Learning/tree/vagrant)
-
-# 4. Basics of Linux
-
-## Open Source
-
-Open source software is a software which have its entire source code open, and anybody can inspect, modify, and enhance the software.
-
-<div align="center">
-
-![open source](./images/open_source.png)
-
-</div>
-
-## Linux History
-
--   **1984**: The GNU Project and the Free Software Foundation
-    -   Creates open source version of UNIX utilities
-    -   Creates the General Public License (GPL)
-        -   Software license enforcing open source principles
--   **1991**: Linus Torvalds
-    -   Creates open source, UNIX-like kernel, release under the GPL
-    -   Ports some GNU utilities, solicits assistance online
--   **Today**:
-    -   Linux kernel + GNU utilities = complete, open source, UNIX-like operating system
-        -   Packaged for targeted audiences and distributions
-
-## Linux principles
-
--   Everything is a file (including hardware)
--   Small Single purpose Programs
--   Ability to chain programs together for complex operations
--   Avoid Captive User Interfaces (GUI which waits for user interaction)
--   Configuration data stored in files
-
-## Why Linux?
-
--   Opensource
--   Community Support
--   Support Wide Variety of hardware
--   Customization
--   Most Servers run on Linux
--   Automation
--   Security
-
-## Linux Architecture
-
-<div align="center">
-
-![architecture](images/linux_architecture.jpg)
-
-</div>
-
-## Popular Linux distros
-
--   **Desktop based**
-    -   Ubuntu Linux
-    -   Linux Mint
-    -   Arch Linux
-    -   Fedora
-    -   Debian
-    -   OpenSuse
--   **Server based**
-    -   Red Hat Enterprise Linux
-    -   Ubuntu Server
-    -   Centos
-    -   SUSE Enterprise Linux
-
-For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
-
-# 5. Initial Server Setup with Ubuntu 18.04
-
-## Introduction
-
--   After creating a new Ubuntu 18.04 server (on Physical Machine, **not** on vagrant VM), you should take some configuration steps as part of an initial server setup in order to increase security and facilitate management later.
--   For the details of the Initial Server Setup when using a physical machine instead of a Vagrant VM, go to [ubuntu-server-setup branch](https://github.com/CoderChirag/DevOps-Learning/tree/ubuntu-server-setup)
-
-# 6. UFW Essentials: Common Firewall Rules and Commands
-
--   **UFW (uncomplicated firewall)** is a firewall configuration tool that runs on top of `iptables`, included by default within Ubuntu distributions.
--   It provides a streamlined interface for configuring common firewall use cases via the command line.
-
-For detailed study of _UFW_ refer to the [ufw branch](https://github.com/CoderChirag/DevOps-Learning/tree/ufw)
-
-# 7. Apache Web Server
-
-## Introduction
-
--   The Apache HTTP server is the most widely-used web server in the world.
--   It provides many powerful features including dynamically loadable modules, robust media support, and extensive integration with other popular software.
-
-For more details about apache and its implementation, go to [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
-
-# 8. Nginx Web Server
-
-## Introduction
-
--   Nginx is one of the most popular web servers in the world and is responsible for hosting some of the largest and highest-traffic sites on the internet.
--   It is more resource-friendly than Apache in most cases and can be used as a web server or reverse proxy.
-
-For more details about nginx and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
+-   `docker images` : Shows the available images on the system.
+-   `docker ps` : Shows the running containers.
+-   `docker ps -a` : Shows all the containers.
+-   `docker run --name web01 -dp 9080:80 nginx` :
+    -   `-d` : Runs in detached mode (in background)
+    -   `-p` : Specify port mapping b/w host and container port (9080 for host and 80 for container here)
+    -   `--name` : Name for the container
+    -   `nginx` : Image name
+-   `docker inspect web01` : Shows the IP Address and other relevant info.
+-   `docker stop web01 heuristic_hugle` : Stops the specified containers.
+-   `docker rm web01 heuristic_hugle` : Removes the specified containers.
+-   `docker rmi <image_id>` : Removes the images specified
