@@ -11,6 +11,15 @@
     - [Some System Variables](#some-system-variables)
   - [Quotes](#quotes)
   - [Command Substitution](#command-substitution)
+  - [Exporting Variables](#exporting-variables)
+  - [User Input](#user-input)
+  - [Decision Making](#decision-making)
+    - [Basic If Statements](#basic-if-statements)
+    - [Operators](#operators)
+  - [Practical Example](#practical-example)
+  - [Loops](#loops)
+    - [For loop](#for-loop)
+    - [While loop](#while-loop)
 
 ---
 
@@ -173,3 +182,231 @@
     $ echo "Free RAM available is $FREE_RAM mbs."
     Free RAM available is 450 mbs.
     ```
+
+## Exporting Variables
+
+-   Exporting the variables make them globally available for all the child processes. Eg, `export NAME=CODER`
+-   For eg, by exporting a variable defined on the current shell, we can use it inside any script executed with the current shell, as executing a script would mean opening a new child shell using the current shell as parent.
+    <br>
+
+-   But the exported variables are still temporary, and are removed as soon as we logout from the shell
+-   To make the variables **permanent** to the current user, we can export the variable in the `.bashrc` file of the current user. Eg, `$ echo 'export NAME=CODER' >> ~/.bashrc`
+-   If you want to make the variable available globally for every user, export it inside `/etc/profile` file. Eg, `$ echo 'export NAME=CODER' >> /etc/profile`.
+
+## User Input
+
+-   Scripts can be made interactive just using the keyword `read`.
+-   Example :
+
+    ```
+    #!/bin/bash
+
+    echo "Enter your skills:"
+    read SKILL      # Skills would be read from user input and stored in SKILL Variable
+
+    echo "Your $SKILL skill is in high demand in the IT Industry."
+
+    read -p 'Username: ' USR        # -p : prompt with some text ('Username: ' in this case)
+    read -sp 'Password: ' pass      # -s : suppress the input so that it is not visible what user inputs
+
+    echo
+
+    echo "Login Successfull: Welcom USER $USR."
+    ```
+
+## Decision Making
+
+### Basic If Statements
+
+-   ```
+      #syntax :
+            if [ <some test> ]
+            then
+                <command>
+            elif [ <some other test> ]
+            then
+                <command>
+            else
+                <command>
+            fi
+
+      # Example :
+            #!/bin/bash
+
+            read -p "Enter a number: " NUM
+            echo
+
+            if [ $NUM -gt 100 ]
+            then
+                echo "We have entered in IF block."
+                sleep 3
+                echo "Your number is greater than 100"
+                echo
+                date
+            elif [ $NUM -eq 100 ]
+            then
+                echo "Number is equal to 100."
+            else
+                echo "You have entered number less than 100."
+            fi
+
+            echo "Script execution completed successfully."
+    ```
+
+### Operators
+
+| Operator              | Decription                                                             |
+| --------------------- | ---------------------------------------------------------------------- |
+| ! EXPRESSION          | The EXPRESSION is false                                                |
+| -n STRING             | The length of STRING is greater than 0                                 |
+| -z STRING             | The length f STRING is zero (i.e, it is empty)                         |
+| STRING1 = STRING2     | STRING1 is equal to STRING2                                            |
+| STRING1 != STRING2    | STRING1 is not equal to STRING2                                        |
+| INTEGER1 -eq INTEGER2 | INTEGER1 is numerically equal to INTEGER2                              |
+| INTEGER1 -gt INTEGER2 | INTEGER1 is numerically greater than INTEGER2                          |
+| INTEGER1 -lt INTEGER2 | INTEGER1 is numerically less than INTEGER2                             |
+| -d FILE               | FILE exists and is a directory                                         |
+| -e FILE               | FILE exists                                                            |
+| -r FILE               | FILE exists and the read permission is granted                         |
+| s FILE                | FILE exists and it's size is greater than zero (i.e, it is not empty). |
+| -w FILE               | FILE exists and the write permission is granted.                       |
+| -x FILE               | FILE exists and the execute permission is granted.                     |
+
+**Points to Note :**
+
+-   `=` is slightly different to `-eq`. [ 001 `=` 1 ] will return false as `=` doeas a **string comparison**, whereas `-eq` does a **numerical comparison**.
+-   When we refer to `FILE` above, we are actually meaning a **path**.
+
+## Practical Example
+
+Writing a script to check if a process is running and if it is not running then start it.
+
+```
+# Writing a script to check if httpd process is running, af if not then start it.
+$ vim /opt/scripts/11_monit.sh
+
+    #!/bin/bash
+
+    echo "#####################################################"
+    date
+    ls /var/run/httpd/httpd.pid &> /dev/null
+
+    if [ $? -eq 0 ]
+    then
+        echo "Httpd process is running."
+    else
+        echo "Httpd process is NOT Running."
+        echo "Starting the process"
+        systemctl start httpd
+        if [ $? -eq 0 ]
+        then
+            echo "Process started successfully."
+        else
+            echo "Process Starting Failed, contact the admin."
+        fi
+    fi
+    echo "####################################################"
+    echo
+$ chmod +x /opt/scripts/11-monit.sh
+# Scheduling the script to run automatically every minute, and log the output in a log file.
+$ crontab -e        # It will open the vim editor
+
+    # MM HH DOM mm DOW COMMAND       # Required Format
+    # 30 20 * * 1-5 COMMAND     # Will run the command every monday to friday, every month at 8:30 p.m
+    # Scheduling our script to run every minute everyday and logging the output in a file
+    * * * * * /opt/scripts/11_monit.sh &>> /var/log/monit_httpd.log
+
+crontab: installing new crontab
+$ systemctl stop httpd
+
+# Checking the log file after some minutes
+$ cat /var/log/monit_httpd.log
+
+    #####################################################
+    Mon May 30 19:48:01 UTC 2022
+    Httpd process is NOT Running.
+    Starting the process
+    Process started successfully.
+    ####################################################
+
+    #####################################################
+    Mon May 30 19:49:01 UTC 2022
+    Httpd process is running.
+    ####################################################
+
+    #####################################################
+    Mon May 30 19:50:01 UTC 2022
+    Httpd process is running.
+    ####################################################
+
+    #####################################################
+    Mon May 30 19:51:01 UTC 2022
+    Httpd process is running.
+    ####################################################
+
+    #####################################################
+    Mon May 30 19:52:01 UTC 2022
+    Httpd process is running.
+    ####################################################
+```
+
+## Loops
+
+### For loop
+
+```
+# Syntax:
+    for var in <list>
+    do
+        <command>
+    done
+
+# Example 1:
+    #!/bin/bash
+
+    for VAR1 in java .net python php ruby
+    do
+        echo "Looping..."
+        sleep 1
+        echo "############################################"
+        echo "Value of VAR1 is $VAR1"
+        echo "############################################"
+        date
+        echo
+    done
+
+# Example 2:
+    #!/bin/bash
+    echo "Bash version ${BASH_VERSION}"
+    for i in {0..10..2}
+    do
+        echo "Welcome $i times"
+    done
+
+# Example 3:
+    #!/bin/bash
+    for (( c=1; c<=5; c++ ))
+    do
+    echo "Welcome $c times"
+    done
+```
+
+### While loop
+
+```
+# Syntax:
+    while [ condition ]
+    do
+        <command>
+    done
+
+# Example:
+    #!/bin/bash
+    counter=0
+    while [ $counter -lt 5 ]
+    do
+        echo "Looping..."
+        echo "Value of counter is $counter."
+        counter=$(($counter + 1))
+    done
+```
