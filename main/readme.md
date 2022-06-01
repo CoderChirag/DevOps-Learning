@@ -25,14 +25,15 @@
   - [Why Linux?](#why-linux)
   - [Linux Architecture](#linux-architecture)
   - [Popular Linux distros](#popular-linux-distros)
-- [5. Initial Server Setup with Ubuntu 18.04](#5-initial-server-setup-with-ubuntu-1804)
+- [5. Bash Scripting](#5-bash-scripting)
+- [6. Initial Server Setup with Ubuntu 18.04](#6-initial-server-setup-with-ubuntu-1804)
   - [Introduction](#introduction)
-- [6. UFW Essentials: Common Firewall Rules and Commands](#6-ufw-essentials-common-firewall-rules-and-commands)
-- [7. Apache Web Server](#7-apache-web-server)
+- [7. UFW Essentials: Common Firewall Rules and Commands](#7-ufw-essentials-common-firewall-rules-and-commands)
+- [8. Apache Web Server](#8-apache-web-server)
   - [Introduction](#introduction-1)
-- [8. Nginx Web Server](#8-nginx-web-server)
+- [9. Nginx Web Server](#9-nginx-web-server)
   - [Introduction](#introduction-2)
-- [9. Dockers and Containers](#9-dockers-and-containers)
+- [10. Dockers and Containers](#10-dockers-and-containers)
 
 ---
 
@@ -237,21 +238,27 @@ Open source software is a software which have its entire source code open, and a
 
 For more detailed study of linux refer to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux)
 
-# 5. Initial Server Setup with Ubuntu 18.04
+# 5. Bash Scripting
+
+So now that we have learnt about linux in detailed by referring to the [Linux branch](https://github.com/CoderChirag/DevOps-Learning/tree/linux), so now we can move ahead to **bash scripting**.
+**Bash Scripting** is a process of writing scripts in linux to automate the day-to-day tasks in linux.
+For the detailed study of **bash scripting**, refer to the [bash-scripting branch](https://github.com/CoderChirag/DevOps-Learning/tree/bash-scripting).
+
+# 6. Initial Server Setup with Ubuntu 18.04
 
 ## Introduction
 
 -   After creating a new Ubuntu 18.04 server (on Physical Machine, **not** on vagrant VM), you should take some configuration steps as part of an initial server setup in order to increase security and facilitate management later.
 -   For the details of the Initial Server Setup when using a physical machine instead of a Vagrant VM, go to [ubuntu-server-setup branch](https://github.com/CoderChirag/DevOps-Learning/tree/ubuntu-server-setup)
 
-# 6. UFW Essentials: Common Firewall Rules and Commands
+# 7. UFW Essentials: Common Firewall Rules and Commands
 
 -   **UFW (uncomplicated firewall)** is a firewall configuration tool that runs on top of `iptables`, included by default within Ubuntu distributions.
 -   It provides a streamlined interface for configuring common firewall use cases via the command line.
 
 For detailed study of _UFW_ refer to the [ufw branch](https://github.com/CoderChirag/DevOps-Learning/tree/ufw)
 
-# 7. Apache Web Server
+# 8. Apache Web Server
 
 ## Introduction
 
@@ -260,7 +267,7 @@ For detailed study of _UFW_ refer to the [ufw branch](https://github.com/CoderCh
 
 For more details about apache and its implementation, go to [apache2 branch](https://github.com/CoderChirag/DevOps-Learning/tree/apache2)
 
-# 8. Nginx Web Server
+# 9. Nginx Web Server
 
 ## Introduction
 
@@ -269,6 +276,6 @@ For more details about apache and its implementation, go to [apache2 branch](htt
 
 For more details about nginx and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
 
-# 9. Dockers and Containers
+# 10. Dockers and Containers
 
 For the detailed study about Containers and Dockers, refer to the [docker branch](https://github.com/CoderChirag/DevOps-Learning/tree/docker).
