@@ -3,89 +3,166 @@
 ---
 
 - [Contents](#contents)
-- [Initial Server Setup with Ubuntu 18.04](#initial-server-setup-with-ubuntu-1804)
-  - [Introduction](#introduction)
-- [Step 1 — Logging in as Root](#step-1--logging-in-as-root)
-- [Step 2 - Creating a New User](#step-2---creating-a-new-user)
-- [Step 3 - Granting Administrative Priviliges](#step-3---granting-administrative-priviliges)
-- [Step 4 - Setting Up a Basic Firewall](#step-4---setting-up-a-basic-firewall)
-- [Step 5 — Enabling External Access for Your Regular User](#step-5--enabling-external-access-for-your-regular-user)
-  - [If the Root Account Uses Password Authentication](#if-the-root-account-uses-password-authentication)
-  - [If the Root Account Uses SSH Key Authentication](#if-the-root-account-uses-ssh-key-authentication)
+- [Containers](#containers)
+- [Docker](#docker)
+  - [Overview](#overview)
+  - [The Docker Platform](#the-docker-platform)
+  - [Docker Architecture](#docker-architecture)
+    - [The Docker daemon](#the-docker-daemon)
+    - [The Docker client](#the-docker-client)
+    - [Docker Desktop](#docker-desktop)
+    - [Docker registries](#docker-registries)
+    - [Docker objects](#docker-objects)
+      - [Images](#images)
+      - [Containers](#containers-1)
+  - [Hands on Docker Containers](#hands-on-docker-containers)
+    - [Basic Docker Commands](#basic-docker-commands)
 
 ---
 
-# Initial Server Setup with Ubuntu 18.04
+# Containers
 
-## Introduction
+-   Containers are an **operating system virtualization** technology used to package applications and their dependencies and run them in isolated environments.
+-   A single container might be used to run anything from a small microservice or software process to a larger application.
+-   They provide a lightweight method of packaging and deploying applications in a standardized way across many different types of infrastructure.
 
--   After creating a new Ubuntu 18.04 server (on Physical Machine, **not** on vagrant VM), you should take some configuration steps as part of an initial server setup in order to increase security and facilitate management later.
+# Docker
 
-# Step 1 — Logging in as Root
+## Overview
 
--   Newly installed servers typically have only a root account set up, and that is the account you’ll use to log into your server for the first time.
--   To get started, you’ll need to log into your server. Make sure you know your **server’s public IP address**.
--   To authenticate, you’ll need either the account’s password or the SSH private key for the **root** user’s account, in case you have set up an SSH key for authentication within the server.
--   SSH to your server : `$ ssh root@your_server_ip`
--   If using password authentication, provide the **root** password.
+-   Docker is an open platform for developing, shipping, and running applications.
+-   It enables us to separate our applications from our infrastructure so we can deliver software quickly.
+-   With Docker, we can manage our infrastructure in the same ways we manage our applications.
+-   By taking advantage of Docker’s methodologies for shipping, testing, and deploying code quickly, we can significantly reduce the delay between writing code and running it in production.
 
-# Step 2 - Creating a New User
+## The Docker Platform
 
--   `$ adduser coder`
+-   Docker provides the ability to package and run an application in a loosely isolated environment called a **container**.
+-   The isolation and security allows to run many containers simultaneously on a given host.
+-   Containers are lightweight and contain everything needed to run the application, so we do not need to rely on what is currently installed on the host.
+    <br>
 
-# Step 3 - Granting Administrative Priviliges
+-   Docker provides tooling and a platform to manage the lifecycle of our containers :
+    -   Develop application and its supporting components using containers.
+    -   The container becomes the unit for distributing and testing the application.
+    -   Deploy application into production environment, as a container or an orchestrated service. This works the same whether production environment is a local data center, a cloud provider, or a hybrid of the two.
 
--   To add `sudo` privileges to your new user, you need to add the new user to the `sudo` group. By default on Ubuntu 18.04, users who belong to the `sudo` group are allowed to use the `sudo` command :<br> `$ usermod -aG sudo coder`
+## Docker Architecture
 
-# Step 4 - Setting Up a Basic Firewall
+-   Docker uses a **client-server architecture**.
+-   The Docker _client_ talks to the Docker _daemon_, which does the heavy lifting of building, running, and distributing Docker containers.
+-   The Docker client and daemon can run on the same system, or you can connect a Docker client to a remote Docker daemon.
+-   The Docker client and daemon communicate using a REST API, over UNIX sockets or a network interface.
+-   Another Docker client is **Docker Compose**, that lets you work with applications consisting of a set of containers.
 
--   **UFW (Uncomplicated Firewall)** is a firewall configuration tool that comes with Ubuntu servers. You can use the UFW firewall to make sure only connections to certain services are allowed on your server.
--   Applications can register their profiles with UFW upon installation. These profiles allow UFW to manage per-application settings by name.
--   OpenSSH, the service allowing you to connect to your server now, has a profile registered within UFW.
--   Run the following command to get a list of all current available profiles :
+<div align='center'>
+
+![architecture](./images/architecture.svg)
+
+</div>
+
+### The Docker daemon
+
+-   The **Docker daemon** (`dockerd`) listens for Docker API requests and manages Docker objects such as images, containers, networks, and volumes.
+-   A daemon can also communicate with other daemons to manage Docker services.
+
+### The Docker client
+
+-   The **Docker client** (`docker`) is the primary way that many Docker users interact with Docker.
+-   When we use commands such as `docker run`, the client sends these commands to `dockerd`, which carries them out.
+-   The `docker` command uses the **Docker API**.
+-   The Docker client can communicate with more than one daemon.
+
+### Docker Desktop
+
+-   **Docker Desktop** is an easy-to-install application for Mac or Windows environment that enables to build and share containerized applications and microservices.
+-   **Docker Desktop** includes the **Docker daemon** (`dockerd`), the **Docker client** (`docker`), **Docker Compose**, **Docker Content Trust**, **Kubernetes**, and **Credential Helper**.
+
+### Docker registries
+
+-   A **Docker registry** stores **Docker images**.
+-   **Docker Hub** is a public registry that anyone can use, and Docker is configured to look for images on Docker Hub by default.
+-   When we use the `docker pull` or `docker run` commands, the required images are pulled from the configured registry.
+-   When we use the `docker push` command, our image is pushed to our configured registry.
+
+### Docker objects
+
+-   When we use Docker, we are creating and using images, containers, networks, volumes, plugins, and other objects.
+
+#### Images
+
+-   An _image_ is a read-only template with instructions for creating a Docker container.
+
+#### Containers
+
+-   A container is a runnable instance of an image.
+-   We can create, start, stop, move, or delete a container using the Docker API or CLI.
+-   We can connect a container to one or more networks, attach storage to it, or even create a new image based on its current state.
+    <br>
+
+-   By default, a container is relatively well isolated from other containers and its host machine.
+
+## Hands on Docker Containers
+
+-   Copy the contents of the `docker/Vagrantfile` file and run `vagrant up`.
+-   The `Vagrantfile` is configured to provision the installation of Docker and run the service.
+-   Now ssh to the VM and run the commands below :
+-   ```
+    $ vagrant ssh
+    $ sudo -i
+    $ systemctl status docker     # Check the status of docker service
+      ● docker.service - Docker Application Container Engine
+          Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+          Active: active (running) since Sun 2022-05-29 18:44:02 UTC; 2min 26s ago
+      TriggeredBy: ● docker.socket
+          Docs: https://docs.docker.com
+      Main PID: 3112 (dockerd)
+          Tasks: 8
+          Memory: 30.1M
+          CGroup: /system.slice/docker.service
+                  └─3112 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+
+    $ docker run hello-world      # test docker by downloading and running a container
+
+      Unable to find image 'hello-world:latest' locally
+      latest: Pulling from library/hello-world
+      2db29710123e: Pull complete
+      Digest: sha256:80f31da1ac7b312ba29d65080fddf797dd76acfb870e677f390d5acba9741b17
+      Status: Downloaded newer image for hello-world:latest
+
+      Hello from Docker!
+      This message shows that your installation appears to be working correctly.
+
+      To generate this message, Docker took the following steps:
+      1. The Docker client contacted the Docker daemon.
+      2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+          (amd64)
+      3. The Docker daemon created a new container from that image which runs the
+          executable that produces the output you are currently reading.
+      4. The Docker daemon streamed that output to the Docker client, which sent it
+          to your terminal.
+
+      To try something more ambitious, you can run an Ubuntu container with:
+      $ docker run -it ubuntu bash
+
+      Share images, automate workflows, and more with a free Docker ID:
+      https://hub.docker.com/
+
+      For more examples and ideas, visit:
+      https://docs.docker.com/get-started/
     ```
-    $ ufw app list
-    Available applications:
-      OpenSSH
-    ```
--   You need to make sure that the firewall allows SSH connections so that you can log back in next time. You can allow these connections by typing:<br> `$ ufw allow 'OpenSSH'`
--   Afterwards, you can enable the firewall with :<br>`$ ufw enable`
--   To see enabled firewall apps :
 
-    ```
-    $ ufw status
-    Status: active
+### Basic Docker Commands
 
-    To                         Action      From
-    --                         ------      ----
-    OpenSSH                    ALLOW       Anywhere
-    OpenSSH (v6)               ALLOW       Anywhere (v6)
-    ```
-
--   As **the firewall is currently blocking all connections except for SSH**, if you install and configure additional services, you will need to adjust the firewall settings to allow acceptable traffic in.
-
-For more detailed study about **ufw**, refer to [ufw branch](https://github.com/CoderChirag/DevOps-Learning/tree/ufw)
-
-# Step 5 — Enabling External Access for Your Regular User
-
-## If the Root Account Uses Password Authentication
-
--   If you logged in to your **root** account using a password, it means that password authentication is enabled for SSH. You can SSH to your new user account by opening up a new terminal session and using SSH with your new username:<br>`$ ssh coder@your_server-ip`
-
-## If the Root Account Uses SSH Key Authentication
-
--   If you logged in to your **root** account using SSH keys, it’s likely that password authentication is disabled for SSH.
--   You will need to add a copy of your local public key to the new user’s `~/.ssh/authorized_keys` file to log in successfully.
--   Since your public key is already in the root account’s `~/.ssh/authorized_keys` file on the server, you can copy that file and directory structure to your new user account in your existing session.
--   The simplest way to copy the files with the correct ownership and permissions is with the `rsync` command.
--   This will copy the **root** user’s `.ssh` directory, preserve the permissions, and modify the file owners, all in a single command : <br>`$ rsync --archive --chown=coder:coder ~/.ssh /home/coder`
-
-    **NOTE**
-
-    -   The `rsync` command treats sources and destinations that end with a trailing slash differently than those without a trailing slash. When using `rsync`, be sure that the source directory (`~/.ssh`) **does not** include a trailing slash (check to make sure you are not using `~/.ssh/`).
-    -   If you accidentally add a trailing slash to the command, `rsync` will copy the contents of the root account’s `~/.ssh` directory to the sudo user’s home directory instead of copying the entire `~/.ssh` directory structure. The files will be in the wrong location and SSH will not be able to find and use them.
-
--   You should be now able to log into the new user account without being prompted for the remote user’s SSH password for authentication.
-    -   If your SSH key was set up with a keyphrase, you may be asked to unlock the SSH key by providing that password when you use the key for the first time in a terminal session.
-
-And with that we have successfully configured and secure our brand new Ubuntu Server :sunglasses:
+-   `docker images` : Shows the available images on the system.
+-   `docker ps` : Shows the running containers.
+-   `docker ps -a` : Shows all the containers.
+-   `docker run --name web01 -dp 9080:80 nginx` :
+    -   `-d` : Runs in detached mode (in background)
+    -   `-p` : Specify port mapping b/w host and container port (9080 for host and 80 for container here)
+    -   `--name` : Name for the container
+    -   `nginx` : Image name
+-   `docker inspect web01` : Shows the IP Address and other relevant info.
+-   `docker stop web01 heuristic_hugle` : Stops the specified containers.
+-   `docker rm web01 heuristic_hugle` : Removes the specified containers.
+-   `docker rmi <image_id>` : Removes the images specified
