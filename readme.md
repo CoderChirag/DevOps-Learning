@@ -13,6 +13,10 @@
     - [Popular Linux distros](#popular-linux-distros)
     - [Some Important Directories](#some-important-directories)
   - [Basic File Directory and Related Commands](#basic-file-directory-and-related-commands)
+  - [Date Command](#date-command)
+    - [Syntax](#syntax)
+    - [options with Examples :](#options-with-examples-)
+    - [Format Specifiers](#format-specifiers)
   - [Vim Editor](#vim-editor)
     - [Command Mode](#command-mode)
   - [File Types](#file-types)
@@ -181,7 +185,22 @@ Open source software is a software which have its entire source code open, and a
 
 -   `$ whoami` - shows the current user
 -   `$ pwd` - present working directory
--   `$ ls [-l: long list] [-t: sort based on last updated] [-r|--reverse: reverse sort]` - list files from current directory
+-   `$ ls <filename>` - list files from current directory
+    -   `-l` : long listing => `<filetype><permissions>. <link_count> <user_owner> <group_owner> <block_size> <last_modification_date&time> <filename>`
+    -   `-t` : sort based on last updated
+    -   `-r` : reverse sort
+    -   `-R` : recursive
+    -   `-h` : human readable format for the block size
+    -   `-a`: all
+-   `$ du <filename>` - Shows the disk usage of files and directories on a system. By default the size is in Kb.
+    -   `-a` : List all files and directories size
+    -   `-h` : Human readable format
+    -   `-c` : Display grand total in the output
+    -   `-s` : Display only total
+    -   `-0/td>`: End output with null byte
+    -   `--block-size=<size>` : Specify block size
+    -   `--time` : display time modification
+-   `file <filename>` : scans the beginning of a file's contents and displays what type it is.
 -   `$ cat <filename>` - view the contents of a file
 -   `$ sudo -i` - switch to root user
 -   `$ cd <path>` - change directory
@@ -192,6 +211,104 @@ Open source software is a software which have its entire source code open, and a
 -   `mv <src> <dest>` - move or rename files
 -   `rm [-r|-R|--recursive: recursive] [-f|--force: force] <filename>` - remove file
 -   `wc [-c: byte counts] [-m: char counts] [-l: lines count] [-L: max line length] [-w: words counts]` - print newline, word, and bytte counts for each file
+
+## Date Command
+
+-   `date` command is used to display the system date and time.
+-   `date` command is also used to set date and time of the system.
+-   By default the date command displays the date in the time zone on which unix/linux operating system is configured.
+-   You must be the super-user (root) to change the date and time.
+
+### Syntax
+
+-   `$ date [OPTION]... [+++FORMAT]`
+
+### options with Examples :
+
+1. `date (no option)` : With no options, the date command displays the current date and time, including the abbreviated day name, abbreviated month name, day of the month, the time separated by colons, the time zone name, and the year.
+    ```
+    $ date
+    Wed Jun  1 13:41:00 UTC 2022
+    ```
+2. `-u|--utc|--universal` : Displays the time in GMT(Greenwich Mean Time)/UTC(Coordinated Universal Time )time zone.
+    ```
+    $ date -u
+    Wed Jun  1 13:42:53 UTC 2022
+    ```
+3. `-d|--date` : Displays the given date string in the format of date. But this will not affect the system’s actual date and time value.Rather it uses the date and time given in the form of string.
+
+    ```
+    $ date --date="2/02/2010"
+    Tue Feb  2 00:00:00 UTC 2010
+
+    $ date --date="Feb 2 2010"
+    Tue Feb  2 00:00:00 UTC 2010
+
+    # Past Dates
+    $ date --date="2 year ago"
+    Mon Jun  1 13:48:30 UTC 2020
+
+    $ date --date="yesterday"
+    Tue May 31 13:48:35 UTC 2022
+
+    $ date --date="10 sec ago"
+    Wed Jun  1 13:50:32 UTC 2022
+
+    # Future Dates
+    $ date --date="tomorrow"
+    Thu Jun  2 13:48:46 UTC 2022
+
+    $ date --date="next week"
+    Wed Jun  8 13:51:15 UTC 2022
+
+    $ date --date="2 day"
+    Fri Jun  3 13:51:38 UTC 2022
+    ```
+
+4. `-s|--set` : To set the system date and time.
+    ```
+    $ date --set="Tue Nov 13 15:23:34 PDT 2018"
+    Tue Nov 13 15:23:34 PDT 2018
+    ```
+
+### Format Specifiers
+
+```
+%D: Display date as mm/dd/yy.
+%r: Displat time in 12-Hour Format
+%d: Display the day of the month (01 to 31).
+%a: Displays the abbreviated name for weekdays (Sun to Sat).
+%A: Displays full weekdays (Sunday to Saturday).
+%h: Displays abbreviated month name (Jan to Dec).
+%b: Displays abbreviated month name (Jan to Dec).
+%B: Displays full month name(January to December).
+%m: Displays the month of year (01 to 12).
+%y: Displays last two digits of the year(00 to 99).
+%Y: Display four-digit year.
+%T: Display the time in 24 hour format as HH:MM:SS.
+%H: Display the hour.
+%M: Display the minute.
+%S: Display the seconds.
+```
+
+Examples :
+
+```
+$ date "+%D"
+10/11/17
+
+$ date "+%D %T"
+10/11/17 16:13:27
+
+$ date "+%Y-%m-%d"
+2017-10-11
+
+$ date "+%Y/%m/%d"
+2017/10/11
+
+$ date "+%A %B %d %T %y"
+Thursday October 07:54:29 12 17
+```
 
 ## Vim Editor
 
