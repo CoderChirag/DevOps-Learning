@@ -1,110 +1,129 @@
-# Windows Tools
+# Contents
 
-#### Install chocolatey from the instructions given in the link below.
+- [Contents](#contents)
+- [UFW Essentials: Common Firewall Rules and Commands](#ufw-essentials-common-firewall-rules-and-commands)
+  - [Verify UFW Status](#verify-ufw-status)
+  - [Enable UFW](#enable-ufw)
+  - [Disable UFW](#disable-ufw)
+  - [Block an IP Address](#block-an-ip-address)
+  - [Block a Subnet](#block-a-subnet)
+  - [Block Incoming Connections to a Network Interface](#block-incoming-connections-to-a-network-interface)
+  - [Allow an IP Address](#allow-an-ip-address)
+  - [Allow Incoming Connections to a Network Interface](#allow-incoming-connections-to-a-network-interface)
+  - [Delete UFW Rule](#delete-ufw-rule)
+  - [List Available Application Profiles](#list-available-application-profiles)
+  - [Enable and Disable Application Profile](#enable-and-disable-application-profile)
+  - [Allow SSH](#allow-ssh)
+    - [Allow Incoming SSH from Specific IP Address or Subnet](#allow-incoming-ssh-from-specific-ip-address-or-subnet)
+    - [Allow Incoming Rsync from Specific IP Address or Subnet](#allow-incoming-rsync-from-specific-ip-address-or-subnet)
+  - [Allow All Incoming HTTP (port 80)](#allow-all-incoming-http-port-80)
+  - [Allow All Incoming HTTPS (port 443)](#allow-all-incoming-https-port-443)
+  - [Allow All Incoming HTTP and HTTPS](#allow-all-incoming-http-and-https)
 
-https://chocolatey.org/docs/installation
+# UFW Essentials: Common Firewall Rules and Commands
 
-#### Run all the below commands on Powershell (Open Powershell as Admin)
+-   **UFW (uncomplicated firewall)** is a firewall configuration tool that runs on top of `iptables`, included by default within Ubuntu distributions.
+-   It provides a streamlined interface for configuring common firewall use cases via the command line.
 
-> choco install virtualbox
+## Verify UFW Status
 
-> choco install vagrant
+-   To check if `ufw` is enabled, run :
+    ```
+    $ sudo ufw status
+    Status: inactive
+    ```
 
-> choco install git
+## Enable UFW
 
-> choco install jdk8
+-   If you got a `Status: inactive` message when running `ufw status`, it means the firewall is not yet enabled on the system. You’ll need to run a command to enable it :
+    ```
+    $ sudo ufw enable
+    Firewall is active and enabled on system startup
+    ```
+-   To see what is currently blocked or allowed, you may use the `verbose` parameter when running `ufw status`, as follows:
+    ```
+    $ sudo ufw status verbose
+    Status: active
+    Logging: on (low)
+    Default: deny (incoming), allow (outgoing), deny (routed)
+    New profiles: skip
+    ```
 
-> choco install maven
+## Disable UFW
 
-> choco install awscli
+-   `$ sudo ufw disable`
 
-> choco install intellijidea-ultimate
+## Block an IP Address
 
-> choco install sublimetext3.app
+-   To block all network connections that originate from a specific IP address : <br> `$ sudo ufw deny from IP_ADDRESS #eg 203.0.113.100`
+-   All connections, coming in or going out, are blocked for the specified IP address.
 
-# MacOS Tools
+## Block a Subnet
 
-#### Install brew from the instructions given in the link below.
+-   If you need to block a full subnet, you may use the subnet address as `from` parameter on the `ufw deny` command : <br> `$ sudo ufw deny from IP_ADDRESS/subnetmask # eg 203.0.113.0/24`
 
-https://brew.sh/
+## Block Incoming Connections to a Network Interface
 
-#### After installing homebrew
+-   To block incoming connections from a specific IP address to a specific network interface : <br> `$ sudo ufw deny in on eth0 from IP_ADDRESS`
 
-Create a file in users home directory with name .curlrc with content “-k”
-(-k without quotes and give a new line character after -k.)
+## Allow an IP Address
 
-**Steps:**
+-   To allow all network connections that originate from a specific IP address : <br> `$ sudo ufw allow from IP_ADDRESS`
+-   Similarly, you can allow for a subnet
 
-1. Open Terminal
-2. echo -k > ~/.curlrc
-3. cat ~/.curlrc
+## Allow Incoming Connections to a Network Interface
 
-#### Run all the below commands in Terminal
+-   To allow incoming connections from a specific IP address to a specific network interface : <br> `$ sudo ufw allow in on eth0 from IP_ADDRESS`
 
-> brew install --cask virtualbox
+## Delete UFW Rule
 
-> brew install --cask vagrant
+-   To delete a rule that you previously set up within UFW : <br> `$ sudo ufw delete allow from IP_ADDRESS`
+-   Another way to specify which rule you want to delete is by providing the rule ID.
 
-> brew install --cask vagrant-manager
+    ```
+    $ sudo ufw status numbered
+    Status: active
 
-> brew install git
+       To                         Action      From
+       --                         ------      ----
+    [ 1] Anywhere                DENY IN     203.0.113.100
+    [ 2] Anywhere on eth0        ALLOW IN    203.0.113.102
 
-> brew install openjdk@8
+    $ sudo ufw delete 1
+    ```
 
-> brew install openjdk@8
+## List Available Application Profiles
 
-> brew install maven
+-   Upon installation, applications that rely on network communications will typically set up a UFW profile that you can use to allow connection from external addresses : <br>`$ sudo ufw app list`
 
-> brew install --cask intellij-idea
+## Enable and Disable Application Profile
 
-> brew install --cask intellij-idea-ce
+-   To enable a UFW application profile : <br> `$ sudo ufw allow 'OpenSSH'`
+-   To Disable Application Profile : <br> `$ sudo ufw delete allow 'Nginx Full'`
 
-> brew install --cask sublime-text
+## Allow SSH
 
-> brew install awscli
+-   Enable the OpenSSH UFW application profile and allow all connections to the default SSH port on the server: <br> `$ sudo ufw allow OpenSSH` or `$ sudo ufw allow 22 ## 22 is the port no of ssh service`
 
-# Ubuntu 20 Tools
+### Allow Incoming SSH from Specific IP Address or Subnet
 
-#### Install Virtualbox
+-   Allow only **SSH connections** coming from the IP address/subnet `$ suod ufw allow from IP_ADDRESS/Subnet proto tcp to any port 22`
 
-> $ sudo apt update
+### Allow Incoming Rsync from Specific IP Address or Subnet
 
-> $ sudo apt install virtualbox
+-   The `Rsync` program, runs on `port 873`, and can be used to transfer files from one computer to another.
+-   `$ sudo ufw allow from IP_ADDRESS/SUBNET to any port 873`
 
-#### Install Vagrant
+## Allow All Incoming HTTP (port 80)
 
-> $ curl -O https://releases.hashicorp.com/vagrant/2.2.9/vagrant_2.2.9_x86_64.deb
+-   Web servers, such as Apache and Nginx, typically listen for HTTP requests on `port 80`.
+-   If your default policy for incoming traffic is set to drop or deny, you’ll need to create a UFW rule to allow external access on `port 80` : <br> `$ sudo ufw allow http` or `$ sudo ufw allow 80`
 
-> $ sudo apt install ./vagrant_2.2.9_x86_64.deb
+## Allow All Incoming HTTPS (port 443)
 
-#### Install Git
+-   HTTPS typically runs on `port 443`.
+-   If your default policy for incoming traffic is set to drop or deny, you’ll need to create a UFW rule to allow external access on `port 443`. : <br> `$ sudo ufw allow https` or `$ sudo ufw allow 443`
 
-> $ apt install git
+## Allow All Incoming HTTP and HTTPS
 
-#### Install jdk8
-
-> $ sudo apt-get install openjdk-8-jdk
-
-#### Install Maven
-
-> $ sudo apt-get install maven
-
-#### Install awscli
-
-> $ sudo apt-get install awscli
-
-#### Install Intellij community
-
-> $ sudo snap install intellij-idea-community --classic
-
-#### Install Sublime Text
-
-> $ sudo apt update
-
-> $ sudo apt install dirmngr gnupg apt-transport-https ca-certificates software-properties-common
-
-> $ curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-
-> $ sudo add-apt-repository "deb https://download.sublimetext.com/ apt/stable/"
-
-> $ sudo apt install sublime-text
+-   `$ sudo ufw allow proto tcp from any to any port 80,443`
