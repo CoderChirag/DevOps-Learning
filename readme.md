@@ -20,6 +20,8 @@
   - [Loops](#loops)
     - [For loop](#for-loop)
     - [While loop](#while-loop)
+  - [Remote Command Execution](#remote-command-execution)
+    - [Setting VMs](#setting-vms)
 
 ---
 
@@ -410,3 +412,117 @@ $ cat /var/log/monit_httpd.log
         counter=$(($counter + 1))
     done
 ```
+
+## Remote Command Execution
+
+### Setting VMs
+
+-   `$ vagrant up`
+-   Setting up hostnames in all machines.
+
+    ```
+    $ vagrant ssh web01
+    $ sudo -i
+    $ echo "web01" > /etc/hostname
+    $ hostname web01
+    $ logout
+    $ logout
+
+    $ vagrant ssh web02
+    $ sudo -i
+    $ echo "web02" > /etc/hostname
+    $ hostname web02
+    $ logout
+    $ logout
+
+    $ vagrant ssh web03
+    $ sudo -i
+    $ echo "web03" > /etc/hostname
+    $ hostname web03
+    $ logout
+    $ logout
+    ```
+
+-   Setting up a name to IP mapping in `scriptbox` machine
+    ```
+    $ vagrant ssh scriptbox
+    $ sudo -i
+    $ cat << EOF >> /etc/hosts
+    > 192.168.10.13 web01
+    > 192.168.10.14 web02
+    > 192.168.10.15 web03
+    > EOF
+    $ ping web01
+        PING web01 (192.168.10.13) 56(84) bytes of data.
+        64 bytes from web01 (192.168.10.13): icmp_seq=1 ttl=64 time=0.424 ms
+        64 bytes from web01 (192.168.10.13): icmp_seq=2 ttl=64 time=1.50 ms
+        64 bytes from web01 (192.168.10.13): icmp_seq=3 ttl=64 time=0.717 ms
+        64 bytes from web01 (192.168.10.13): icmp_seq=4 ttl=64 time=0.986 ms
+        ^C
+        --- web01 ping statistics ---
+        4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+        rtt min/avg/max/mdev = 0.424/0.909/1.509/0.399 ms
+    $ ping web02
+        PING web02 (192.168.10.14) 56(84) bytes of data.
+        64 bytes from web02 (192.168.10.14): icmp_seq=1 ttl=64 time=1.21 ms
+        64 bytes from web02 (192.168.10.14): icmp_seq=2 ttl=64 time=1.00 ms
+        64 bytes from web02 (192.168.10.14): icmp_seq=3 ttl=64 time=1.07 ms
+        64 bytes from web02 (192.168.10.14): icmp_seq=4 ttl=64 time=1.15 ms
+        ^C
+        --- web02 ping statistics ---
+        4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+        rtt min/avg/max/mdev = 1.000/1.112/1.219/0.081 ms
+    $ ping web03
+        PING web03 (192.168.10.15) 56(84) bytes of data.
+        64 bytes from web03 (192.168.10.15): icmp_seq=1 ttl=64 time=1.44 ms
+        64 bytes from web03 (192.168.10.15): icmp_seq=2 ttl=64 time=0.857 ms
+        64 bytes from web03 (192.168.10.15): icmp_seq=3 ttl=64 time=0.885 ms
+        64 bytes from web03 (192.168.10.15): icmp_seq=4 ttl=64 time=0.565 ms
+        ^C
+        --- web03 ping statistics ---
+        4 packets transmitted, 4 received, 0% packet loss, time 3006ms
+        rtt min/avg/max/mdev = 0.565/0.938/1.445/0.318 ms
+    ```
+-   Logging in remotely from `scriptbox` machine to other machines and creating a user named `devops` in all machines
+
+    ```
+    [root@localhost ~]# ssh vagrant@web01         # password for vagrant user is : vagrant
+    [vagrant@web01 ~]$ sudo -i
+    [root@web01 ~]# useradd devops
+    [root@web01 ~]# passwd devops
+    [root@web01 ~]# echo "devops    ALL=(ALL)    NOPASSWD: ALL" > /etc/sudoers.d/devops
+    [root@web01 ~]# exit
+    [vagrant@web01 ~]$ exit
+
+    [root@localhost ~]# ssh vagrant@web02
+    [vagrant@web02 ~]$ sudo -i
+    [root@web02 ~]$ useradd devops
+    [root@web02 ~]$ passwd devops
+    [root@web02 ~]$ echo "devops    ALL=(ALL)    NOPASSWD: ALL" > /etc/sudoers.d/devops
+    [root@web02 ~]$ exit
+    [vagrant@web02 ~]$ exit
+    [root@localhost ~]# logout
+
+    $ vagrant ssh web03
+    vagrant@web03:~$ sudo -i
+    root@web03:~# sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    root@web03:~# systemctl restart ssh
+    root@web03:~# logout
+    vagrant@web03:~# logout
+    $ vagrant ssh scriptbox
+    [vagrant@localhost ~]$ sudo -i
+    [root@localhost ~]$ ssh vagrant@web03
+    vagrant@web03:~$ sudo -i
+    root@web03:~# adduser devops
+    root@web03:~# echo "devops    ALL=(ALL:ALL)    NOPASSWD: ALL" > /etc/sudoers.d/devops
+    root@web03:~# logout
+    vagrant@web03:~$ logout
+    ```
+
+-   Configuring a **key based authentication** for ssh. Key based authentication is always considered more safer than the password based authentication.
+    ```
+    [root@scriptbox ~]# ssh-keygen
+    [root@scriptbox ~]# ssh-copy-id devops@web01
+    [root@scriptbox ~]# ssh-copy-id devops@web02
+    [root@scriptbox ~]# ssh-copy-id devops@web03
+    ```
