@@ -22,6 +22,7 @@
     - [While loop](#while-loop)
   - [Remote Command Execution](#remote-command-execution)
     - [Setting VMs](#setting-vms)
+  - [Hosting Static Website on all of the 3 VMs by Automating the process.](#hosting-static-website-on-all-of-the-3-vms-by-automating-the-process)
 
 ---
 
@@ -526,3 +527,157 @@ $ cat /var/log/monit_httpd.log
     [root@scriptbox ~]# ssh-copy-id devops@web02
     [root@scriptbox ~]# ssh-copy-id devops@web03
     ```
+
+## Hosting Static Website on all of the 3 VMs by Automating the process.
+
+So now, with the use of Bash Scripting knowledge we have gained so far, let's write a script to automate the process of hosting a Static website on all of the 3 VMs, i.e, `web01`, `web02` and `web03`.
+
+```
+[root@scriptbox ~]# cd /opt/scripts
+[root@scriptbox ~]# mkdir remote_websetup
+[root@scriptbox ~]# cd remote_websetup/
+[root@scriptbox ~]# cat << EOF > remhosts
+> web01
+> web02
+> web03
+> EOF
+[root@scriptbox ~]# for host in `cat remhosts`; do ssh devops@$host uptime; done
+[root@scriptbox ~]# vim multios_websetup.sh
+#!/bin/bash
+
+# Variable Declaration
+#PACKAGE="httpd wget unzip"
+#SVC="httpd"
+URL='https://www.tooplate.com/zip-templates/2098_health.zip'
+ART_NAME='2098_health'
+TEMPDIR="/tmp/webfiles"
+
+yum --help &> /dev/null
+
+if [ $? -eq 0 ]
+then
+    # Set Variables for CentOS
+    PACKAGE="httpd wget unzip"
+    SVC="httpd"
+
+    echo "Running setup on CentOS"
+    # Installing Dependencies
+    echo "############################################################"
+    echo "Installing packages."
+    echo "############################################################"
+    sudo yum install $PACKAGE -y
+    echo
+
+    # Start & Enable Service
+    echo "###########################################################"
+    echo "Start & Enable HTTPD Service"
+    echo "###########################################################"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+    echo
+
+    # Creating Temp Directory
+    echo "##########################################################"
+    echo "Creating Temp Directory"
+    echo "##########################################################"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    wget $URL
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Bounce Service
+    echo "############################################################"
+    echo "Restarting HTTPD service"
+    echo "############################################################"
+    systemctl restart $SVC
+    echo
+
+    # Clean Up
+    echo "############################################################"
+    echo "Removing Temporary Files"
+    echo "############################################################"
+    rm -rf $TEMPDIR
+    echo
+
+    sudo systemctl status $SVC
+    ls /var/www/html/
+else
+    # Set Variables for Ubuntu
+    PACKAGE="apache2 wget unzip"
+    SVC="apache2"
+
+    echo "Running setup on CentOS"
+    # Installing Dependencies
+    echo "############################################################"
+    echo "Installing packages."
+    echo "############################################################"
+    sudo apt update
+    sudo apt install $PACKAGE -y
+    echo
+
+    # Start & Enable Service
+    echo "###########################################################"
+    echo "Start & Enable HTTPD Service"
+    echo "###########################################################"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+
+    # Creating Temp Directory
+    echo "##########################################################"
+    echo "Creating Temp Directory"
+    echo "##########################################################"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    wget $URL
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Bounce Service
+    echo "############################################################"
+    echo "Restarting HTTPD service"
+    echo "############################################################"
+    systemctl restart $SVC
+    echo
+
+    # Clean Up
+    echo "############################################################"
+    echo "Removing Temporary Files"
+    echo "############################################################"
+    rm -rf $TEMPDIR
+    echo
+
+    sudo systemctl status $SVC
+    ls /var/www/html/
+fi
+[root@scriptbox ~]# vim webdeploy.sh
+#!/bin/bash
+
+USR='devops'
+
+for host in `cat remhosts`
+do
+    echo
+    echo "#####################################################"
+    echo "Connecting to $host"
+    echo "Pushing Script to $host"
+    # Scp is used to push files using ssh protocol
+    scp multios_websetup.sh $USR@$host:/tmp/
+    echo "Executing Script on $host"
+    ssh $USR@$host sudo /tmp/multios_websetup.sh
+    ssh $USR@$host sudo rm -rf /tmp/multios_websetup.sh
+    echo "#####################################################"
+    echo
+done
+[root@scriptbox ~]# chmod +x multios_websetup.sh
+[root@scriptbox ~]# chmod +x webdeploy.sh
+[root@scriptbox ~]# webdeploy.sh
+```
+
+-   Now go to browser and test the IPs of `web01`, `web02` and `web03`. The website should be hosted on all of the 3 machines :sunglasses:
