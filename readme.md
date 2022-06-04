@@ -508,10 +508,13 @@ filea1.txt filea2.txt fileb.txt filec.txt
     ```
         $ man -k passwd
         checkPasswdAccess (3) - query the SELinux policy database in the kernel.
-        chpasswd (8) - update passwords in batch mode ckpasswd (8) - nnrpd password authenticator
-        fgetpwent_r (3) - get passwd file entry reentrantly getpwent_r (3) - get passwd file entry reentrantly
+        chpasswd (8) - update passwords in batch mode
+        ckpasswd (8) - nnrpd password authenticator
+        fgetpwent_r (3) - get passwd file entry reentrantly
+        getpwent_r (3) - get passwd file entry reentrantly
         ...
-        passwd (1) - update user's authentication tokens sslpasswd (1ssl) - compute password hashes
+        passwd (1) - update user's authentication tokens
+        sslpasswd (1ssl) - compute password hashes
         passwd (5) - password file
         passwd.nntp (5) - Passwords for connecting to remote NNTP servers
         passwd2des (3) - RFS password encryption
