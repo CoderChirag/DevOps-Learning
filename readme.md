@@ -24,6 +24,12 @@
       - [Brace Expansion](#brace-expansion)
       - [Variable Expansion](#variable-expansion)
       - [Command Substitution](#command-substitution)
+  - [Getting Help in Linux](#getting-help-in-linux)
+    - [Man Command](#man-command)
+      - [Introduction](#introduction-1)
+      - [Navigate and Search Man Pages](#navigate-and-search-man-pages)
+      - [Reading Man pages](#reading-man-pages)
+      - [Searching for man pages by keyword](#searching-for-man-pages-by-keyword)
   - [Vim Editor](#vim-editor)
     - [Command Mode](#command-mode)
   - [File Types](#file-types)
@@ -434,6 +440,71 @@ filea1.txt filea2.txt fileb.txt filec.txt
     -   it can be easy to visually confuse backticks with single quote marks
     -   backticks cannot be nested.
 
+## Getting Help in Linux
+
+### Man Command
+
+#### Introduction
+
+-   One source of documentation that is generally available on the local system are system _manual pages_ or _man pages_.
+-   These pages are shipped as part of the software packages for which they provide documentation, and can be accessed from the command line by using the `man` command.
+-   Common Sections of the Linux Manual
+
+| Section | Content Type                                                        |
+| ------- | ------------------------------------------------------------------- |
+| 1       | User Commands (both executable and shell programs)                  |
+| 2       | System Calls (kernel routines invoked from user space)              |
+| 3       | Library functions (provided by program libraries)                   |
+| 4       | Special Files (such as device files)                                |
+| 5       | File formats (for many configuration files and structures)          |
+| 6       | Games (historical section for amusing programs)                     |
+| 7       | Conventions, standards, and miscellaneous (protocols, file systems) |
+| 8       | System administration and priviliged commands (maintenance tasks)   |
+| 9       | Linux kernel API (internal kernel calls)                            |
+
+-   To distinguish identical topic names in different sections, man page references include the section number in parentheses after the topic.
+-   For example, **passwd(1)** describes the command to change passwords, while **passwd(5)** explains the `/etc/passwd` file format for storing local user accounts.
+-   To read specific man pages, use `$ man topic`.
+-   To display the man page topic from a specific section, include the section number argument: `$ man 5 passwd` displays **passwd(5)**.
+
+#### Navigate and Search Man Pages
+
+| Command   | Result                                                |
+| --------- | ----------------------------------------------------- |
+| Spacebar  | Scroll forward (down) one screen                      |
+| PageDown  | Scroll forward (down) one sceeen                      |
+| PageUp    | Scroll backward (up) one screen                       |
+| DownArrow | Scroll forward (down) one line                        |
+| UpArrow   | Scroll backward (up) one line                         |
+| D         | Scroll forward (down) one half screen                 |
+| U         | Scroll backward (up) one half-screen                  |
+| /string   | Search forward (down) for `string` in the man page    |
+| N         | Repeat previous search forward (down) in the man page |
+| Shift + N | Repeat previous search backward (up) in the man page  |
+| G         | Go to the start of the man page                       |
+| Shift + G | Go to the end of the man page                         |
+| Q         | Exit man and return to the command shell prompt       |
+
+#### Reading Man pages
+
+-   Each topic is separated into several parts. Most topics share the same headings and are presented in the same order. Typically a topic does not feature all headings, because not all headings apply for all topics.
+
+| Headings | Description
+| NAME | Subject name. Usually a command or file name. Very brief description
+| SYNOPSIS | Summary of the command syntax
+| DESCRIPTION | In-depth description to provide a basic understanding of the topic
+| OPTIONS | Explanation of the command execution options
+| EXAMPLES | Examples of how to use the command, function, or file
+| FILES | A list of files and directories related to the man page
+| SEE ALSO | Related information, normally other man page topics
+| BUGS | Known bugs in the software
+| Author | Information about who has contributed to the development of the topic
+
+#### Searching for man pages by keyword
+
+-   A keyword search of man pages is performed with `$ man -k keyword`, which displays a list of keyword-matching man page topics with section numbers.
+    ` $ man -k passwd checkPasswdAccess (3) - query the SELinux policy database in the kernel. chpasswd (8) - update passwords in batch mode ckpasswd (8) - nnrpd password authenticator fgetpwent_r (3) - get passwd file entry reentrantly getpwent_r (3) - get passwd file entry reentrantly ... passwd (1) - update user's authentication tokens sslpasswd (1ssl) - compute password hashes passwd (5) - password file passwd.nntp (5) - Passwords for connecting to remote NNTP servers passwd2des (3) - RFS password encryption ... `
+
 ## Vim Editor
 
 -   To install in centos: `sudo yum install vim -y`
@@ -756,17 +827,17 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 
 ## Redirections
 
-|                           |                                                                 |
-| ------------------------- | --------------------------------------------------------------- |
-| `$ command > file`        | redirect **stdout** to **overwrite** a file                     |
-| `$ command >> file`       | redirect **stdout** to **append** a file                        |
-| `$ command 2> file`       | redirect **stderr** to **overwrite** a file                     |
-| `$ command 2>> file`      | redirect **stderr** to **append** a file                        |
-| `$ command > /dev/null`   | discard / dump **stdout** messages                              |
-| `$ command 2> /dev/null`  | discard / dump **stderr** messages                              |
-| `$ command &> file`       | redirect both **stdout** and **stderr** to **overwrite** a file |
-| `$ command &>> file`      | redirect both **stdout** and **stderr** to **append** a file    |
-| `$ command &>> /dev/null` | dump / discard all the output                                   |
+|                                                |                                                                 |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| `$ command > file`                             | redirect **stdout** to **overwrite** a file                     |
+| `$ command >> file`                            | redirect **stdout** to **append** a file                        |
+| `$ command 2> file`                            | redirect **stderr** to **overwrite** a file                     |
+| `$ command 2>> file`                           | redirect **stderr** to **append** a file                        |
+| `$ command > /dev/null`                        | discard / dump **stdout** messages                              |
+| `$ command 2> /dev/null`                       | discard / dump **stderr** messages                              |
+| `$ command &> file` or `command > file 2>&1`   | redirect both **stdout** and **stderr** to **overwrite** a file |
+| `$ command &>> file` or `command >> file 2>&1` | redirect both **stdout** and **stderr** to **append** a file    |
+| `$ command &>> /dev/null`                      | dump / discard all the output                                   |
 
 -   `/dev/null` is a dump file. We can dump any content in it and it would always be empty.
 -   `>file` is equivalent to `1>file` and `>>file` is equivalent to `1>>file`
