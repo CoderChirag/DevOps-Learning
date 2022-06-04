@@ -1,7 +1,18 @@
+# Learning DevOps
+
+This is going to be my journey to learn Devops from very basics to advanced level. I will try to share each and every step of it so it can also benefit others.
+
+I am making this repo so that you don't have to go and search at different different places and you can find every topic here only.
+
+I will try to provide complete notes and practical projects in complete detailed and in an easy to understand manner.
+
+---
+
 # Contents
 
 ---
 
+- [Learning DevOps](#learning-devops)
 - [Contents](#contents)
 - [1. Introduction to DevOps](#1-introduction-to-devops)
   - [Transforming an Idea into Application](#transforming-an-idea-into-application)
