@@ -54,11 +54,27 @@
     - [Users](#users)
       - [Some Important Points](#some-important-points)
       - [Types of User](#types-of-user)
+      - [id Command](#id-command)
       - [`/etc/passwd` file](#etcpasswd-file)
-      - [`/etc/group` file](#etcgroup-file)
     - [Groups](#groups)
-      - [Basic commands](#basic-commands)
-      - [Switching users](#switching-users)
+      - [`/etc/group` file](#etcgroup-file)
+      - [Primary Groups and Supplementary Groups](#primary-groups-and-supplementary-groups)
+    - [Switching users](#switching-users)
+    - [Running Commands with Sudo](#running-commands-with-sudo)
+      - [Getting an Interactive Root Shell with Sudo](#getting-an-interactive-root-shell-with-sudo)
+      - [Configuring Sudo](#configuring-sudo)
+    - [Managing Local User Accounts](#managing-local-user-accounts)
+      - [Creating & Modifying Users](#creating--modifying-users)
+      - [Deleting Users](#deleting-users)
+      - [Setting Passwords](#setting-passwords)
+    - [Managing Local Groups](#managing-local-groups)
+      - [Creating and Modifying groups](#creating-and-modifying-groups)
+      - [Deleting Groups](#deleting-groups)
+    - [Managing User Passwords](#managing-user-passwords)
+      - [Shadow Passwords and Password Policy](#shadow-passwords-and-password-policy)
+      - [Format of an Encrypted Password](#format-of-an-encrypted-password)
+      - [Configuring Password Aging](#configuring-password-aging)
+    - [Additional commands](#additional-commands)
   - [File Permissions](#file-permissions)
     - [Changing Permissions](#changing-permissions)
       - [Symbolic Method](#symbolic-method)
@@ -74,7 +90,7 @@
     - [Basic way of installing any package in CentOS](#basic-way-of-installing-any-package-in-centos)
     - [yum](#yum)
   - [Services](#services)
-    - [Basic commands](#basic-commands-1)
+    - [Basic commands](#basic-commands)
   - [Processes](#processes)
     - [Killing Processes](#killing-processes)
   - [Archiving Data](#archiving-data)
@@ -894,14 +910,6 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 
 A **_user_** account is used to provide security boundaries between different people and programs that can run commands.
 
-There are three main types of user account: the superuser, system users, and regular users.
-
-The superuser account is for administration of the system. The name of the superuser is root and the account has UID 0. The superuser has full access to the system.
-
-The system has system user accounts which are used by processes that provide supporting services. These processes, or daemons, usually do not need to run as the superuser. They are assiged non-privileged accounts that allow them to secure their files and other resources from each other and from regular users on the system. Users do not interactively log in using a system user account.
-
-Most users have regular user accounts which they use for their day-to-day work. Like system users, regular users have limited access to the system.
-
 #### Some Important Points
 
 -   Users and groups are used to control access to files and resources
@@ -918,47 +926,244 @@ Most users have regular user accounts which they use for their day-to-day work. 
 
 #### Types of User
 
+There are three main types of user account: the **_superuser_**, **_system users_**, and **_regular users_**.
+
+1.  **_superuser_**
+
+    -   The **_superuser_** account is for administration of the system.
+    -   The name of the **_superuser_** is **root** and the account has **UID 0**.
+    -   The **_superuser_** has full access to the system.
+
+2.  **_system user_**
+
+    -   The system has **_system user_** accounts which are used by processes that provide supporting services.
+    -   These processes, or daemons, usually do not need to run as the superuser.
+    -   They are assiged non-privileged accounts that allow them to secure their files and other resources from each other and from regular users on the system.
+    -   Users do not interactively log in using a system user account.
+
+3.  **_regular user_**
+    -   Most users have **_regular user_** accounts which they use for their day-to-day work.
+    -   Like system users, regular users have limited access to the system.
+
 | Type        | Example              | User ID (ID)  | Group ID (GID) | Home Dir         | Shell           |
 | ----------- | -------------------- | ------------- | -------------- | ---------------- | --------------- |
 | **Root**    | root                 | 0             | 0              | `/root`          | `/bin/bash`     |
 | **Regular** | coderchirag, vagrant | 1000 to 60000 | 1000 to 60000  | `/home/username` | `/bin/bash`     |
 | **Service** | ftp, ssh, apache     | 1 to 999      | 1 to 999       | `/var/ftp etc`   | `/sbin/nologin` |
 
+#### id Command
+
+-   We can use the `id` command to show information about the currently logged-in user.
+    ```
+    $ id
+    uid=1000(user01) gid=1000(user01) groups=1000(user01) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+    ```
+-   To view basic information about another user, pass the username to the `id` command as an argument.
+    ```
+    $ id user02
+    uid=1002(user02) gid=1001(user02) groups=1001(user02) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+    ```
+
 #### `/etc/passwd` file
 
--   Total 7 columns seperated by colon (`:`)
--   user_name:pwd(link to shadow file):uid:gid:comment:home_dir:login_shell
-
-#### `/etc/group` file
-
--   Total 4 columns seperated by colon (`:`)
--   group_name:pwd(link to shadow file):gid:users_list(separated by commas (`,`)
+-   Total **7** columns seperated by colon (`:`)
+-   `user_name:pwd(link to shadow file):uid:gid:comment:home_dir:login_shell`
 
 ### Groups
 
 -   A **group** is a collection of users that need to share acess to fiiles and other system resources.
 -   Every user has exactly one **primary group** and zero or more **supplementary groups**.
 
-#### Basic commands
+#### `/etc/group` file
 
--   `$ id <username>` - outputs uid, gid, and groups
--   `$ useradd <username>` - creates new user
--   `$ groupadd <groupname>` - create new group
--   `$ usermod [-g group: primary group] [-G groups: supplementary groups] [-c comment] <username>` - modify the user config
--   `$ userdel [-r: delete the home directory also] <username>` - delete a user
--   `passwd <username>` - set the password of user
--   `$ groupmod [-n name: new name] [-g gid: new gid] <groupname>` - modify the group
--   `$ groupdel <groupname>` - delete the group (cannot delete a group if it is a primary group for any existing user).
--   `$ last` - give the details of which user logged in at what time
+-   Total **4** columns seperated by colon (`:`)
+-   `group_name:pwd(link to shadow file):gid:users_list(separated by commas (,))`
+
+#### Primary Groups and Supplementary Groups
+
+-   Every user has exactly one primary group.
+    -   For local users, this is the group listed by GID number in the `/etc/passwd` file.
+    -   By default, this is the group that will own new files created by the user.
+-   Normally, when we create a new regular user, a new group with the same name as that user is created.
+    -   That group is used as the **_primary group_** for the new user, and that user is the only member of this User Private Group.
+    -   It turns out that this helps make management of file permissions simpler
+-   Users may also have **_supplementary groups_**.
+    -   Membership in supplementary groups is determined by the `/etc/group` file.
+    -   Users are granted access to files based on whether any of their groups have access.
+    -   It doesn't matter if the group or groups that have access are primary or supplementary for the user.
+
+### Switching users
+
+-   The `su` command allows users to switch to a different user account.
+-   If we run `su` from a regular user account, we will be prompted for the password of the account to which we want to switch.
+-   When root runs `su`, we do not need to enter the user's password.
+-   `$ su - user02`
+-   If we omit the user name, the `su` or `su -` command attempts to switch to root by default.
+-   `$ su -`
+-   The command `su` starts a **non-login shell**, while the command `su -` (with the dash option) starts a **login shell**.
+-   The main distinction between the two commands is that `su -` sets up the shell environment as if it were a new login as that user, while `su` just starts a shell as that user, but uses the original user's environment settings.
+
+### Running Commands with Sudo
+
+-   In some cases, the root user's account may not have a valid password at all for security reasons.
+-   In this case, users cannot log in to the system as `root` directly with a password, and `su` cannot be used to get an interactive shell. One tool that can be used to get root access in this case is `sudo`.
+    <br>
+
+-   Unlike `su`, `sudo` normally requires users to enter their own password for authentication, not the password of the user account they are trying to access.
+-   Additionally, sudo can be configured to allow specific users to run any command as some other user, or only some commands as that user.
+    <br>
+-   If a user tries to run a command as another user, and the sudo configuration does not permit it, the command will be blocked, the attempt will be logged, and by default an email will be sent to the root user.
+    ```
+    $ sudo tail /var/log/secure
+    [sudo] password for user02:
+    user02 is not in the sudoers file.  This incident will be reported.
+    ```
+-   One additional benefit to using sudo is that all commands executed are logged by default to /var/log/secure.
+    ```
+    $ sudo tail /var/log/secure
+    ...output omitted...
+    Feb  6 20:45:46 host sudo[2577]:  user01 : TTY=pts/0 ; PWD=/home/user01 ; USER=root ; COMMAND=/sbin/usermod -L user02
+    ...output omitted...
+    ```
+
+#### Getting an Interactive Root Shell with Sudo
+
+-   If there is a nonadministrative user account on the system that can use sudo to run the `su` command, you can run `sudo su -` from that account to get an interactive root user shell. This works because sudo will run `su -` as root, and root does not need to enter a password to use `su` : `$ sudo su -`.
+-   Another way to access the root account with sudo is to use the `sudo -i` command. This will switch to the root account and run that user's default shell (usually bash) and associated shell login scripts. If we just want to run the shell, we can use the `sudo -s` command.
+
+#### Configuring Sudo
+
+-   The main configuration file for sudo is `/etc/sudoers`. To avoid problems if multiple administrators try to edit it at the same time, it should only be edited with the special `visudo` command.
+-   For example, the following line from the `/etc/sudoers` file enables sudo access for members of group `wheel`.
+    ```
+    %wheel    ALL=(ALL)   ALL
+    ```
+    -   `%wheel` is the user or group to whom the rule applies.
+    -   A `%` specifies that this is a group, group `wheel`
+    -   The `ALL=(ALL)` specifies that on any host that might have this file, `wheel` can run any command.
+    -   The final `ALL` specifies that `wheel` can run those commands as any user on the system.
+-   By default, `/etc/sudoers` also includes the contents of any files in the `/etc/sudoers.d` directory as part of the configuration file. This allows an administrator to add sudo access for a user simply by putting an appropriate file in that directory.
+
+**NOTE**
+
+-   It is also possible to set up sudo to allow a user to run commands as another user without entering their password:
+    ```
+    ansible   ALL=(ALL)   NOPASSWD:ALL
+    ```
+
+### Managing Local User Accounts
+
+#### Creating & Modifying Users
+
+-   The `useradd username` command creates a new user named username. It sets up the user's home directory and account information, and creates a private group for the user named username. At this point the account does not have a valid password set, and the user cannot log in until a password is set.
+-   The `usermod username` command is used to modify an existing user.
+
+Both the command are having almost same options
+| options | usage
+| --- | ---
+| -c, --comment COMMENT | Add the user's real name to the comment field
+| -u, --uid UID | Specify the uid for the user account
+| -g, --gid GROUP | Specify the primary group for the user account
+| -G, --groups GROUPS | Specify a comma-separated list of supplementary groups for the user account.
+| -a, --append | Used with the `-G` option to add the supplementary groups to the user's current set of group memberships instead of replacing the set of supplementary groups with a new set
+| -d, --home HOME_DIR | Specify a particular home directory for the user account
+| -m, --move-home | Move the user's home directory to a new location. Must be used with `-d` option
+| -s, --shell SHELL | Specify a particular login shell for the user account
+| -L, --lock | Lock the user account
+| -U, --unlock | Unlock the user account
+
+#### Deleting Users
+
+-   The `userdel username` command removes the details of username from `/etc/passwd`, but leaves the user's home directory intact.
+
+-   The `userdel -r username` command removes the details of username from `/etc/passwd` and also deletes the user's home directory.
+
+#### Setting Passwords
+
+-   The `passwd username` command sets the initial password or changes the existing password of username.
+-   The **root user** can set a password to any value. A message is displayed if the password does not meet the minimum recommended criteria, but is followed by a prompt to retype the new password and all tokens are updated successfully.
+-   A **regular user** must choose a password at least eight characters long and is also not based on a dictionary word, the username, or the previous password.
+
+### Managing Local Groups
+
+#### Creating and Modifying groups
+
+-   The `groupadd` command creates groups. Without options the `groupadd` command uses the next available `GID` from the range specified in the `/etc/login.defs` file while creating the groups.
+    -   The `-g` option specifies a particular `GID` for the group to use.
+    -   The `-r` option creates a system group using a `GID` from the range of valid system GIDs listed in the `/etc/login.defs` file.
+    -   The `SYS_GID_MIN` and `SYS_GID_MAX` configuration items in `/etc/login.defs` define the range of system GIDs.
+-   The `groupmod command` changes the properties of an existing group.
+    -   The `-n` option specifies a new name for the group.
+    -   The `-g` option specifies a new GID.
+
+#### Deleting Groups
+
+-   The `groupdel command` removes groups.
+
+**Note**
+
+-   We cannot remove a group if it is the primary group of any existing user.
+-   As with `userdel`, check all file systems to ensure that no files remain on the system that are owned by the group.
+
+### Managing User Passwords
+
+#### Shadow Passwords and Password Policy
+
+-   At one time, encrypted passwords were stored in the world-readable `/etc/passwd` file.
+-   This was thought to be reasonably secure until dictionary attacks on encrypted passwords became common.
+-   At that point, the encrypted passwords were moved to a separate `/etc/shadow` file which is readable only by root.
+-   This new file also allowed **password aging and expiration** features to be implemented.
+    <br>
+-   The `/etc/shadow` file has **9** colon separated values.
+-   `user03:$6$CSsX...output omitted...:17933:0:99999:7:2:18113:`
+    1. **Username** of the account this password belongs to
+    2. The **encrypted password** of the user.
+    3. The day on which the password was **last changed**. This is set in days since `1970-01-01`, and is calculated in the UTC time zone.
+    4. The **minimum number of days** that have to elapse since the last password change **before the user can change it again**.
+    5. The **maximum number of days** that can pass without a password change before the **password expires**. An empty field means it does not expire based on time since the last change.
+    6. **Warning period**. The user will be warned about an expiring password when they login for this number of days before the deadline.
+    7. **Inactivity period**. Once the password has expired, it will still be accepted for login for this many days. After this period has elapsed, the account will be locked.
+    8. The day on which the **account expires**. This is set in days since `1970-01-01`, and is calculated in the UTC time zone. An empty field means it does not expire on a particular date.
+    9. The last field is usually empty and is **reserved for future use**.
+
+#### Format of an Encrypted Password
+
+-   The **encrypted password** field stores **3** pieces of information:
+    -   The **hashing algorithm** used
+    -   The **salt**
+    -   The **encrypted hash**
+-   Each piece of information is delimited by the `$` sign.
+-   `$6$CSsXcYG1L/4ZfHr/$2W6evvJahUfzfHpc9X.45Jc6H30E...output omitted...`
+    1. The **hashing algorithm** used for this password. The number `6` indicates it is a `SHA-512` hash. A `1` would indicate `MD5`, a `5` `SHA-256`.
+    2. The **salt** used to encrypt the password. This is originally chosen at random.
+    3. The **encrypted hash** of the user's password. The salt and the unencrypted password are combined and encrypted to generate the encrypted hash of the password.
+
+#### Configuring Password Aging
+
+-   Passowrd aging can be configured using the `chage` command.
+
+<div align='center'>
+
+![password_aging](./images/password_aging.png)
+
+</div>
+
+| Options for `chage` command  | Usage                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| -d, --lastday LAST_DAY       | set date of last password change to LAST_DAY                   |
+| -E, --expiredate EXPIRE_DATE | set account expiration date to EXPIRE_DATE                     |
+| -I, --inactive INACTIVE      | set password inactive after expiration to INACTIVE             |
+| -l, --list                   | show account aging info                                        |
+| -m, --mindays MIN_DAYS       | set mininmum number of days before password change to MIN_DAYS |
+| -M, --maxdays MAX_DAYS       | set maximum number of days before password change to MAX_DAYS  |
+| -R, --root CHROOT_DIR        | directory to chroot into                                       |
+| -W, --warndays WARN_DAYS     | set expiration warning days to WARN_DAYS                       |
+
+### Additional commands
+
+-   `$ last` - gives the details of which user logged in at what time
 -   `$ who` - which user is currently logged in
 -   `$ lsof -u <user>` - list files opened by the user (to install `$ yum install lsof -y`).
-
-#### Switching users
-
--   Firstly create a password for **root** user - `$ sudo passwd`.
--   The `su` command allows you to switch users
-    -   switching as root user - `$ sudo su -` or `$ sudo -i #Switch to root acount properly` or `$ sudo -s #Just run the root shell only`.
-    -   switching to other users - `$ sudo su - user01`.
 
 ## File Permissions
 
