@@ -17,6 +17,13 @@
     - [Syntax](#syntax)
     - [options with Examples :](#options-with-examples-)
     - [Format Specifiers](#format-specifiers)
+  - [Matching File Names with Shell Expansions](#matching-file-names-with-shell-expansions)
+    - [Command-line Expansions](#command-line-expansions)
+      - [Pattern Matching](#pattern-matching)
+      - [Tilde Expansion](#tilde-expansion)
+      - [Brace Expansion](#brace-expansion)
+      - [Variable Expansion](#variable-expansion)
+      - [Command Substitution](#command-substitution)
   - [Vim Editor](#vim-editor)
     - [Command Mode](#command-mode)
   - [File Types](#file-types)
@@ -309,6 +316,123 @@ $ date "+%Y/%m/%d"
 $ date "+%A %B %d %T %y"
 Thursday October 07:54:29 12 17
 ```
+
+## Matching File Names with Shell Expansions
+
+### Command-line Expansions
+
+The Bash shell has multiple ways of expanding a command line including **pattern matching**, **home directory expansion**, **string expansion**, and **variable substitution**. Perhaps the most powerful of these is the **path name-matching capability**, historically called **globbing**.
+The **Bash globbing** feature, sometimes called **“wildcards”**, makes managing large numbers of files easier. Using metacharacters that “expand” to match file and path names being sought, commands perform on a focused set of files at once.
+
+#### Pattern Matching
+
+**Globbing** is a shell command-parsing operation that expands a wildcard pattern into a list of matching path names. Command-line metacharacters are replaced by the match list prior to command execution. Patterns that do not return matches display the original pattern request as literal text. The following are common metacharacters and pattern classes.
+
+| Pattern      | Matches                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------- |
+| \*           | Any string of zero or more characters                                                                      |
+| ?            | Any single character                                                                                       |
+| [abc...]     | Any one character in the enclosed class (between the square brackets)                                      |
+| [!abc...]    | Any one character not in the enclosed class                                                                |
+| [^abc...]    | Begins with any one character in the enclosed class                                                        |
+| \[[:alpha:]] | Any alphabetic character                                                                                   |
+| \[[:lower:]] | Any lowercase character                                                                                    |
+| \[[:upper]]  | Any uppercase letter                                                                                       |
+| \[[:alnum:]] | Any alphabetic character or digit                                                                          |
+| \[[:punct:]] | Any printable character not a space or alphanumeric                                                        |
+| \[[:digit:]] | Any single digit from 0 to 9                                                                               |
+| \[[:space:]] | Any single white space character. This may include tabs, newlines, carriage returns, form feeds, or spaces |
+
+For the next few examples, pretend that we have run the following commands to create some sample files.
+
+```
+$ mkdir glob; cd glob
+$ touch alfa bravo charlie delta echo able baker cast dog easy
+```
+
+The first example will use simple pattern matches with the asterisk (\*) and question mark (?) characters, and a class of characters, to match some of those file names.
+
+```
+$ ls a*
+able alfa
+$ ls *a*
+able alfa bravo cast charlie delta easy
+$ ls [ac]*
+able alfa cast charlie
+$ ls ????
+able alfa cast easy echo
+$ ls ?????
+baker bravo delta
+```
+
+#### Tilde Expansion
+
+The tilde character (~), matches the current user's home directory. If it starts a string of characters other than a slash (/), the shell will interpret the string up to that slash as a user name, if one matches, and replace the string with the absolute path to that user's home directory. If no user name matches, then an actual tilde followed by the string of characters will be used instead.
+
+```
+$ echo ~root
+/root
+$ echo ~user
+/home/user
+$ echo ~/glob
+/home/user/glob
+```
+
+#### Brace Expansion
+
+-   Brace expansion is used to generate discretionary strings of characters.
+-   Braces contain a comma-separated list of strings, or a sequence expression.
+-   The result includes the text preceding or following the brace definition.
+-   Brace expansions may be nested, one inside another.
+-   Also double-dot syntax (`..`) expands to a sequence such that `{m..p}` will expand to `m n o p`.
+
+```
+$ echo {Sunday,Monday,Tuesday,Wednesday}.log
+Sunday.log Monday.log Tuesday.log Wednesday.log
+$ echo file{1..3}.txt
+file1.txt file2.txt file3.txt
+$ echo file{a..c}.txt
+filea.txt fileb.txt filec.txt
+$ echo file{a,b}{1,2}.txt
+filea1.txt filea2.txt fileb1.txt fileb2.txt
+$ echo file {a{1,2},b,c}.txt
+filea1.txt filea2.txt fileb.txt filec.txt
+```
+
+#### Variable Expansion
+
+-   A variable acts like a named container that can store a value in memory. Variables make it easy to access and modify the stored data either from the command line or within a shell script.
+-   We can assign data as a value to a variable using the following syntax:
+-   `$ VARIABLENAME=value`
+-   We can use variable expansion to convert the variable name to its value on the command line. If a string starts with a dollar sign (`$`), then the shell will try to use the rest of that string as a variable name and replace it with whatever value the variable has.
+    ```
+    $ USERNAME=operator
+    $ echo $USERNAME
+    operator
+    ```
+-   To help avoid mistakes due to other shell expansions, you can put the name of the variable in curly braces, for example `${VARIABLENAME}`.
+    ```
+    $ USERNAME=operator
+    $ echo ${USERNAME}
+    operator
+    ```
+
+#### Command Substitution
+
+-   Command substitution allows the output of a command to replace the command itself on the command line.
+-   Command substitution occurs when a command is enclosed in parentheses, and preceded by a dollar sign (`$`).
+-   The `$(command)` form can nest multiple command expansions inside each other.
+    ```
+    $ echo Today is $(date +%A).
+    Today is Saturday.
+    $ echo The time is $(date +%M) minutes past $(date +%l%p).
+    The time is 50 minutes past 1PM.
+    ```
+    **NOTE**
+-   An older form of command substitution uses backticks: \`command\`.
+-   Disadvantages to the backticks form include:
+    -   it can be easy to visually confuse backticks with single quote marks
+    -   backticks cannot be nested.
 
 ## Vim Editor
 
