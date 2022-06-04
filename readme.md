@@ -7,6 +7,7 @@ I am making this repo so that you don't have to go and search at different diffe
 I will try to provide complete notes and practical projects in complete detailed and in an easy to understand manner.
 
 **NOTE**
+
 The content I am providing here in not completely mine. I am just integrating everything from different different places and serving it on one place so that you don't have to search for anything.
 
 ---
