@@ -489,21 +489,34 @@ filea1.txt filea2.txt fileb.txt filec.txt
 
 -   Each topic is separated into several parts. Most topics share the same headings and are presented in the same order. Typically a topic does not feature all headings, because not all headings apply for all topics.
 
-| Headings | Description
-| NAME | Subject name. Usually a command or file name. Very brief description
-| SYNOPSIS | Summary of the command syntax
-| DESCRIPTION | In-depth description to provide a basic understanding of the topic
-| OPTIONS | Explanation of the command execution options
-| EXAMPLES | Examples of how to use the command, function, or file
-| FILES | A list of files and directories related to the man page
-| SEE ALSO | Related information, normally other man page topics
-| BUGS | Known bugs in the software
-| Author | Information about who has contributed to the development of the topic
+| Headings    | Description                                                           |
+| ----------- | --------------------------------------------------------------------- |
+| NAME        | Subject name. Usually a command or file name. Very brief description  |
+| SYNOPSIS    | Summary of the command syntax                                         |
+| DESCRIPTION | In-depth description to provide a basic understanding of the topic    |
+| OPTIONS     | Explanation of the command execution options                          |
+| EXAMPLES    | Examples of how to use the command, function, or file                 |
+| FILES       | A list of files and directories related to the man page               |
+| SEE ALSO    | Related information, normally other man page topics                   |
+| BUGS        | Known bugs in the software                                            |
+| Author      | Information about who has contributed to the development of the topic |
 
 #### Searching for man pages by keyword
 
 -   A keyword search of man pages is performed with `$ man -k keyword`, which displays a list of keyword-matching man page topics with section numbers.
-    ` $ man -k passwd checkPasswdAccess (3) - query the SELinux policy database in the kernel. chpasswd (8) - update passwords in batch mode ckpasswd (8) - nnrpd password authenticator fgetpwent_r (3) - get passwd file entry reentrantly getpwent_r (3) - get passwd file entry reentrantly ... passwd (1) - update user's authentication tokens sslpasswd (1ssl) - compute password hashes passwd (5) - password file passwd.nntp (5) - Passwords for connecting to remote NNTP servers passwd2des (3) - RFS password encryption ... `
+
+    ```
+        $ man -k passwd
+        checkPasswdAccess (3) - query the SELinux policy database in the kernel.
+        chpasswd (8) - update passwords in batch mode ckpasswd (8) - nnrpd password authenticator
+        fgetpwent_r (3) - get passwd file entry reentrantly getpwent_r (3) - get passwd file entry reentrantly
+        ...
+        passwd (1) - update user's authentication tokens sslpasswd (1ssl) - compute password hashes
+        passwd (5) - password file
+        passwd.nntp (5) - Passwords for connecting to remote NNTP servers
+        passwd2des (3) - RFS password encryption
+        ...
+    ```
 
 ## Vim Editor
 
@@ -875,6 +888,16 @@ Awk's built-in variables include the field variables - `$1`, `$2`, `$3`, and so 
 ## Users and Groups
 
 ### Users
+
+A **_user_** account is used to provide security boundaries between different people and programs that can run commands.
+
+There are three main types of user account: the superuser, system users, and regular users.
+
+The superuser account is for administration of the system. The name of the superuser is root and the account has UID 0. The superuser has full access to the system.
+
+The system has system user accounts which are used by processes that provide supporting services. These processes, or daemons, usually do not need to run as the superuser. They are assiged non-privileged accounts that allow them to secure their files and other resources from each other and from regular users on the system. Users do not interactively log in using a system user account.
+
+Most users have regular user accounts which they use for their day-to-day work. Like system users, regular users have limited access to the system.
 
 #### Some Important Points
 
