@@ -12,6 +12,13 @@
   - [Setting Up IAM with MFA](#setting-up-iam-with-mfa)
   - [Setting up Biling Alarms](#setting-up-biling-alarms)
   - [Setting Up a SSL Certificate for our domain](#setting-up-a-ssl-certificate-for-our-domain)
+- [Amazon Elastic Compute Cloud (EC2)](#amazon-elastic-compute-cloud-ec2)
+  - [EC2 Pricing](#ec2-pricing)
+  - [Components in EC2 Instance](#components-in-ec2-instance)
+  - [Creating EC2 Instance](#creating-ec2-instance)
+    - [Launching an EC2 Instance](#launching-an-ec2-instance)
+      - [Creating the Instance](#creating-the-instance)
+      - [Connecting to the Instance](#connecting-to-the-instance)
 
 ---
 
@@ -159,3 +166,126 @@
 -   Now click on the certificate you just created, scroll down and copy the **CNAME name** and **CNAME value** values, and create a corresponding record with these values in your domain.
 
 So, with this we have setup our AWS Free Tier account, created an IAM user and set up MFA, set up Billing Alarms using CloudWatch, and create a SSL Certificate for our domain :sunglasses:.
+
+# Amazon Elastic Compute Cloud (EC2)
+
+-   **EC2** provides web services API for provisioning, managingm and deprovisioning virtual servers inside Amazon Cloud.
+-   Ease in Scaling Up / Down.
+-   Pay only for what we use.
+-   Can be integrated into several other services.
+
+## EC2 Pricing
+
+1. On Demand
+    - Pay per hour or seconds
+2. Reserved
+    - Reserve Capacity (1 or 3 yrs) for discounts
+3. Spot
+    - Bid your price for unused EC2 capacity
+4. Dedicated Hosts
+    - Physical Server dedicated for you
+
+## Components in EC2 Instance
+
+**Amazon Machine Image (AMI)**
+
+-   Amazon Machine Image (AMI) is a supported and maintained image provided by AWS that provides the information required to launch an instance.
+
+**Instance Type**
+
+-   When we launch an instance, the instance type that we specify determines the hardware of the host computer used for our instance. Eg, M4 Instance, C4 Instance, F1 Instance, I3 Instance etc
+
+**Amazon Elastic Block Store (EBS)**
+
+-   Amazon Elastic Block Store (Amazon EBS) is an easy-to-use, scalable, high-performance block-storage service designed for Amazon Elastic Compute Cloud (Amazon EC2).
+-   These are basically the **Virtual Hard Drive Volumes** which we can mount as devices on our instances.
+
+**Tags**
+
+-   Tag is a simpel label consisting of a customer-defined key and an optional value that can make it easier to manage, search for, and filter resources.
+
+**Security Group**
+
+-   A security group acts as a **virtual firewall** that controls the traffic for one or more instances.
+
+**Key Pair**
+
+-   Amazon EC2 uses **public-key cryptography** to encrypt and decrypt login information.
+-   These are basically **SSH Keys** to connect to the instances remotely.
+
+## Creating EC2 Instance
+
+Steps for creation of an EC2 Instance:
+
+1. Choose an Amazon Machine Image (AMI)
+2. Choose an Instance Type
+3. Configure the Instance
+4. Add Storage
+5. Add Tags
+6. Configure Security Group
+7. Review
+
+![ec2_1](./images/aws/ec2_1.jpg)
+
+### Launching an EC2 Instance
+
+#### Creating the Instance
+
+-   Log in to the AWS Console and switch to **North Virginia** region.
+-   Search for EC2 in the search box and navigate to the Dashboard page of EC2.
+
+![ec2_2](./images/aws/ec2__2.jpg)
+
+-   Navigate to Instances from the left navigation menu.
+-   Click on Launch Instance.
+-   Give a **name** to the instance.
+-   If you want you can give additional tags according to your project.
+-   Now select an **AMI**. I will be going here with **Cent OS7**.
+-   Then select an **Instance Type**. I will be chosing **t2 micro**.
+-   Create a **key-pair**, download it and store it in a safe accessible location on your pc.
+-   Configure the **Network Settings**. Give a **Security Group** and for security you can select the option **My IP** in the IP section.
+-   Now configure the **Storage**.
+-   Go to Advanced details > User Data. This is just like Vagrant Provisioning in the local setup. Whatever commands we give here, it will be executing that commands on the startup of the Instance.
+    Give the following commands. (Make sure you have choosen Cent OS7 if you are using these commands).
+    ` #!/bin/bash sudo yum install http -y sudo systemctl start httpd sudo systemctl enable httpd mkdir /tmp/test1 `
+-   Now finally click on **Launch Instance**.
+
+#### Connecting to the Instance
+
+**Using SSH**
+
+-   Open a git bash terminal on your system and type in the following commands.
+
+    ```
+    $ ssh -i <path_to_your_key> centos@<public_ip>
+    # You can find your public IP by clicking on the instance you just created from the AWS console.
+
+    # So with this we are logged in to our instance
+
+    $ sudo systemctl status httpd
+    ```
+
+**Accessing via HTTP**
+
+For accessing your instance via HTTP, we have to configure the security rules.
+As of now, we have only one security rule through which our instance is listening on Port `22` (for SSH). So lets create a new security rule, for the Port `80` (for HTTP).
+
+-   So select the Instance in the AWS Console.
+-   Go to Security tab.
+-   Click on the Security Group.
+-   Go to **Inbound Rules** section and click on **Edit inbound rules**.
+-   Click on Add rule.
+-   Enter following info:
+    -   **Type :** Custom TCP
+    -   **Protocol :** TCP
+    -   **Port Range :** 80
+    -   **Source :** MY IP (if you are using it for private, else you can select Anywhere-IPv4 or Anywhere-IPv6 or both by creating 2 rules).
+    -   **Description - Optional :** If you want you can give this also.
+-   Then click on save rules.
+-   Now type your instance's external IP Address on the Browser and you would see the Default Apache 2 page.
+
+So with this we have created and set up an EC2 instance successfully :sunglasses:
+
+**Note**
+
+-   Don't forget to **terminate the instance** after using it.
