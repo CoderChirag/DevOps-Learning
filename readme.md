@@ -100,8 +100,13 @@
       - [Running Jobs in the Background](#running-jobs-in-the-background)
     - [Killing Processes](#killing-processes)
     - [Real-time Process Monitoring](#real-time-process-monitoring)
-  - [Services](#services)
-    - [Basic commands](#basic-commands)
+  - [Controling Services and Daemons](#controling-services-and-daemons)
+    - [Introduction to `systemd`](#introduction-to-systemd)
+    - [Describing Service Units](#describing-service-units)
+    - [Listing Service Units](#listing-service-units)
+    - [Viewing Service States](#viewing-service-states)
+    - [Verifying the Status of a Service](#verifying-the-status-of-a-service)
+    - [Controlling System Services](#controlling-system-services)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -1553,21 +1558,88 @@ Both the command are having almost same options
     | q            | Quit                                                                                                   |
     | f            | Manage the columns by enabling or disabling fields. Also allows you to set the sort field for **top**. |
 
-## Services
+## Controling Services and Daemons
 
--   A service is a program that runs in the background otuside the interactive control of system users as they lack an interface.
--   `systemctl` command is used for managing services in linux
+### Introduction to `systemd`
 
-### Basic commands
+-   The `systemd` daemon manages startup for Linux, including service startup and service management in general. It activates system resources, server daemons, and other processes both at boot time and on a running system.
+-   **Daemons** are processes that either wait or run in the background, performing various tasks. Generally, daemons start automatically at boot time and continue to run until shutdown or until they are manually stopped. It is a convention for names of many daemon programs to end in the letter `d`.
+-   A **service** in the `systemd` sense often refers to one or more daemons, but starting or stopping a service may instead make a one-time change to the state of the system, which does not involve leaving a daemon process running afterward (called _oneshot_).
 
--   `$ systemctl status httpd`
--   `$ systemctl start httpd`
--   `$ systemctl restart httpd`
--   `$ systemctl reload httpd` - reloads the config without restarting it
--   `$ systemctl stop httpd`
--   `$ systemctl enable httpd` - enables the service to start at boot time.
--   `$ systemctl is-active httpd`
--   `$ systemctl is-enabled httpd`
+### Describing Service Units
+
+-   `systemd` uses units to manage different types of objects. Some common unit types are listed below :
+    -   **Service units** have a `.service` extension and represent system services. This type of unit is used to start frequently accessed daemons, such as a web server.
+    -   **Socket units** have a `.socket` extension and represent inter-process communication (IPC) sockets that `systemd` should monitor. If a client connects to the socket, `systemd` will start a daemon and pass the connection to it. **Socket units** are used to delay the start of a service at boot time and to start less frequently used services on demand.
+    -   **Path units** have a `.path` extension and are used to delay the activation of a service until a specific file system change occurs. This is commonly used for services which use spool directories such as a printing system.
+-   The `systemctl` command is used to manage units. For example, display available unit types with the `$ systemctl -t help` command.
+
+### Listing Service Units
+
+-   To list all currently loaded service units, paginating the output using **less**.
+    ```
+    $ systemctl list-units --type=service --all
+    UNIT                          LOAD      ACTIVE   SUB     DESCRIPTION
+        atd.service                 loaded    active   running Job spooling tools
+        auditd.service              loaded    active   running Security Auditing ...
+        auth-rpcgss-module.service  loaded    inactive dead    Kernel Module ...
+        chronyd.service             loaded    active   running NTP client/server
+        cpupower.service            loaded    inactive dead    Configure CPU power ...
+        crond.service               loaded    active   running Command Scheduler
+        dbus.service                loaded    active   running D-Bus System Message Bus
+        ● display-manager.service     not-found inactive dead    display-manager.service
+    ...output omitted...
+    ```
+
+### Viewing Service States
+
+-   View the status of a specific unit with `$ systemctl status name.type`. If the unit type is not provided, systemctl will show the status of a service unit, if one exists.
+
+    ```
+    $ systemctl status sshd.service
+    ● sshd.service - OpenSSH server daemon
+    Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; vendor preset: enabled)
+    Active: active (running) since Thu 2019-02-14 12:07:45 IST; 7h ago
+    Main PID: 1073 (sshd)
+    CGroup: /system.slice/sshd.service
+            └─1073 /usr/sbin/sshd -D ...
+
+    Feb 14 11:51:39 host.example.com systemd[1]: Started OpenSSH server daemon.
+    Feb 14 11:51:39 host.example.com sshd[1073]: Could not load host key: /et...y
+    Feb 14 11:51:39 host.example.com sshd[1073]: Server listening on 0.0.0.0 ....
+    Feb 14 11:51:39 host.example.com sshd[1073]: Server listening on :: port 22.
+    Feb 14 11:53:21 host.example.com sshd[1270]: error: Could not load host k...y
+    Feb 14 11:53:22 host.example.com sshd[1270]: Accepted password for root f...2
+    ...output omitted...
+    ```
+
+-   Service Unit Information
+
+    | Field    | Description                                                                 |
+    | -------- | --------------------------------------------------------------------------- |
+    | Loaded   | Wether the service unit is loaded into memory.                              |
+    | Active   | Wether the service unit is running and if so, how long it has been running. |
+    | Main PID | The main process ID of the service, including the command name              |
+    | Status   | Additional information about the service.                                   |
+
+### Verifying the Status of a Service
+
+-   The `systemctl` command provides methods for verifying the specific states of a service.
+    ```
+    $ systemctl is-active sshd.service
+    active
+    $ systemctl is-failed sshd.service
+    active
+    $ systemctl is-enabled sshd.service
+    enabled
+    ```
+
+### Controlling System Services
+
+-   `$ systemctl start sshd.service`
+-   `$ systemctl stop sshd.service`
+-   `systemctl restart sshd.service`
+-   `systemctl reload sshd.service`
 
 ## Archiving Data
 
