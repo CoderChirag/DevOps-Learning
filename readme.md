@@ -89,10 +89,19 @@
   - [Package Management](#package-management)
     - [Basic way of installing any package in CentOS](#basic-way-of-installing-any-package-in-centos)
     - [yum](#yum)
+  - [Processes](#processes)
+    - [Definition of a Process](#definition-of-a-process)
+    - [Process States](#process-states)
+    - [Listing Processes](#listing-processes)
+      - [ps Command](#ps-command)
+      - [top Command](#top-command)
+    - [Controlling Jobs](#controlling-jobs)
+      - [Describing Jobs and Sessions](#describing-jobs-and-sessions)
+      - [Running Jobs in the Background](#running-jobs-in-the-background)
+    - [Killing Processes](#killing-processes)
+    - [Real-time Process Monitoring](#real-time-process-monitoring)
   - [Services](#services)
     - [Basic commands](#basic-commands)
-  - [Processes](#processes)
-    - [Killing Processes](#killing-processes)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -139,7 +148,7 @@ Open source software is a software which have its entire source code open, and a
 
 <div align="center">
 
-![open source](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/images/open_source.png)
+![open source](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/main/images/open_source.png)
 
 </div>
 
@@ -178,7 +187,7 @@ Open source software is a software which have its entire source code open, and a
 
 <div align="center">
 
-![architecture](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/images/linux_architecture.jpg)
+![architecture](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/main/images/linux_architecture.jpg)
 
 </div>
 
@@ -1350,27 +1359,145 @@ Both the command are having almost same options
 | `$ yum history`                              | View history of yum                        |
 | `$ yum info packagename`                     |
 
-## Services
-
--   A service is a program that runs in the background otuside the interactive control of system users as they lack an interface.
--   `systemctl` command is used for managing services in linux
-
-### Basic commands
-
--   `$ systemctl status httpd`
--   `$ systemctl start httpd`
--   `$ systemctl restart httpd`
--   `$ systemctl reload httpd` - reloads the config without restarting it
--   `$ systemctl stop httpd`
--   `$ systemctl enable httpd` - enables the service to start at boot time.
--   `$ systemctl is-active httpd`
--   `$ systemctl is-enabled httpd`
-
 ## Processes
 
--   `$ top` - show all the process running on realtime basis
--   `$ ps aux` - similar to top but displays info and quits
--   `$ps -ef` - shows Parent Process ID (PPID) but don't show the CPU and MEM Utilization
+### Definition of a Process
+
+-   Process is a running instance of a launched, executable program. A process consists of :
+
+    -   An address space of allocated memory
+    -   Security properties including ownership credentials and privileges
+    -   One or more execution threads of program code
+    -   Process state
+
+-   The environment of a process includes :
+
+    -   Local and global variables
+    -   A current scheduling context
+    -   Allocated system resources, such as file descriptors and network ports
+
+-   An existing (parent) process duplicates its own address space (fork) to create a new (child) process structure.
+-   Every new process is assigned a unique process ID (PID) for tracking and security.
+-   The PID and the parent's process ID (PPID) are elements of the new process environment.
+-   Any process may create a child process. All processes are descendants of the first system process, `init` in old linux systems and `systemd` in newer linux systems.
+
+![process_lifecycle](./images/process_lifecycle.png)
+
+-   Through the `fork` routine, a child process inherits security identities, previous and current file descriptors, port and resource privileges, environment variables, and program code.
+-   A child process may then `exec` its own program code.
+-   Normally, a parent process sleeps while the child process runs, setting a request (`wait`) to be signaled when the child completes.
+-   Upon exit, the child process has already closed or discarded its resources and environment. The only remaining resource, called a `zombie`, is an entry in the process table.
+-   The parent, signaled awake when the child exited, cleans the process table of the child's entry, thus freeing the last resource of the child process. The parent process then continues with its own program code execution.
+
+### Process States
+
+![process_states](./images/process_states.png)
+
+| Name     | Flag | Kernel0defined state name and description                                                                                                                                                                                                                                                           |
+| -------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Running  | R    | TASK*RUNNING : The process is either executing on a CPU or waiting to run. Process can be executing user routines or kernel routines (system calls), or be queued and ready when in the \_Running*(or _Runnable_) state.                                                                            |
+| Sleeping | S    | TASK*INTERRUPTIBLE : The process is waiting for some condition : a hardware request, system resource access, or signal. When an event or signal satisfies the condition, the process returns to \_Running*.                                                                                         |
+| Sleeping | D    | TASK*UNINTERRUPTIBLE: This process is also \_Sleeping*, but unlike S state, does not respond to sugnals. Used only when process interruption may cause an unpredictable device state.                                                                                                               |
+| Sleeping | K    | TASK*KILLABLE : Identical to the uninterruptible D state but modified to allow a waiting task to respond to the signal that it should be killed (exit completely). Utilities frequently display \_Killable* processes as **D** state.                                                               |
+| Sleeping | I    | TASK_REPORT_IDLE : A subset of state **D**. The kernel doeas not count these processes when calculating thr load average. Used for kernel threads. Flags **TASK_UNINTERRUPTIBLE** and **TASK_NOLOAD** are set. Similar to **TASK_KILLABLE**, also a subse of state **D**. It accepts fatal signals. |
+| Stopped  | T    | TASK*STOPPED : The process has been stopped (suspended), usually by being signaled by a user or another process. The process can be continued (resumed) by aother signal to return to \_RUNNING*.                                                                                                   |
+| Stopped  | T    | TASK_TRACED : A process that is being debugged is also temporarily Stopped and shares the same **T** state flag.                                                                                                                                                                                    |
+| Zombie   | Z    | EXIT_ZOMBIE : A child process signals its parent as it exits. All resources except for the process identity (PID) are released.                                                                                                                                                                     |
+| Zombie   | X    | EXIT_DEAD : When the parent cleans up (reaps) the remaining child process structure, the process is now released completely. This state will never be observed in process-listing utilities.                                                                                                        |
+
+### Listing Processes
+
+#### ps Command
+
+-   The ps command is used for listing current processes. It can provide detailed process information, including :
+
+    -   User identification (UID), which determines process privileges
+    -   Unique process identification (PID)
+    -   CPU and real time already expended
+    -   How much memory the process has allocated in various locations
+    -   The location of process stdout, known as the controlling terminal
+    -   The current process state
+
+-   The Linux version of ps supports three option formats :
+    -   **UNIX** (**POSIX**) options, which may be grouped and must be preceded by a dash
+    -   **BSD** options, which may be grouped and must not be used with a dash
+    -   **GNU** long options, which are preceded by two dashes
+    -   For example, `$ ps -aux` is not the same as `$ ps aux`.
+-   To display all processes including processes without a controlling terminal :
+    ```
+    $ ps aux
+    USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+    root         1  0.1  0.1  51648  7504 ?        Ss   17:45   0:03 /usr/lib/systemd/syst
+    root         2  0.0  0.0      0     0 ?        S    17:45   0:00 [kthreadd]
+    root         3  0.0  0.0      0     0 ?        S    17:45   0:00 [ksoftirqd/0]
+    root         5  0.0  0.0      0     0 ?        S<   17:45   0:00 [kworker/0:0H]
+    root         7  0.0  0.0      0     0 ?        S    17:45   0:00 [migration/0]
+    ...output omitted...
+    ```
+-   To diplay long listing for providing more technical detail, and faster due to avoiding user name lookups :
+    ```
+    $ ps lax
+    F   UID   PID  PPID PRI  NI    VSZ   RSS WCHAN  STAT TTY     TIME COMMAND
+    4     0     1     0  20   0  51648  7504 ep_pol Ss   ?       0:03 /usr/lib/systemd/
+    1     0     2     0  20   0      0     0 kthrea S    ?       0:00 [kthreadd]
+    1     0     3     2  20   0      0     0 smpboo S    ?       0:00 [ksoftirqd/0]
+    1     0     5     2   0 -20      0     0 worker S<   ?       0:00 [kworker/0:0H]
+    1     0     7     2 -100  -      0     0 smpboo S    ?       0:00 [migration/0]
+    ...output omitted...
+    ```
+-   To display all processes using **UNIX** syntax and ffor getting **Parent Process ID**
+    ```
+    $ ps -ef
+    UID        PID  PPID  C STIME TTY          TIME CMD
+    root         1     0  0 17:45 ?        00:00:03 /usr/lib/systemd/systemd --switched-ro
+    root         2     0  0 17:45 ?        00:00:00 [kthreadd]
+    root         3     2  0 17:45 ?        00:00:00 [ksoftirqd/0]
+    root         5     2  0 17:45 ?        00:00:00 [kworker/0:0H]
+    root         7     2  0 17:45 ?        00:00:00 [migration/0]
+    ...output omitted...
+    ```
+
+#### top Command
+
+-   Shows all the processes running on **realtime** basis.
+
+### Controlling Jobs
+
+#### Describing Jobs and Sessions
+
+-   **Job control** is a feature of the shell which allows a single shell instance to run and manage multiple commands.
+-   A **job** is associated with each pipeline entered at a shell prompt. All processes in that pipeline are part of the job and are members of the same **_process group_**. If only one command is entered at a shell prompt, that can be considered to be a minimal “pipeline” of one command, creating a job with only one member.
+-   Only one job can read input and keyboard generated signals from a particular terminal window at a time. Processes that are part of that job are **foreground processes** of that controlling terminal.
+-   A **background process** of that controlling terminal is a member of any other job associated with that terminal.
+-   **Background processes** of a terminal cannot read input or receive keyboard generated interrupts from the terminal, but may be able to write to the terminal.
+-   A job in the background may be stopped (suspended) or it may be running.
+    **Note**
+    -   If a running background job tries to read from the terminal, it will be automatically suspended.
+-   Each terminal is its own **session**, and can have a foreground process and any number of independent background processes. A job is part of exactly one session: the one belonging to its controlling terminal.
+
+#### Running Jobs in the Background
+
+-   Any command or pipeline can be started in the background by appending an **ampersand** (`&`) to the end of the command line.
+-   The Bash shell displays a job number (unique to the session) and the PID of the new child process.
+    ```
+    $ sleep 10000 &
+    [1] 5947
+    ```
+-   We can display the list of jobs that Bash is tracking for a particular session with the `jobs` command.
+    ```
+    $ jobs
+    [1]+ Running            sleep 10000 &
+    ```
+-   A background job can be brought to the foreground by using the `fg` command with its **job ID** (`%job number`).
+    ```
+    $ fg %1
+    sleep 10000
+    ```
+-   To send a foreground process to the background, first press the keyboard generated suspend request (`Ctrl+z`) in the terminal.
+    `sleep 10000 ^Z [1]+ Stopped sleep 10000`
+    The job is immediately placed in the background and is suspended.
+    To start the suspended process running in the background, use the bg command with the same job ID.
+    `$ bg %1 [1]+ sleep 10000 &`
 
 ### Killing Processes
 
@@ -1389,6 +1516,58 @@ Both the command are having almost same options
 
 -   Signals can be specified to `kill` command as options either by name (eg -HUP or -SIGHUP) or by number (the related -1).
 -   Users can kill their own processes, but root privilige is required to kill processes owned by others.
+
+### Real-time Process Monitoring
+
+-   The **top** program is a dynamic view of the system's processes, displaying a summary header followed by a process or thread list similar to `ps` information.
+-   Default output columns are :
+    -   The process ID (PID).
+    -   User name (USER) is the process owner.
+    -   Virtual memory (VIRT) is all memory the process is using, including the resident set, shared libraries, and any mapped or swapped memory pages. (Labeled VSZ in the ps command.)
+    -   Resident memory (RES) is the physical memory used by the process, including any resident shared objects. (Labeled RSS in the ps command.)
+    -   Process state (S) displays as :
+        -   D = Uninterruptible Sleeping
+        -   R = Running or Runnable
+        -   S = Sleeping
+        -   T = Stopped or Traced
+        -   Z = Zombie
+    -   CPU time (TIME) is the total processing time since the process started. May be toggled to include cumulative time of all previous children.
+    -   The process command name (COMMAND).
+-   Fundamentals Keystrokes in top
+
+    | Key          | Purpose                                                                                                |
+    | ------------ | ------------------------------------------------------------------------------------------------------ |
+    | ? or h       | Help for interactive keystrokes.                                                                       |
+    | l, t, m      | Toggles for load, threads, and memory header lines.                                                    |
+    | 1            | Toggle showing individual CPUs or a summaty for all CPUs in header.                                    |
+    | s            | Change the refresh (screen) rate, in decimal seconds (eg, 0.5, 1.5).                                   |
+    | b            | Toggle reverse highlighting for **\*Running** processesl default is bold only.                         |
+    | Shift + b    | Enables use of bold display, in the header, and for **_Running_** processes.                           |
+    | Shift + h    | Toggles threads; show process summary or individual threads.                                           |
+    | u, Shift + u | Filter for any user name (effective, real)                                                             |
+    | Shitf + m    | Sorts process listing by memory usage, in descending order                                             |
+    | Shift + p    | Sorts process listing by processor utilization, in descending order.                                   |
+    | k            | Kill a process. When prompted, enter `PID`, then `Signal`.                                             |
+    | r            | Renice a process. When prompted enter `PID`, then `nice_value`.                                        |
+    | Shift + w    | Write (save) the current display configuration for use at the next **top** restart.                    |
+    | q            | Quit                                                                                                   |
+    | f            | Manage the columns by enabling or disabling fields. Also allows you to set the sort field for **top**. |
+
+## Services
+
+-   A service is a program that runs in the background otuside the interactive control of system users as they lack an interface.
+-   `systemctl` command is used for managing services in linux
+
+### Basic commands
+
+-   `$ systemctl status httpd`
+-   `$ systemctl start httpd`
+-   `$ systemctl restart httpd`
+-   `$ systemctl reload httpd` - reloads the config without restarting it
+-   `$ systemctl stop httpd`
+-   `$ systemctl enable httpd` - enables the service to start at boot time.
+-   `$ systemctl is-active httpd`
+-   `$ systemctl is-enabled httpd`
 
 ## Archiving Data
 
