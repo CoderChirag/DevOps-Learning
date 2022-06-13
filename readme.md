@@ -107,6 +107,19 @@
     - [Viewing Service States](#viewing-service-states)
     - [Verifying the Status of a Service](#verifying-the-status-of-a-service)
     - [Controlling System Services](#controlling-system-services)
+  - [Configuring and Securing SSH](#configuring-and-securing-ssh)
+    - [OpenSSH](#openssh)
+    - [Identifying Remote Users](#identifying-remote-users)
+    - [SSH host keys](#ssh-host-keys)
+      - [SSH Known Hosts Key Management](#ssh-known-hosts-key-management)
+    - [Configuring SSH Key-based Authentication](#configuring-ssh-key-based-authentication)
+      - [Generating SSH Keys](#generating-ssh-keys)
+      - [Sharing the Public Key](#sharing-the-public-key)
+      - [Using ssh-agent for Non-interactive Authentication](#using-ssh-agent-for-non-interactive-authentication)
+    - [Customizing OpenSSH Service Configuration](#customizing-openssh-service-configuration)
+      - [Configuring the OpenSSH Server](#configuring-the-openssh-server)
+      - [Prohibit the Superuser From Logging in Using SSH](#prohibit-the-superuser-from-logging-in-using-ssh)
+      - [Prohibiting Password-Based Authentication for SSH](#prohibiting-password-based-authentication-for-ssh)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -1640,6 +1653,227 @@ Both the command are having almost same options
 -   `$ systemctl stop sshd.service`
 -   `systemctl restart sshd.service`
 -   `systemctl reload sshd.service`
+
+## Configuring and Securing SSH
+
+### OpenSSH
+
+-   **_OpenSSH_** implements the Secure Shell or SSH protocol. The SSH protocol enables systems to communicate in an encrypted and secure fashion over an insecure network.
+-   We can use the `ssh` command to create a secure connection to a remote system, authenticate as a specific user, and get an interactive shell session on the remote system as that user. We may also use the `ssh` command to run an individual command on the remote system without running an interactive shell.
+-   Examples :
+    -   The following `ssh` command would log us in on the remote server `remotehost` using the same user name as the current local user.
+        ```
+        [user01@host ~]$ ssh remotehost
+        user01@remotehost's password:
+        ...output omitted...
+        [user01@remotehost ~]$
+        ```
+    -   We can use the `exit` command to log out of the remote system.
+        ```
+        [user01@remotehost ~]$ exit
+        logout
+        Connection to remotehost closed
+        [user01@host ~]$
+        ```
+    -   The next `ssh` command would log us in on the remote server `remotehost` using the user name `user02`. Again, we are prompted by the remote system to authenticate with that user's password.
+        ```
+        [user01@host ~]$ ssh user02@remotehost
+        user02@remotehost's password:
+        ...output omitted...
+        [user02@remotehost ~]$
+        ```
+    -   This `ssh` command would run the `hostname` command on the `remotehost` remote system as the `user02` user without accessing the remote interactive shell.
+        ```
+        [user01@host ~]$ ssh user02@remotehost hostname
+        user02@remotehost's password:
+        remotehost.lab.example.com
+        [user01@host ~]$
+        ```
+
+### Identifying Remote Users
+
+-   The `w` command displays a list of users currently logged into the computer. This is especially useful to show which users are logged in using `ssh` from which remote locations, and what they are doing.
+    ```
+    [user01@host ~]$ ssh user01@remotehost
+    user01@remotehost's password:
+    [user01@remotehost ~]$ w
+    16:13:38 up 36 min,  1 user,  load average: 0.00, 0.00, 0.00
+    USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+    user02   pts/0    172.25.250.10    16:13    7:30   0.01s  0.01s -bash
+    user01   pts/1    172.25.250.10    16:24    3.00s  0.01s  0.00s w
+    [user02@remotehost ~]$
+    ```
+    The preceding output shows that the `user02` user has logged in to the system on the pseudo-terminal 0 at 16:13 today from the host with the `172.25.250.10` IP address, and has been idle at a shell prompt for seven minutes and thirty seconds.
+    The preceding output also shows that the `user01` user has logged in to the system on the pseudo-terminal 1 and has been idle since since last three seconds after executing the `w` command.
+
+### SSH host keys
+
+-   SSH secures communication through public-key encryption.
+-   When an SSH client connects to an SSH server, the server sends a copy of its public key to the client before the client logs in. This is used to set up the secure encryption for the communication channel and to authenticate the server to the client.
+    <br>
+
+-   When a user uses the `ssh` command to connect to an SSH server, the command checks to see if it has a copy of the public key for that server in its local known hosts files. The system administrator may have pre-configured it in `/etc/ssh/ssh_known_hosts`, or the user may have a `~/.ssh/known_hosts` file in their home directory that contains the key.
+-   If the client has a copy of the key, ssh will compare the key from the known hosts files for that server to the one it received. If the keys do not match, the client assumes that the network traffic to the server could be hijacked or that the server has been compromised, and seeks the user's confirmation on whether or not to continue with the connection.
+
+**Note**
+
+-   Set the `StrictHostKeyChecking` parameter to `yes` in the user-specific `~/.ssh/config` file or the system-wide `/etc/ssh/ssh_config` to cause the `ssh` command to always abort the SSH connection if the public keys do not match.
+    <br>
+    <br>
+
+-   If the client does not have a copy of the public key in its known hosts files, the `ssh` command will ask you if we want to log in anyway. If we do, a copy of the public key will be saved in our `~/.ssh/known_hosts` file so that the server's identity can be automatically confirmed in the future.
+    ```
+    [user01@host ~]$ ssh newhost
+    The authenticity of host 'remotehost (172.25.250.12)' can't be established.
+    ECDSA key fingerprint is SHA256:qaS0PToLrqlCO2XGklA0iY7CaP7aPKimerDoaUkv720.
+    Are you sure you want to continue connecting (yes/no)? yes
+    Warning: Permanently added 'newhost,172.25.250.12' (ECDSA) to the list of known hosts.
+    user01@newhost's password:
+    ...output omitted...
+    [user01@newhost ~]$
+    ```
+
+#### SSH Known Hosts Key Management
+
+-   If a server's public key is changed because the key was lost due to hard drive failure, or replaced for some legitimate reason, we will need to edit the known hosts files to make sure the entry for the old public key is replaced with an entry with the new public key in order to log in without errors.
+-   Public keys are stored in the `/etc/ssh/ssh_known_hosts` and each users' `~/.ssh/known_hosts` file on the SSH client.
+    -   Each key is on one line.
+    -   The first field is a list of **hostnames** and **IP addresses** that share that public key.
+    -   The second field is the **encryption algorithm** for the key.
+    -   The last field is the **key** itself.
+        ```
+        [user01@host ~]$ cat ~/.ssh/known_hosts
+        remotehost,172.25.250.11 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOsEi0e+FlaNT6jul8Ag5Nj+RViZl0yE2w6iYUr+1fPtOIF0EaOgFZ1LXM37VFTxdgFxHS3D5WhnIfb+68zf8+w=
+        ```
+-   Each remote SSH server that we conect to, stores its public key in the `/etc/ssh` directory in files with the extension `.pub`.
+    ```
+    [user01@remotehost ~]$ ls /etc/ssh/*key.pub
+    /etc/ssh/ssh_host_ecdsa_key.pub  /etc/ssh/ssh_host_ed25519_key.pub  /etc/ssh/ssh_host_rsa_key.pub
+    ```
+
+### Configuring SSH Key-based Authentication
+
+-   We can configure an SSH server to allow us to authenticate without a password by using key-based authentication. This is based on a private-public key scheme.
+-   To do this, we generate a matched pair of cryptographic key files. One is a private key, the other a matching public key. The private key file is used as the authentication credential and, like a password, must be kept secret and secure. The public key is copied to systems the user wants to connect to, and is used to verify the private key. The public key does not need to be secret.
+-   We put a copy of the public key in our account on the server. When we try to log in, the SSH server can use the public key to issue a challenge that can only be correctly answered by using the private key. As a result, our ssh client can automatically authenticate our login to the server with our unique copy of the private key. This allows us to securely access systems in a way that doesn't require us to enter a password interactively every time.
+
+#### Generating SSH Keys
+
+-   To create a private key and matching public key for authentication, use the `ssh-keygen` command. By default, our private and public keys are saved in our `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` files, respectively.
+    ```
+    [user@host ~]$ ssh-keygen
+    Generating public/private rsa key pair.
+    Enter file in which to save the key (/home/user/.ssh/id_rsa): Enter
+    Created directory '/home/user/.ssh'.
+    Enter passphrase (empty for no passphrase):
+    Enter same passphrase again:
+    Your identification has been saved in /home/user/.ssh/id_rsa.
+    Your public key has been saved in /home/user/.ssh/id_rsa.pub.
+    The key fingerprint is:
+    SHA256:vxutUNPio3QDCyvkYm1oIx35hmMrHpPKWFdIYu3HV+w user@host.lab.example.com
+    The key's randomart image is:
+    +---[RSA 2048]----+
+    |                 |
+    |   .     .       |
+    |  o o     o      |
+    | . = o   o .     |
+    |  o + = S E .    |
+    | ..O o + * +     |
+    |.+% O . + B .    |
+    |=*oO . . + *     |
+    |++.     . +.     |
+    +----[SHA256]-----+
+    ```
+-   If we do not specify a passphrase when `ssh-keygen` prompts us, the generated private key is not protected. In this case, anyone with our private key file could use it for authentication. If we set a passphrase, then we will need to enter that passphrase when we use the private key for authentication. (Therefore, we would be using the private key's passphrase rather than our password on the remote host to authenticate.)
+-   We can run a helper program called `ssh-agent` which can temporarily cache our private key passphrase in memory at the start of our session to get true passwordless authentication.
+    ```
+    [user@host ~]$ ssh-keygen -f .ssh/key-with-pass
+    Generating public/private rsa key pair.
+    Enter passphrase (empty for no passphrase):
+    Enter same passphrase again:
+    Your identification has been saved in .ssh/key-with-pass.
+    Your public key has been saved in .ssh/key-with-pass.pub.
+    The key fingerprint is:
+    SHA256:w3GGB7EyHUry4aOcNPKmhNKS7dl1YsMVLvFZJ77VxAo user@host.lab.example.com
+    The key's randomart image is:
+    +---[RSA 2048]----+
+    |    . + =.o ...  |
+    |     = B XEo o.  |
+    |  . o O X =....  |
+    | = = = B = o.    |
+    |= + * * S .      |
+    |.+ = o + .       |
+    |  + .            |
+    |                 |
+    |                 |
+    +----[SHA256]-----+
+    ```
+    The `-f` option with the ssh-keygen command determines the files where the keys are saved.
+
+#### Sharing the Public Key
+
+-   Before key-based authentication can be used, the public key needs to be copied to the destination system. The `ssh-copy-id` command copies the public key of the SSH keypair to the destination system. If we omit the path to the public key file while running `ssh-copy-id`, it uses the default `/home/user/.ssh/id_rsa.pub` file.
+
+    ```
+    [user@host ~]$ ssh-copy-id -i .ssh/key-with-pass.pub user@remotehost
+    /usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/home/user/.ssh/id_rsa.pub"
+    /usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+    /usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+    user@remotehost's password: redhat
+    Number of key(s) added: 1
+
+    Now try logging into the machine, with:   "ssh 'user@remotehost'"
+    and check to make sure that only the key(s) you wanted were added.
+    ```
+
+-   After the public key is successfully transferred to a remote system, we can authenticate to the remote system using the corresponding private key while logging in to the remote system over SSH. If we omit the path to the private key file while running the `ssh` command, it uses the default `/home/user/.ssh/id_rsa` file.
+    ```
+    [user@host ~]$ ssh -i .ssh/key-with-pass user@remotehost
+    Enter passphrase for key '.ssh/key-with-pass':
+    ...output omitted...
+    [user@remotehost ~]$ exit
+    logout
+    Connection to remotehost closed.
+    [user@host ~]$
+    ```
+
+#### Using ssh-agent for Non-interactive Authentication
+
+-   If our SSH private key is protected with a passphrase, we normally have to enter the passphrase to use the private key for authentication. However, we can use a program called `ssh-agent` to temporarily cache the passphrase in memory. Then any time that we use SSH to log in to another system with the private key, `ssh-agent` will automatically provide the passphrase for us. This is convenient, and can improve security by providing fewer opportunities for someone "shoulder surfing" to see we type the passphrase in.
+    <br>
+
+-   To start `ssh-agent` for the session.
+    ```
+    $ eval $(ssh-agent)
+    Agent pid 10155
+    ```
+-   The following `ssh-add` commands add the private keys from `/home/user/.ssh/id_rsa` (the default) and `/home/user/.ssh/key-with-pass` files, respectively.
+    ```
+    [user@host ~]$ ssh-add
+    Identity added: /home/user/.ssh/id_rsa (user@host.lab.example.com)
+    [user@host ~]$ ssh-add .ssh/key-with-pass
+    Enter passphrase for .ssh/key-with-pass:
+    Identity added: .ssh/key-with-pass (user@host.lab.example.com)
+    ```
+
+### Customizing OpenSSH Service Configuration
+
+#### Configuring the OpenSSH Server
+
+-   **OpenSSH** service is provided by a daemon called `sshd`. Its main configuration file is `/etc/ssh/sshd_config`.
+
+#### Prohibit the Superuser From Logging in Using SSH
+
+-   The **OpenSSH** server uses the `PermitRootLogin` configuration setting in the `/etc/ssh/sshd_config` configuration file to allow or prohibit users logging in to the system as root. <br> `PermitRootLogin yes`
+-   With the `PermitRootLogin` parameter to `yes`, as it is by default, people are permitted to log in as `root`. To prevent this, set the value to `no`.
+-   Alternatively, to prevent password-based authentication but allow private key-based authentication for root, set the `PermitRootLogin` parameter to `without-password`.
+-   The SSH server (sshd) must be reloaded for any changes to take effect.<br>`[root@host ~]# systemctl reload sshd`
+
+#### Prohibiting Password-Based Authentication for SSH
+
+-   The **OpenSSH** server uses the `PasswordAuthentication` parameter in the `/etc/ssh/sshd_config` configuration file to control whether users can use password-based authentication to log in to the system.<br> `PasswordAuthentication yes`
+-   The default value of `yes` for the `PasswordAuthentication` parameter in the `/etc/ssh/sshd_config` configuration file causes the SSH server to allow users to use password-based authentication while logging in. The value of `no` for `PasswordAuthentication` prevents users from using password-based authentication.
+-   -   The SSH server (sshd) must be reloaded for any changes to take effect.<br>`[root@host ~]# systemctl reload sshd`
 
 ## Archiving Data
 
