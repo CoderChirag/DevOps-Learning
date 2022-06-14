@@ -136,6 +136,13 @@
     - [Maintaining Accurate Time](#maintaining-accurate-time)
       - [Setting Local Clocks and Time Zones](#setting-local-clocks-and-time-zones)
       - [Configuring and Monnitoring Chronyd](#configuring-and-monnitoring-chronyd)
+  - [Managing Networking](#managing-networking)
+    - [Describing Networking Concepts](#describing-networking-concepts)
+      - [TCP/IP Network Model](#tcpip-network-model)
+      - [Describing Network Interface Names](#describing-network-interface-names)
+      - [IPv4 Networking](#ipv4-networking)
+        - [IPv4 Addresses](#ipv4-addresses)
+        - [Ipv4 Routing](#ipv4-routing)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -2237,6 +2244,105 @@ local7.*                                        /var/log/boot.log
     ===============================================================================
     ^* classroom.example.com         8   6    17    23   -497ns[-7000ns] +/-  956us
     ```
+
+## Managing Networking
+
+### Describing Networking Concepts
+
+#### TCP/IP Network Model
+
+-   The **TCP/IP network model** is a simplified, four-layered set of abstractions that describes how different protocols interoperate in order for computers to send traffic from one machine to another over the Internet. It is specified by RFC 1122, Requirements for Internet Hosts -- Communication Layers. The four layers are:
+    -   **Application**
+        -   Each application has specifications for communication so that clients and servers may communicate across platforms. Common protocols include **SSH** (remote login), **HTTPS** (secure web), **NFS** or **CIFS** (file sharing), and **SMTP** (electronic mail delivery).
+    -   **Transport**
+        -   Transport protocols are **TCP** and **UDP**. **TCP** is a reliable connection-oriented communication, while **UDP** is a connectionless datagram protocol. Application protocols use TCP or UDP ports. A list of well-known and registered ports can be found in the `/etc/services` file.
+        -   When a packet is sent on the network, the combination of the service port and IP address forms a **socket**. Each packet has a source socket and a destination socket. This information can be used when monitoring and filtering.
+    -   **Internet**
+        -   The Internet, or network layer, carries data from the source host to the destination host. The **IPv4** and **IPv6** protocols are Internet layer protocols. Each host has an IP address and a prefix used to determine network addresses. Routers are used to connect networks
+    -   **Link**
+        -   The link, or media access, layer provides the connection to physical media. The most common types of networks are **wired Ethernet** (802.3) and **wireless WLAN** (802.11). Each physical device has a hardware address (MAC) which is used to identify the destination of packets on the local network segment.
+
+![network_models](./images/network_models.svg)
+
+#### Describing Network Interface Names
+
+-   Each network port on a system has a name, which we use to configure and identify it.
+    <br>
+
+-   Older versions Linux like Ubuntu uses names like `eth0`, `eth1`, and `eth2` for each network interface.
+-   The name `eth0` is the first network port detected by the operating system, `eth1` the second, and so on. However, as devices are added and removed, the mechanism detecting devices and naming them could change which interface gets which name.
+-   Furthermore, the PCIe standard does not guarantee the order in which PCIe devices will be detected on boot, which could change device naming unexpectedly due to variations during device or system startup.
+    <br>
+
+-   Newer versions of Linux like CentOS use a different naming system. Instead of being based on detection order, the names of network interfaces are assigned based on information from the firmware, the PCI bus topology, and type of network device.
+-   Network interface names **start with the type of interface**:
+    -   **Ethernet** interfaces begin with `en`
+    -   **WLAN** interfaces begin with `wl`
+    -   **WWAN** interfaces begin with `ww`
+-   The rest of the interface name after the type will be based on **information provided by the server's firmware** or determined by the **location of the device in the PCI topology**.
+    -   `oN` indicates that this is an **on-board device** and the server's firmware provided index number `N` for the device. So `eno1` is **on-board Ethernet device 1**. Many servers will not provide this information.
+    -   `sN` indicates that this device is in **PCI hotplug slot `N`**. So `ens3` is an **Ethernet card in PCI hotplug slot 3**.
+    -   `pMsN` indicates that this is a **PCI device on bus `M` in slot `N`**. So `wlp4s0` is a **WLAN card on PCI bus 4 in slot 0**. If the card is a multi-function device (possible with an Ethernet card with multiple ports, or devices that have Ethernet plus some other functionality), we may see `fN` added to the device name. So `enp0s1f0` is **function 0 of the Ethernet card on bus 0 in slot 1**. There might also be a second interface named `enp0s1f1` that is **function 1 of that same device**.
+-   Persistent naming means that once we know what the name is for a network interface on the system, we also know that it will not change later. The trade off is that we cannot assume that a system with one interface will name that interface `eth0`.
+
+#### IPv4 Networking
+
+IPv4 is the primary network protocol used on the Internet today. We should have at least a basic understanding of IPv4 networking in order to manage network communication for our servers.
+
+##### IPv4 Addresses
+
+-   An IPv4 address is a **32-bit** number, normally expressed in decimal as **four 8-bit octets** ranging in value from **0 to 255**, separated by dots. The address is divided into two parts : **the network part** and **the host part**. All hosts on the same subnet, which can talk to each other directly without a router, have the same network part; the network part identifies the subnet. No two hosts on the same subnet can have the same host part; the host part identifies a particular host on a subnet.
+    <br>
+
+-   In the modern Internet, the size of an IPv4 subnet is variable. To know which part of an IPv4 address is the network part and which is the host part, an administrator must know the **netmask**, which is assigned to the subnet. The **netmask** indicates how many bits of the IPv4 address belong to the subnet. The more bits available for the host part, the more hosts can be on the subnet.
+    <br>
+
+-   The lowest possible address on a subnet (host part is all zeros in binary) is sometimes called the **network address**. The highest possible address on a subnet (host part is all ones in binary) is used for broadcast messages in IPv4, and is called the **broadcast address**.
+    <br>
+
+-   Network masks are expressed in two forms. The older syntax for a netmask uses **24 bits** for the network part and reads `255.255.255.0`. A newer syntax, called **CIDR notation**, specifies a network prefix of `/24`. Both forms convey the same information; namely, how many leading bits in the IP address contribute to its network address.
+-   The following examples illustrate how the IP address, prefix (netmask), network part, and host part are related.
+    ![subnetting](./images/subnet.svg)
+
+-   Calculating the network address for `192.168.1.107/24`
+    | | | |
+    | --- | --- | ---
+    | Host addr | `192.168.1.107` | `11000000.10101000.00000001.01101011`
+    | Network prefix | `/24 (255.255.255.0)` | `11111111.11111111.11111111.00000000`
+    | Network addr | `192.168.1.0` | `11000000.10101000.00000001.00000000`
+    | Broadcast addr | `192.168.1.255` | `11000000.10101000.00000001.11111111`
+-   Calculating the network address for `10.1.1.18/8`
+    | | | |
+    | --- | --- | ---
+    | Host addr | `10.1.1.18` | `00001010.00000001.0000000.00010010`
+    | Network prefix | `/8 (255.0.0.0)` | `11111111.00000000.00000000.00000000`
+    | Network addr | `10.0.0.0` | `00001010.00000000.00000000.00000000`
+    | Broadcast addr | `10.255.255.255` | `00001010.11111111.11111111.11111111`
+-   Calculating the network address for `172.16.181.23/19`
+    | | | |
+    | --- | --- | ---
+    | Host addr | `172.168.181.23` | `10101100.10101000.10110101.00010111`
+    | Network prefix | `/19 (255.255.224.0)` | `11111111.11111111.11100000.00000000`
+    | Network addr | `172.168.160.0` | `10101100.10101000.10100000.00000000`
+    | Broadcast addr | `172.168.191.255` | `10101100.10101000.10111111.11111111`
+    <br>
+
+-   The special address `127.0.0.1` always points to the local system (**“localhost”**), and the network `127.0.0.0/8` belongs to the local system, so that it can talk to itself using network protocols.
+
+##### Ipv4 Routing
+
+-   Whether using IPv4 or IPv6, network traffic needs to move from host to host and network to network. Each host has a **routing table**, which tells it how to route traffic for particular networks. A routing table entry lists a **destination network**, **which interface to use** when sending traffic, and the **IP address of any intermediate router** required to relay a message to its final destination. The routing table entry matching the destination of the network traffic is used to route it. If two entries match, the one with the longest prefix is used.
+    <br>
+
+-   If the network traffic does not match a more specific route, the routing table usually has an entry for a default route to the entire IPv4 Internet: `0.0.0.0/0`. This default route points to a router on a reachable subnet (that is, on a subnet that has a more specific route in the host's routing table).
+    <br>
+
+-   If a router receives traffic that is not addressed to it, instead of ignoring it like a normal host, it forwards the traffic based on its own routing table. This may send the traffic directly to the destination host (if the router happens to be on the destination's subnet), or it may be forwarded on to another router. This process of forwarding continues until the traffic reaches its final destination.
+
+- Example network topology :
+    ![routing](./images/routing.svg)
+
+    
 
 ## Archiving Data
 
