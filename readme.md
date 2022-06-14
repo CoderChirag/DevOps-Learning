@@ -132,6 +132,9 @@
       - [Sending Syslog Messages Manually](#sending-syslog-messages-manually)
     - [Reviewing System Journal Entries](#reviewing-system-journal-entries)
       - [Finding Events](#finding-events)
+    - [Preserving the System Journal](#preserving-the-system-journal)
+    - [Maintaining Accurate Time](#maintaining-accurate-time)
+      - [Setting Local Clocks and Time Zones](#setting-local-clocks-and-time-zones)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -2127,6 +2130,68 @@ local7.*                                        /var/log/boot.log
     Apr 03 19:34:27 host.lab.example.com sshd[1182]: Accepted password for root from ::1 port 52778 ssh2
     Apr 03 19:34:28 host.lab.example.com sshd[1182]: pam_unix(sshd:session): session opened for user root by (uid=0)
     ...output omitted...
+    ```
+
+### Preserving the System Journal
+
+-   By default, the system journals are kept in the `/run/log/journal` directory, which means the journals are cleared when the system reboots.
+-   We can change the configuration settings of the `systemd-journald` service in the `/etc/systemd/journald.conf` file to make the journals persist across reboot.
+    <br>
+
+-   The `Storage` parameter in the `/etc/systemd/journald.conf` file defines whether to store system journals in a volatile manner or persistently across reboot. Set this parameter to `persistent`, `volatile`, `auto`, or `none` as follows:
+    -   `persistent` : stores journals in the `/var/log/journal` directory which persists across reboots.
+        If the `/var/log/journal` directory does not exist, the `systemd-journald` service creates it.
+    -   `volatile` : stores journals in the volatile `/run/log/journal` directory.
+        As the `/run` file system is temporary and exists only in the runtime memory, data stored in it, including system journals, do not persist across a reboot.
+    -   `auto` : if the `/var/log/journal` directory exists, then `systemd-journald` uses persistent storage, otherwise it uses volatile storage.
+        This is the default action if the Storage parameter is not set.
+    -   `none` : do not use any storage. All logs are dropped but log forwarding will still work as expected.
+
+<br>
+
+-   To configure the `systemd-journald` service to preserve system journals persistently across reboot, set `Storage` to `persistent` in the `/etc/systemd/journald.conf` file.
+-   After editing the configuration file, restart the `systemd-journald` service to bring the configuration changes into effect. <br> `$ systemctl restart systemd-journald`
+
+### Maintaining Accurate Time
+
+#### Setting Local Clocks and Time Zones
+
+-   Correct synchronized system time is critical for log file analysis across multiple systems. The **Network Time Protocol (NTP)** is a standard way for machines to provide and obtain correct time information on the Internet. A machine may get accurate time information from public NTP services on the Internet, such as the **NTP Pool Project**. A high-quality hardware clock to serve accurate time to local clients is another option.
+-   The `timedatectl` command shows an overview of the current time-related system settings, including current time, time zone, and NTP synchronization settings of the system.
+    ```
+    [user@host ~]$ timedatectl
+                    Local time: Fri 2019-04-05 16:10:29 CDT
+                Universal time: Fri 2019-04-05 21:10:29 UTC
+                      RTC time: Fri 2019-04-05 21:10:29
+                     Time zone: America/Chicago (CDT, -0500)
+     System clock synchronized: yes
+                   NTP service: active
+               RTC in local TZ: no
+    ```
+-   A database of time zones is available and can be listed with the `timedatectl list-timezones` command.
+    ```
+    [user@host ~]$ timedatectl list-timezones
+    Africa/Abidjan
+    Africa/Accra
+    Africa/Addis_Ababa
+    Africa/Algiers
+    Africa/Asmara
+    Africa/Bamako
+    ...
+    ```
+-   The command `tzselect` is useful for identifying correct zoneinfo time zone names. It interactively prompts the user with questions about the system's location, and outputs the name of the correct time zone. It does not make any change to the time zone setting of the system
+-   The superuser can change the system setting to update the current time zone using the `timedatectl set-timezone` command. For Example :
+    ```
+    [root@host ~]# timedatectl set-timezone Asia/Kolkata
+    [root@host ~]# timedatectl
+            Local time: Tue 2022-06-14 15:13:59 IST
+        Universal time: Tue 2022-06-14 09:43:59 UTC
+              RTC time: Tue 2022-06-14 15:13:59
+             Time zone: Asia/Kolkata (IST, +0530)
+           NTP enabled: yes
+      NTP synchronized: yes
+       RTC in local TZ: yes
+            DST active: n/a
     ```
 
 ## Archiving Data
