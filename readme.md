@@ -135,6 +135,7 @@
     - [Preserving the System Journal](#preserving-the-system-journal)
     - [Maintaining Accurate Time](#maintaining-accurate-time)
       - [Setting Local Clocks and Time Zones](#setting-local-clocks-and-time-zones)
+      - [Configuring and Monnitoring Chronyd](#configuring-and-monnitoring-chronyd)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -2192,6 +2193,49 @@ local7.*                                        /var/log/boot.log
       NTP synchronized: yes
        RTC in local TZ: yes
             DST active: n/a
+    ```
+-   **Note :** Use the `timedatectl set-timezone UTC` command to set the system's current time zone to **UTC**.
+-   Use the `timedatectl set-time` command to change the system's current time. The time is specified in the `"YYYY-MM-DD hh:mm:ss"` format, where either date or time can be omitted.
+-   The `timedatectl set-ntp` command enables or disables **NTP synchronization** for automatic time adjustment. The option requires either a `true` or `false` argument to turn it on or off.
+
+#### Configuring and Monnitoring Chronyd
+
+-   The `chronyd` service keeps the usually-inaccurate local hardware clock (RTC) on track by synchronizing it to the configured NTP servers. If no network connectivity is available, chronyd calculates the RTC clock drift, which is recorded in the driftfile specified in the `/etc/chrony.conf` configuration file.
+    <br>
+
+-   By default, the `chronyd` service uses servers from the **NTP Pool Project** for the time synchronization and does not need additional configuration. It may be useful to change the NTP servers when the machine in question is on an isolated network.
+    <br>
+
+-   The `stratum` of the NTP time source determines its quality. The stratum determines the number of hops the machine is away from a high-performance reference clock. The reference clock is a `stratum 0` time source. An NTP server directly attached to it is a `stratum 1`, while a machine synchronizing time from the NTP server is a `stratum 2` time source.
+    <br>
+
+-   The server and peer are the two categories of time sources that we can declare in the `/etc/chrony.conf` configuration file. The server is one stratum above the local NTP server, and the peer is at the same stratum level. More than one server and more than one peer can be specified, one per line.
+-   The first argument of the `server` line is the IP address or DNS name of the NTP server. Following the server IP address or name, a series of options for the server can be listed. It is recommended to use the `iburst` option, because after the service starts, four measurements are taken in a short time period for a more accurate initial clock synchronization.
+-   The following `server classroom.example.com iburst` line in the `/etc/chrony.conf` file causes the `chronyd` service to use the `classroom.example.com` NTP time source.
+    ```
+    # Use public servers from the pool.ntp.org project.
+    ...output omitted...
+    server classroom.example.com iburst
+    ...output omitted...
+    ```
+-   After pointing `chronyd` to the local time source, `classroom.example.com`, we should restart the service <br> `$ systemctl restart chronyd`
+-   The `chronyc` command acts as a client to the `chronyd` service. After setting up NTP synchronization, we should verify that the local system is seamlessly using the NTP server to synchronize the system clock using the `chronyc sources` command. For more verbose output with additional explanations about the output, use the `chronyc sources -v` command.
+
+    ```
+    [root@host ~]# chronyc sources -v
+    210 Number of sources = 1
+
+    .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+    / .- Source state '*' = current synced, '+' = combined , '-' = not combined,
+    | /   '?' = unreachable, 'x' = time may be in error, '~' = time too variable.
+    ||                                                 .- xxxx [ yyyy ] +/- zzzz
+    ||                                                /   xxxx = adjusted offset,
+    ||         Log2(Polling interval) -.             |    yyyy = measured offset,
+    ||                                  \            |    zzzz = estimated error.
+    ||                                   |           |
+    MS Name/IP address         Stratum Poll Reach LastRx Last sample
+    ===============================================================================
+    ^* classroom.example.com         8   6    17    23   -497ns[-7000ns] +/-  956us
     ```
 
 ## Archiving Data
