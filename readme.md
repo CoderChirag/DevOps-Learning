@@ -130,6 +130,8 @@
       - [Analyzing a Syslog Entry](#analyzing-a-syslog-entry)
       - [Monitoring Logs](#monitoring-logs)
       - [Sending Syslog Messages Manually](#sending-syslog-messages-manually)
+    - [Reviewing System Journal Entries](#reviewing-system-journal-entries)
+      - [Finding Events](#finding-events)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -2023,6 +2025,109 @@ local7.*                                        /var/log/boot.log
 
 -   The `logger` command can send messages to the `rsyslog` service. By default, it sends the message to the `user` facility with the `notice` priority (`user.notice`) unless specified otherwise with the `-p` option. It is useful to test any change to the `rsyslog` service configuration.
 -   To send a message to the `rsyslog` service that gets recorded in the `/var/log/boot.log` log file, execute the following `logger` command :<br> `$ logger -p local7.notice "Log entry created on host"`
+
+### Reviewing System Journal Entries
+
+#### Finding Events
+
+-   The `systemd-journald` service stores logging data in a structured, indexed binary file called the **journal**. This data includes extra information about the log event. For example, for syslog events this includes the facility and the priority of the original message.
+-   The `/run/log` directory stores the system journal by default in CentOS based systems and the contents of the `/run/log` directory get cleared after a reboot.
+    <br>
+
+-   To retrieve log messages from the journal, use the `journalctl` command. We can use this command to view all messages in the journal, or to search for specific events based on a wide range of options and criteria. If we run the command as root, we have full access to the journal. Regular users can also use this command, but might be restricted from seeing certain messages.
+    ```
+    [root@host ~]# journalctl
+    ...output omitted...
+    Feb 21 17:46:25 host.lab.example.com systemd[24263]: Stopped target Sockets.
+    Feb 21 17:46:25 host.lab.example.com systemd[24263]: Closed D-Bus User Message Bus Socket.
+    Feb 21 17:46:25 host.lab.example.com systemd[24263]: Closed Multimedia System.
+    Feb 21 17:46:25 host.lab.example.com systemd[24263]: Reached target Shutdown.
+    Feb 21 17:46:25 host.lab.example.com systemd[24263]: Starting Exit the Session...
+    Feb 21 17:46:25 host.lab.example.com systemd[24268]: pam_unix(systemd-user:session): session c>
+    Feb 21 17:46:25 host.lab.example.com systemd[1]: Stopped User Manager for UID 1001.
+    Feb 21 17:46:25 host.lab.example.com systemd[1]: user-runtime-dir@1001.service: Unit not neede>
+    Feb 21 17:46:25 host.lab.example.com systemd[1]: Stopping /run/user/1001 mount wrapper...
+    Feb 21 17:46:25 host.lab.example.com systemd[1]: Removed slice User Slice of UID 1001.
+    Feb 21 17:46:25 host.lab.example.com systemd[1]: Stopped /run/user/1001 mount wrapper.
+    Feb 21 17:46:36 host.lab.example.com sshd[24434]: Accepted publickey for root from 172.25.250.>
+    Feb 21 17:46:37 host.lab.example.com systemd[1]: Started Session 20 of user root.
+    Feb 21 17:46:37 host.lab.example.com systemd-logind[708]: New session 20 of user root.
+    Feb 21 17:46:37 host.lab.example.com sshd[24434]: pam_unix(sshd:session): session opened for u>
+    Feb 21 18:01:01 host.lab.example.com CROND[24468]: (root) CMD (run-parts /etc/cron.hourly)
+    Feb 21 18:01:01 host.lab.example.com run-parts[24471]: (/etc/cron.hourly) starting 0anacron
+    Feb 21 18:01:01 host.lab.example.com run-parts[24477]: (/etc/cron.hourly) finished 0anacron
+    lines 1464-1487/1487 (END) q
+    ```
+-   The `journalctl` command highlights important log messages: messages at notice or warning priority are in bold text while messages at the error priority or higher are in red text.
+-   `journalctl -n` shows the last 10 log entries. We can adjust this with an optional argument that specifies how many log entries to display. For the last five log entries, run the following journalctl command :
+    ```
+    [root@host ~]# journalctl -n 5
+    -- Logs begin at Wed 2019-02-20 16:01:17 +07, end at Thu 2019-02-21 18:01:01 +07. --
+    ...output omitted...
+    Feb 21 17:46:37 host.lab.example.com systemd-logind[708]: New session 20 of user root.
+    Feb 21 17:46:37 host.lab.example.com sshd[24434]: pam_unix(sshd:session): session opened for u>
+    Feb 21 18:01:01 host.lab.example.com CROND[24468]: (root) CMD (run-parts /etc/cron.hourly)
+    Feb 21 18:01:01 host.lab.example.com run-parts[24471]: (/etc/cron.hourly) starting 0anacron
+    Feb 21 18:01:01 host.lab.example.com run-parts[24477]: (/etc/cron.hourly) finished 0anacron
+    lines 1-6/6 (END) q
+    ```
+-   Similar to the `tail -f` command, the `journalctl -f` command outputs the last 10 lines of the system journal and continues to output new journal entries as they get written to the journal. To exit the `journalctl -f` process, use the `Ctrl+C` key combination.
+    ```
+    [root@host ~]# journalctl -f
+    -- Logs begin at Wed 2019-02-20 16:01:17 +07. --
+    ...output omitted...
+    Feb 21 18:01:01 host.lab.example.com run-parts[24477]: (/etc/cron.hourly) finished 0anacron
+    Feb 21 18:22:42 host.lab.example.com sshd[24437]: Received disconnect from 172.25.250.250 port 48710:11: disconnected by user
+    Feb 21 18:22:42 host.lab.example.com sshd[24437]: Disconnected from user root 172.25.250.250 port 48710
+    Feb 21 18:22:42 host.lab.example.com sshd[24434]: pam_unix(sshd:session): session closed for user root
+    Feb 21 18:22:42 host.lab.example.com systemd-logind[708]: Session 20 logged out. Waiting for processes to exit.
+    Feb 21 18:22:42 host.lab.example.com systemd-logind[708]: Removed session 20.
+    Feb 21 18:22:43 host.lab.example.com sshd[24499]: Accepted publickey for root from 172.25.250.250 port 48714 ssh2: RSA SHA256:1UGybTe52L2jzEJa1HLVKn9QUCKrTv3ZzxnMJol1Fro
+    Feb 21 18:22:44 host.lab.example.com systemd-logind[708]: New session 21 of user root.
+    Feb 21 18:22:44 host.lab.example.com systemd[1]: Started Session 21 of user root.
+    Feb 21 18:22:44 host.lab.example.com sshd[24499]: pam_unix(sshd:session): session opened for user root by (uid=0)
+    ^C
+    [root@host ~]#
+    ```
+-   Run the following `journalctl` command to list journal entries at the err priority or higher :
+    ```
+    [root@host ~]# journalctl -p err
+    -- Logs begin at Wed 2019-02-20 16:01:17 +07, end at Thu 2019-02-21 18:01:01 +07. --
+    ..output omitted...
+    Feb 20 16:01:17 host.lab.example.com kernel: Detected CPU family 6 model 13 stepping 3
+    Feb 20 16:01:17 host.lab.example.com kernel: Warning: Intel Processor - this hardware has not undergone testing by Red Hat and might not be certif>
+    Feb 20 16:01:20 host.lab.example.com smartd[669]: DEVICESCAN failed: glob(3) aborted matching pattern /dev/discs/disc*
+    Feb 20 16:01:20 host.lab.example.com smartd[669]: In the system's table of devices NO devices found to scan
+    lines 1-5/5 (END) q
+    ```
+-   The `journalctl` command has two options to limit the output to a specific time range, the `--since` and `--until` options. Both options take a time argument in the format `"YYYY-MM-DD hh:mm:ss"` (the double-quotes are required to preserve the space in the option). If the date is omitted, the command assumes the current day, and if the time is omitted, the command assumes the whole day starting at `00:00:00`. Both options take `yesterday`, `today`, and `tomorrow` as valid arguments in addition to the date and time field.
+    ```
+    [root@host ~]# journalctl --since today
+    -- Logs begin at Wed 2019-02-20 16:01:17 +07, end at Thu 2019-02-21 18:31:14 +07. --
+    ...output omitted...
+    Feb 21 18:22:44 host.lab.example.com systemd-logind[708]: New session 21 of user root.
+    Feb 21 18:22:44 host.lab.example.com systemd[1]: Started Session 21 of user root.
+    Feb 21 18:22:44 host.lab.example.com sshd[24499]: pam_unix(sshd:session): session opened for user root by (uid=0)
+    Feb 21 18:31:13 host.lab.example.com systemd[1]: Starting dnf makecache...
+    Feb 21 18:31:14 host.lab.example.com dnf[24533]: Red Hat Enterprise Linux 8.0 AppStream (dvd)    637 kB/s | 2.8 kB     00:00
+    Feb 21 18:31:14 host.lab.example.com dnf[24533]: Red Hat Enterprise Linux 8.0 BaseOS (dvd)       795 kB/s | 2.7 kB     00:00
+    Feb 21 18:31:14 host.lab.example.com dnf[24533]: Metadata cache created.
+    Feb 21 18:31:14 host.lab.example.com systemd[1]: Started dnf makecache.
+    lines 533-569/569 (END) q
+    ```
+-   The following list gives us the common fields of the system journal that can be used to search for lines relevant to a particular process or event.
+    -   `_COMM` is the **name of the command**
+    -   `_EXE` is the **path to the executable** for the process
+    -   `_PID` is the **PID** of the process
+    -   `_UID` is the **UID** of the user running the process
+    -   `_SYSTEMD_UNIT` is the **systemd unit that started the process**
+-   More than one of the system journal fields can be combined to form a granular search query with the journalctl command. For example :
+    ```
+    [root@host ~]# journalctl _SYSTEMD_UNIT=sshd.service _PID=1182
+    Apr 03 19:34:27 host.lab.example.com sshd[1182]: Accepted password for root from ::1 port 52778 ssh2
+    Apr 03 19:34:28 host.lab.example.com sshd[1182]: pam_unix(sshd:session): session opened for user root by (uid=0)
+    ...output omitted...
+    ```
 
 ## Archiving Data
 
