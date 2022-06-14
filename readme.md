@@ -120,6 +120,16 @@
       - [Configuring the OpenSSH Server](#configuring-the-openssh-server)
       - [Prohibit the Superuser From Logging in Using SSH](#prohibit-the-superuser-from-logging-in-using-ssh)
       - [Prohibiting Password-Based Authentication for SSH](#prohibiting-password-based-authentication-for-ssh)
+  - [Analyzing and Storing Logs](#analyzing-and-storing-logs)
+    - [Describing System Log Architecture](#describing-system-log-architecture)
+      - [System Logging](#system-logging)
+    - [Reviewing Syslog Files](#reviewing-syslog-files)
+      - [Logging Events to the System](#logging-events-to-the-system)
+      - [Sample Rules of Rsyslog](#sample-rules-of-rsyslog)
+      - [Log File Rotation](#log-file-rotation)
+      - [Analyzing a Syslog Entry](#analyzing-a-syslog-entry)
+      - [Monitoring Logs](#monitoring-logs)
+      - [Sending Syslog Messages Manually](#sending-syslog-messages-manually)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -1874,6 +1884,145 @@ Both the command are having almost same options
 -   The **OpenSSH** server uses the `PasswordAuthentication` parameter in the `/etc/ssh/sshd_config` configuration file to control whether users can use password-based authentication to log in to the system.<br> `PasswordAuthentication yes`
 -   The default value of `yes` for the `PasswordAuthentication` parameter in the `/etc/ssh/sshd_config` configuration file causes the SSH server to allow users to use password-based authentication while logging in. The value of `no` for `PasswordAuthentication` prevents users from using password-based authentication.
 -   -   The SSH server (sshd) must be reloaded for any changes to take effect.<br>`[root@host ~]# systemctl reload sshd`
+
+## Analyzing and Storing Logs
+
+### Describing System Log Architecture
+
+#### System Logging
+
+-   Processes and the operating system kernel record a log of events that happen. These logs are used to audit the system and troubleshoot problems
+-   Many systems record logs of events in text files which are kept in the `/var/log` directory. These logs can be inspected using normal text utilities such as **less** and **tail**.
+-   A standard logging system based on the Syslog protocol is built into linux. Many programs use this system to record events and organize them into log files. The `systemd-journald` and `rsyslog` services handle the syslog messages in the CentOS based systems.
+    <br>
+
+-   The `systemd-journald` service is at the heart of the **operating system event logging architecture**. It collects event messages from many sources including the kernel, output from the early stages of the boot process, standard output and standard error from daemons as they start up and run, and syslog events. It then restructures them into a standard format, and writes them into a structured, indexed system journal. By default, this journal is stored on a file system that **does not persist across reboots**.
+    <br>
+
+-   However, the `rsyslog` service reads syslog messages received by `systemd-journald` from the journal as they arrive. It then processes the syslog events, recording them to its log files or forwarding them to other services according to its own configuration.
+-   The `rsyslog` service sorts and writes syslog messages to the log files that **do persist across reboots** in `/var/log`. The rsyslog service sorts the log messages to specific log files based on the type of program that sent each message, or facility, and the priority of each syslog message.
+    <br>
+
+-   In addition to syslog message files, the /var/log directory contains log files from other services on the system.
+    | Log File | Type of Messages Stored
+    | --- | ---
+    | `/var/log/messages` | Most **syslog** messages are logged here. Exceptions include messages related to authentication and email processing, scheduled job execution, and those which are purely debugging-related.
+    | `/var/log/secure` | Syslog messages related to security and authentication events.
+    | `/var/log/maillog` | Syslog messages related to the mail server.
+    | `/var/log/cron` | Syslog messages related to scheduled job execution.
+    | `/var/log/boot.log` | Non-syslog console messages related to the system startup.
+
+### Reviewing Syslog Files
+
+#### Logging Events to the System
+
+-   Many programs use the `syslog` protocol to log events to the system.
+-   Each log message is categorized by a facility (the type of message) and a priority (the severity of the message).
+-   Available facilities are documented in the `rsyslog.conf`(5) man page.
+    <br>
+
+-   The following table lists the standard eight syslog priorities from highest to lowest.
+    | Code | Priority | Severity
+    | --- | --- | ---
+    | 0 | emerg | System is unusable
+    | 1 | alert | Action must be taken immediately
+    | 2 | crit | Critical condition
+    | 3 | err | Non-critical error condition
+    | 4 | warning | Warning condition
+    | 5 | notice | Normal but significant event
+    | 6 | info | Informational event
+    | 7 | debug | Debugging-level message
+    <br>
+
+-   The `rsyslog` service uses the facility and priority of log messages to determine how to handle them. This is configured by rules in the `/etc/rsyslog.conf` file and any file in the `/etc/rsyslog.d` directory that has a file name extension of `.conf`. Software packages can easily add rules by installing an appropriate file in the `/etc/rsyslog.d` directory.
+    <br>
+
+-   Each rule that controls how to sort syslog messages is a line in one of the configuration files. The left side of each line indicates the facility and severity of the syslog messages the rule matches. The right side of each line indicates what file to save the log message in (or where else to deliver the message). An asterisk (`*`) is a wildcard that matches all values.
+-   For example, the following line would record messages sent to the `authpriv` facility at any priority to the file `/var/log/secure`:
+    ```
+    authpriv.*          /var/log/secure
+    ```
+-   Log messages sometimes match more than one rule in `rsyslog.conf`. In such cases, one message is stored in more than one log file. To limit messages stored, the key word `none` in the priority field indicates that no messages for the indicated facility should be stored in the given file.
+    <br>
+
+-   Instead of logging syslog messages to a file, they can also be printed to the terminals of all logged-in users. The `rsyslog.conf` file has a setting to print all the syslog messages with the `emerg` priority to the terminals of all logged-in users.
+
+#### Sample Rules of Rsyslog
+
+```
+#### RULES ####
+
+# Log all kernel messages to the console.
+# Logging much else clutters up the screen.
+#kern.*                                         /dev/console
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+*.info;mail.none;authpriv.none;cron.none        /var/log/messages
+
+# The authpriv file has restricted access.
+authpriv.*                                      /var/log/secure
+
+# Log all the mail messages in one place.
+mail.*                                          /var/log/maillog
+
+# Log cron stuff
+cron.*                                          /var/log/cron
+
+# Everybody gets emergency messages.
+*.emerg                                         :omusrmsg:*
+
+# Save news errors of level crit and higher in a special file.
+uucp,news.crit                                  /var/log/spooler
+
+# Save boot messages also to boot.log
+local7.*                                        /var/log/boot.log
+```
+
+#### Log File Rotation
+
+-   The **logrotate** tool rotates log files to keep them from taking up too much space in the file system containing the `/var/log` directory. When a log file is rotated, it is renamed with an extension indicating the date it was rotated. For example, the old `/var/log/messages` file may become `/var/log/messages-20190130` if it is rotated on `2019-01-30`. Once the old log file is rotated, a new log file is created and the service that writes to it is notified.
+-   After a certain number of rotations, typically after **four weeks**, the oldest log file is discarded to free disk space. A scheduled job runs the logrotate program daily to see if any logs need to be rotated. Most log files are rotated weekly, but logrotate rotates some faster, or slower, or when they reach a certain size.
+
+#### Analyzing a Syslog Entry
+
+-   Log messages start with the oldest message on top and the newest message at the end of the log file. The `rsyslog` service uses a standard format while recording entries in log files. The following example explains the anatomy of a log message in the `/var/log/secure` log file.
+    ```
+    Feb 11 20:11:48 localhost sshd[1433]: Failed password for student from 172.25.0.10 port 59344 ssh2
+    ```
+    1. The **time stamp** when the log entry was recorded
+    2. The host from which the log message was sent
+    3. The program or process name and PID number that sent the log message
+    4. The actual message sent
+
+#### Monitoring Logs
+
+-   Monitoring one or more log files for events is helpful to reproduce problems and issues. The `tail -f /path/to/file` command outputs the last 10 lines of the file specified and continues to output new lines in the file as they get written.
+    <br>
+
+-   For example, to monitor for failed login attempts, run the `tail` command in one terminal and then in another terminal, run the `ssh` command as the `root` user while a user tries to log in to the system.
+-   In the first terminal, run the following `tail` command :
+    ```
+    [root@host ~]# tail -f /var/log/secure
+    ```
+-   In the second terminal, run the following `ssh` command :
+    ```
+    [root@host ~]# ssh root@localhost
+    root@localhost's password:
+    ...output omitted...
+    [root@host ~]#
+    ```
+-   Return to the first terminal and view the logs.
+    ```
+    ...output omitted...
+    Feb 10 09:01:13 host sshd[2712]: Accepted password for root from 172.25.254.254 port 56801 ssh2
+    Feb 10 09:01:13 host sshd[2712]: pam_unix(sshd:session): session opened for user root by (uid=0)
+    ```
+
+#### Sending Syslog Messages Manually
+
+-   The `logger` command can send messages to the `rsyslog` service. By default, it sends the message to the `user` facility with the `notice` priority (`user.notice`) unless specified otherwise with the `-p` option. It is useful to test any change to the `rsyslog` service configuration.
+-   To send a message to the `rsyslog` service that gets recorded in the `/var/log/boot.log` log file, execute the following `logger` command :<br> `$ logger -p local7.notice "Log entry created on host"`
 
 ## Archiving Data
 
