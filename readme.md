@@ -143,6 +143,14 @@
       - [IPv4 Networking](#ipv4-networking)
         - [IPv4 Addresses](#ipv4-addresses)
         - [Ipv4 Routing](#ipv4-routing)
+        - [IPv4 Address and Route Configuration](#ipv4-address-and-route-configuration)
+      - [IPv6 Networking](#ipv6-networking)
+        - [IPv6 Addresses](#ipv6-addresses)
+        - [IPv6 Subnetting](#ipv6-subnetting)
+        - [Link-local IPv6 Addresses](#link-local-ipv6-addresses)
+        - [Multicast IPv6 Addresses](#multicast-ipv6-addresses)
+        - [IPv6 Address Configuration](#ipv6-address-configuration)
+      - [Hosts Names and IP Addresses](#hosts-names-and-ip-addresses)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Basic Networking Commands](#basic-networking-commands)
@@ -2338,11 +2346,124 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
     <br>
 
 -   If a router receives traffic that is not addressed to it, instead of ignoring it like a normal host, it forwards the traffic based on its own routing table. This may send the traffic directly to the destination host (if the router happens to be on the destination's subnet), or it may be forwarded on to another router. This process of forwarding continues until the traffic reaches its final destination.
+    <br>
 
-- Example network topology :
+-   Example network topology :
     ![routing](./images/routing.svg)
+-   Example routing table :
+    | Destination | Interface | Router (if needed)
+    | --- | --- | ---
+    | `192.0.2.0/24` | `wl01` |
+    | `192.168.5.0/24` | `enp3s0` |
+    | `0.0.0.0/0 (default)` | `enp3s0` | `192.168.5.254`
+-   In this example, traffic headed for the IP address `192.0.2.102` from this host is transmitted directly to that destination via the `wlo1` wireless interface, because it matches the `192.0.2.0/24` route most closely. Traffic for the IP address `192.168.5.3` is transmitted directly to that destination via the `enp3s0` Ethernet interface, because it matches the `192.168.5.0/24` route most closely.
+-   Traffic to the IP address `10.2.24.1` is transmitted out the `enp3s0` Ethernet interface to a router at `192.168.5.254`, which forwards that traffic on to its final destination. That traffic matches the `0.0.0.0/0` route most closely, as there is not a more specific route in the routing table of this host. The router uses its own routing table to determine where to forward that traffic to next.
 
-    
+##### IPv4 Address and Route Configuration
+
+-   A server can automatically configure its IPv4 network settings at boot time from a **DHCP server**. A local client daemon queries the link for a server and network settings, and obtains a lease to use those settings for a specific length of time. If the client does not request a renewal of the lease periodically, it might lose its network configuration settings.
+-   As an alternative, we can configure a server to use a **static network configuration**. In this case, network settings are read from local configuration files. We must get the correct settings from our network administrator and update them manually as needed to avoid conflicts with other servers.
+
+#### IPv6 Networking
+
+-   **IPv6** is intended as an eventual replacement for the IPv4 network protocol. We will need to understand how it works since increasing numbers of production systems use IPv6 addressing. For example, many ISPs already use IPv6 for internal communication and device management networks in order to preserve scarce IPv4 addresses for customer purposes.
+-   IPv6 can also be used in parallel with IPv4 in a **dual-stack model**. In this configuration, a network interface can have an IPv6 address or addresses as well as IPv4 addresses.
+
+##### IPv6 Addresses
+
+-   An IPv6 address is a **128-bit** number, normally expressed as **eight colon-separated groups of four hexadecimal nibbles (half-bytes)**. Each nibble represents four bits of the IPv6 address, so each group represents 16 bits of the IPv6 address : `2001:0db8:0000:0010:0000:0000:0000:0001`.
+-   To make IPv6 addresses easier to write, leading zeros in a colon-separated group do not need to be written. However, at least one hexadecimal digit must be written in each colon-separated group : `2001:db8:0:10:0:0:0:1`.
+-   Since addresses with long strings of zeros are common, one or more consecutive groups of zeros only may be combined with exactly one `::` block : `2001:db8:0:10::1`.
+-   Notice that under these rules, `2001:db8::0010:0:0:0:1` would be another less convenient way to write the example address. But it is a valid representation of the same address, and this can confuse administrators new to IPv6. Some tips for writing consistently readable addresses :
+    -   Suppress leading zeros in a group.
+    -   Use `::` to shorten as much as possible.
+    -   If an address contains two consecutive groups of zeros, equal in length, it is preferred to shorten the leftmost groups of zeros to `::` and the rightmost groups to `:0:` for each group.
+    -   Although it is allowed, do not use `::` to shorten one group of zeros. Use `:0:` instead, and save `::` for consecutive groups of zeros.
+    -   Always use lowercase letters for hexadecimal numbers `a` through `f`.
+-   **Important**
+    -   When including a TCP or UDP network port after an IPv6 address, always enclose the IPv6 address in square brackets so that the port does not look like it is part of the address : `[2001:db8:0:10::1]:80`.
+
+##### IPv6 Subnetting
+
+-   A normal IPv6 unicast address is divided into two parts: the **network prefix** and **interface ID**. The **network prefix** identifies the subnet. No two network interfaces on the same subnet can have the same interface ID; the **interface ID** identifies a particular interface on the subnet.
+    <br>
+
+-   Unlike IPv4, IPv6 has a standard subnet mask, which is used for almost all normal addresses, `/64`. In this case, half of the address is the network prefix and half of it is the interface ID. This means that a single subnet can hold as many hosts as necessary.
+    <br>
+
+-   Typically, the network provider will allocate a shorter prefix to an organization, such as a `/48`. This leaves the rest of the network part for assigning subnets (always of length `/64`) from that allocated prefix. For a `/48` allocation, that leaves 16 bits for subnets (up to 65536 subnets).
+    ![ipv6_subnetting](./images/ipv6_subnetting.png)
+-   Common IPv6 Addresses and Networks
+    | IPv6 address or network | Purpose | Description
+    | --- | --- | ---
+    | `::1/128` | localhost | The IPv6 equivalent to `127.0.0.1/8`, set on the loopback interface.
+    | `::` | The unspecified address | The IPv6 equivalent to a `0.0.0.0`. For a network service, this could indicate that it is listening on all configured IP addresses.
+    | `::/0` | The default route (the IPv6 internet) | The IPv6 equivalent to `0.0.0.0/0`. The default route in the routing table matches this network; the router for this network is where all traffic, for which there is no better route, is sent.
+    | `2000::/3` | Global unicast addresses | "Normal" IPv6 addresses are currently being allocated from this space by IANA. This is equivalent to all the networks ranging from `2000::/16` through `3fff::/16`.
+    | `fd00::/8` | Unique local addresses (RFC 4193) | IPv6 has no direct equivalent of RFC 1918 private address space, although this is close. A site can use these to self-allocate a private routable IP address space inside the organization.,but these networks cannot be used on the global internet. The site must _randomly_ select a `/48` from this space, but it can subnet the allocation into `/64` networks normally.<br><br>However, the entire `fe80::/10` range is reserved for future use by the local link.
+    | `ff00::/8` | Multicast | The IPv6 equivalent to `224.0.0.0/4`. Multicast is used to transmit to multiple hosts at the same time, and is particualrly important in IPv6 because it has no broadcast addresses.
+-   **Important**
+    -   The table above lists network address allocations that are reserved for specific purposes. These allocations may consist of many different networks. Remember that IPv6 networks allocated from the **global unicast** and **link-local** unicast spaces have a standard `/64` subnet mask.
+        <br>
+
+##### Link-local IPv6 Addresses
+
+-   A link-local address in IPv6 is an unroutable address used only to talk to hosts on a specific network link. Every network interface on the system is automatically configured with a link-local address on the `fe80::/64` network.
+-   To ensure that it is unique, the interface ID of the link-local address is constructed from the **network interface's Ethernet hardware address**. The usual procedure to **convert the 48-bit MAC address to a 64-bit interface ID** is to **invert bit 7** of the MAC address and **insert `ff:fe` between its two middle bytes**.
+    -   **Network prefix :** `fe80::/64`
+    -   **MAC address :** `00:11:22:aa:bb:cc`
+    -   **Link-local address :** `fe80::211:22ff:feaa:bbcc/64`
+-   The link-local addresses of other machines can be used like normal addresses by other hosts on the same link. Since every link has a `fe80::/64` network on it, the routing table cannot be used to select the outbound interface correctly. The link to use when talking to a link-local address must be specified with a scope identifier at the end of the address. The scope identifier consists of `%` followed by the **name of the network interface**.
+-   For example, to use `ping6` to ping the link-local address `fe80::211:22ff:feaa:bbcc` using the link connected to the `ens3` network interface, the correct command syntax is the following:
+    ```
+    $ ping6 fe80::211:22ff:feaa:bbcc%ens3
+    ```
+-   **Note**
+    -   Scope identifiers are only needed when contacting addresses that have **“link”** scope. Normal global addresses are used just like they are in IPv4, and select their outbound interfaces from the routing table.
+
+##### Multicast IPv6 Addresses
+
+-   Multicast allows one system to send traffic to a special IP address that is received by multiple systems. It differs from broadcast since only specific systems on the network receive the traffic. It also differs from broadcast in IPv4 since some multicast traffic might be routed to other subnets, depending on the configuration of our network routers and systems.
+    <br>
+
+-   Multicast plays a larger role in IPv6 than in IPv4 because there is no broadcast address in IPv6. One key multicast address in IPv6 is `ff02::1`, the **all-nodes link-local address**. Pinging this address sends traffic to all nodes on the link. Link-scope multicast addresses (starting `ff02::/8`) need to be specified with a scope identifier, just like a link-local address.
+    ```
+    $ ping6 ff02:::1%ens3
+    PING ff02::1%ens3(ff02::1) 56 data bytes
+    64 bytes from fe80::211:22ff:feaa:bbcc: icmp_seq=1 ttl=64 time=0.072 ms
+    64 bytes from fe80::200:aaff:fe33:2211: icmp_seq=1 ttl=64 time=102 ms (DUP!)
+    64 bytes from fe80::bcd:efff:fea1:b2c3: icmp_seq=1 ttl=64 time=103 ms (DUP!)
+    64 bytes from fe80::211:22ff:feaa:bbcc: icmp_seq=2 ttl=64 time=0.079 ms
+    ...output omitted...
+    ```
+
+##### IPv6 Address Configuration
+
+-   Liek IPv4, IPv6 also supports **manual configuration**, and two methods of **dynamic configuration**, one of which is **DHCPv6**.
+    <br>
+
+-   Interface IDs for static IPv6 addresses can be selected at will, just like IPv4. In IPv4, there are two addresses on a network that could not be used: the lowest address in the subnet and the highest address in the subnet. In IPv6, the **following interface IDs are reserved and cannot be used** for a normal network address on a host.
+
+    -   The **all-zeros identifier** `0000:0000:0000:0000` (“subnet router anycast”) used by all routers on the link. (For the `2001:db8::/64` network, this would be the address `2001:db8::`)
+    -   The identifiers `fdff:ffff:ffff:ff80` through `fdff:ffff:ffff:ffff`.
+        <br>
+
+-   **DHCPv6** works differently than DHCP for IPv4, because there is no broadcast address. Essentially, a host sends a DHCPv6 request from its link-local address to port `547/UDP` on `ff02::1:2`, the **all-dhcp-servers link-local multicast group**. The DHCPv6 server then usually sends a reply with appropriate information to port `546/UDP` on the client's link-local address.
+-   The **dhcp** package in Red Hat Enterprise Linux 8 provides support for a DHCPv6 server.
+    <br>
+
+-   In addition to DHCPv6, IPv6 also supports a second dynamic configuration method, called **Stateless Address Autoconfiguration (SLAAC)**. Using SLAAC, the host brings up its interface with a link-local `fe80::/64` address normally. It then sends a **“router solicitation”** to `ff02::2`, the **all-routers link-local multicast group**. An IPv6 router on the local link responds to the host's link-local address with a network prefix and possibly other information. The host then uses that network prefix with an interface ID that it normally constructs in the same way that link-local addresses are constructed. The router periodically sends multicast updates (**“router advertisements”**) to confirm or update the information it provided.
+-   The **radvd** package in Red Hat Enterprise Linux 8 allows a Red Hat Enterprise Linux based IPv6 router to provide SLAAC through router advertisements.
+
+#### Hosts Names and IP Addresses
+
+-   It would be inconvenient if we always had to use IP addresses to contact our servers. Humans generally would prefer to work with names than long and hard-to-remember strings of numbers. And so Linux has a number of mechanisms to map a host name to an IP address, collectively called **name resolution**.
+    <br>
+
+-   One way is to set a static entry for each name in the `/etc/hosts` file on each system. This requires to manually update each server's copy of the file.
+    <br>
+
+-   For most hosts, we can look up the address for a host name (or a host name from an address) from a network service called the **Domain Name System (DNS)**. **DNS** is a distributed network of servers providing mappings of host names to IP addresses. In order for name service to work, a host needs to be pointed at a nameserver. This nameserver does not need to be on the same subnet; it just needs to be reachable by the host. This is typically configured through DHCP or a static setting in a file called `/etc/resolv.conf`.
 
 ## Archiving Data
 
