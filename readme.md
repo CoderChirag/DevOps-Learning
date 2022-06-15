@@ -41,7 +41,7 @@ Vagrant is an automation tool to manage VM lifecycle
 
 <div align="center">
 
-![vagrant-architecture](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/images/vagrant.jpg)
+![vagrant-architecture](https://raw.githubusercontent.com/CoderChirag/DevOps-Learning/main/main/images/vagrant.jpg)
 
 </div>
 
