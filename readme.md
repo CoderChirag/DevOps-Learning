@@ -151,18 +151,29 @@
         - [Multicast IPv6 Addresses](#multicast-ipv6-addresses)
         - [IPv6 Address Configuration](#ipv6-address-configuration)
       - [Hosts Names and IP Addresses](#hosts-names-and-ip-addresses)
+    - [Validating Network Configuration](#validating-network-configuration)
+      - [Gathering Network Interface Information](#gathering-network-interface-information)
+        - [Identifying Network Interfaces](#identifying-network-interfaces)
+        - [Displaying IP Addresses](#displaying-ip-addresses)
+        - [Displaying Performance Statistics](#displaying-performance-statistics)
+      - [Checking Connectivity Between Hosts](#checking-connectivity-between-hosts)
+      - [Troubleshooting Routing](#troubleshooting-routing)
+        - [Displaying Routing Table](#displaying-routing-table)
+        - [Tracing Routes taken by Traffic](#tracing-routes-taken-by-traffic)
+      - [Troubleshooting ports and services](#troubleshooting-ports-and-services)
+        - [ss Command - Alternative to netstat](#ss-command---alternative-to-netstat)
+        - [nmap](#nmap)
+        - [dig](#dig)
+    - [Configuring Networking from the Command Line](#configuring-networking-from-the-command-line)
+      - [Describing Network Manager Concepts](#describing-network-manager-concepts)
+      - [Viewing Network Information](#viewing-network-information)
+      - [Adding a network connection](#adding-a-network-connection)
+      - [Controlling network connections](#controlling-network-connections)
+      - [Modifying Network Connection Settings](#modifying-network-connection-settings)
+      - [Deleting a network connection](#deleting-a-network-connection)
+      - [Summary of Commands](#summary-of-commands)
   - [Archiving Data](#archiving-data)
   - [Ubuntu Commands](#ubuntu-commands)
-  - [Basic Networking Commands](#basic-networking-commands)
-    - [Protocols & Port Numbers](#protocols--port-numbers)
-    - [ifconfig](#ifconfig)
-    - [ip addr show](#ip-addr-show)
-    - [ping](#ping)
-    - [netstat](#netstat)
-    - [ss](#ss)
-    - [nmap](#nmap)
-    - [dig](#dig)
-    - [route](#route)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -2400,7 +2411,8 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
     | `::` | The unspecified address | The IPv6 equivalent to a `0.0.0.0`. For a network service, this could indicate that it is listening on all configured IP addresses.
     | `::/0` | The default route (the IPv6 internet) | The IPv6 equivalent to `0.0.0.0/0`. The default route in the routing table matches this network; the router for this network is where all traffic, for which there is no better route, is sent.
     | `2000::/3` | Global unicast addresses | "Normal" IPv6 addresses are currently being allocated from this space by IANA. This is equivalent to all the networks ranging from `2000::/16` through `3fff::/16`.
-    | `fd00::/8` | Unique local addresses (RFC 4193) | IPv6 has no direct equivalent of RFC 1918 private address space, although this is close. A site can use these to self-allocate a private routable IP address space inside the organization.,but these networks cannot be used on the global internet. The site must _randomly_ select a `/48` from this space, but it can subnet the allocation into `/64` networks normally.<br><br>However, the entire `fe80::/10` range is reserved for future use by the local link.
+    | `fd00::/8` | Unique local addresses (RFC 4193) | IPv6 has no direct equivalent of RFC 1918 private address space, although this is close. A site can use these to self-allocate a private routable IP address space inside the organization.,but these networks cannot be used on the global internet. The site must _randomly_ select a `/48` from this space, but it can subnet the allocation into `/64` networks normally.
+    | `fe80::/10` | Linc-local addresses | Every IPv6 interface automatically configures a _link-local_ unicast address that only works on the local link on the `fe80::/64` network.<br><br>However, the entire `fe80::/10` range is reserved for future use by the local link.
     | `ff00::/8` | Multicast | The IPv6 equivalent to `224.0.0.0/4`. Multicast is used to transmit to multiple hosts at the same time, and is particualrly important in IPv6 because it has no broadcast addresses.
 -   **Important**
     -   The table above lists network address allocations that are reserved for specific purposes. These allocations may consist of many different networks. Remember that IPv6 networks allocated from the **global unicast** and **link-local** unicast spaces have a standard `/64` subnet mask.
@@ -2465,180 +2477,199 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
 
 -   For most hosts, we can look up the address for a host name (or a host name from an address) from a network service called the **Domain Name System (DNS)**. **DNS** is a distributed network of servers providing mappings of host names to IP addresses. In order for name service to work, a host needs to be pointed at a nameserver. This nameserver does not need to be on the same subnet; it just needs to be reachable by the host. This is typically configured through DHCP or a static setting in a file called `/etc/resolv.conf`.
 
-## Archiving Data
+### Validating Network Configuration
 
--   `$ tar -czvf <archivename>.tar.gz file1 file2...` - Archiving Data
--   `$ tar -xzvf archivename.tar.gz -C /opt/ #-C is for giving a path where we want to unzip files` - Unziping data
+#### Gathering Network Interface Information
 
-## Ubuntu Commands
+##### Identifying Network Interfaces
 
--   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
+-   The `ip link` command will list all network interfaces available on our system :
+    ```
+    $ ip link show
+    1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+        link/ether 52:54:00:00:00:0a brd ff:ff:ff:ff:ff:ff
+    3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000
+        link/ether 52:54:00:00:00:1e brd ff:ff:ff:ff:ff:ff
+    ```
+    In this example, the server has three network interfaces: `lo`, which is the loopback device that is connected to the server itself, and two Ethernet interfaces, `ens3` and `ens4`.
+-   To configure each network interface correctly, we need to know which one is connected to which network. In many cases, we will know the MAC address of the interface connected to each network, either because it is physically printed on the card or server, or because it is a virtual machine and we know how it is configured. The MAC address of the device is listed after `link/ether` for each interface. So we know that the network card with the MAC address `52:54:00:00:00:0a` is the network interface `ens3`.
 
-## Basic Networking Commands
+##### Displaying IP Addresses
 
-### Protocols & Port Numbers
+-   Use the `ip` command to view device and address information. A single network interface can have multiple IPv4 or IPv6 addresses.
+    ```
+    $ ip addr show ens3
+    2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+        link/ether 52:54:00:00:00:0b brd ff:ff:ff:ff:ff:ff
+        inet 192.0.2.2/24 brd 192.0.2.255 scope global ens3
+            valid_lft forever preferred_lft forever
+        inet6 2001:db8:0:1:5054:ff:fe00:b/64 scope global
+            valid_lft forever preferred_lft forever
+        inet6 fe80::5054:ff:fe00:b/64 scope link
+            valid_lft forever preferred_lft forever
+    ```
+    1. An active interface is `UP`.
+    2. The `link/ether` line specifies the hardware (MAC) address of the device.
+    3. The `inet` line shows an IPv4 address, its network prrefix length, and scope.
+    4. The `inet6` line shows an IPv6 address, its network prefix length, and scope. This address is of _global_ scope and is normally used.
+    5. The next `inet6` line shows that the interface has an IPv6 address of `link` scope that can only be used for communication on the local Ethernet link.
 
-| Protocol | Service Name              | UDP & TCP Port No.s        |
-| -------- | ------------------------- | -------------------------- |
-| DNS      | Domain Name Service - UDP | UDP 53                     |
-| DNS TCP  | Domain Name Service - TCP | TCP 53                     |
-| HTTP     | Web                       | TCP 80                     |
-| HTTPS    | Secure Web (SSL)          | TCP 443                    |
-| SMTP     | Simple Mail Transport     | TCP 25                     |
-| POP      | Post Office Protocol      | TCP 109, 110               |
-| SNMP     | Simple Network Management | TCP 161, 162, UDP 161, 162 |
-| TELNET   | Telnet Terminal           | TCP 23                     |
-| FTP      | File Transfer Protocol    | TCP 20, 21                 |
-| SSH      | Secure Shell (terminal)   | TCP 22                     |
-| AFP IP   | Apple File Protocol/IP    | TCP 447, 548               |
+##### Displaying Performance Statistics
 
-### ifconfig
-
--   Shows the active network interfaces, their names, and IP Addresses.
--   ```
-    $ ifconfig
-
-      enp0s3: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-              inet 10.0.2.15  netmask 255.255.255.0  broadcast 10.0.2.255
-              inet6 fe80::50:97ff:feae:4744  prefixlen 64  scopeid 0x20<link>
-              ether 02:50:97:ae:47:44  txqueuelen 1000  (Ethernet)
-              RX packets 592  bytes 70109 (70.1 KB)
-              RX errors 0  dropped 0  overruns 0  frame 0
-              TX packets 419  bytes 75825 (75.8 KB)
-              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-      enp0s8: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-              inet 192.168.33.10  netmask 255.255.255.0  broadcast 192.168.33.255
-              inet6 fe80::a00:27ff:fe2c:8992  prefixlen 64  scopeid 0x20<link>
-              ether 08:00:27:2c:89:92  txqueuelen 1000  (Ethernet)
-              RX packets 0  bytes 0 (0.0 B)
-              RX errors 0  dropped 0  overruns 0  frame 0
-              TX packets 8  bytes 656 (656.0 B)
-              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-      enp0s9: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-              inet 192.168.1.33  netmask 255.255.255.0  broadcast 192.168.1.255
-              inet6 fe80::a00:27ff:fe94:7c  prefixlen 64  scopeid 0x20<link>
-              ether 08:00:27:94:00:7c  txqueuelen 1000  (Ethernet)
-              RX packets 4  bytes 1300 (1.3 KB)
-              RX errors 0  dropped 0  overruns 0  frame 0
-              TX packets 10  bytes 1342 (1.3 KB)
-              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-      lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-              inet 127.0.0.1  netmask 255.0.0.0
-              inet6 ::1  prefixlen 128  scopeid 0x10<host>
-              loop  txqueuelen 1000  (Local Loopback)
-              RX packets 0  bytes 0 (0.0 B)
-              RX errors 0  dropped 0  overruns 0  frame 0
-              TX packets 0  bytes 0 (0.0 B)
-              TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
+-   The `ip` command may also be used to show statistics about network performance. Counters for each network interface can be used to identify the presence of network issues. The counters record statistics for things like the number of received (RX) and transmitted (TX) packets, packet errors, and packets that were dropped.
+    ```
+    $ ip -s link show ens3
+    2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 52:54:00:00:00:0a brd ff:ff:ff:ff:ff:ff
+        RX: bytes  packets  errors  dropped overrun mcast
+        269850     2931     0       0       0       0
+        TX: bytes  packets  errors  dropped carrier collsns
+        300556     3250     0       0       0       0
     ```
 
-### ip addr show
+#### Checking Connectivity Between Hosts
 
--   In newer linux systems, `ifconfig` command is not available.
--   ```
-    $ ip addr show
-
-      1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
-          link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-          inet 127.0.0.1/8 scope host lo
-          valid_lft forever preferred_lft forever
-          inet6 ::1/128 scope host
-          valid_lft forever preferred_lft forever
-      2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
-          link/ether 02:50:97:ae:47:44 brd ff:ff:ff:ff:ff:ff
-          inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic enp0s3
-          valid_lft 86302sec preferred_lft 86302sec
-          inet6 fe80::50:97ff:feae:4744/64 scope link
-          valid_lft forever preferred_lft forever
-      3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
-          link/ether 08:00:27:2c:89:92 brd ff:ff:ff:ff:ff:ff
-          inet 192.168.33.10/24 brd 192.168.33.255 scope global enp0s8
-          valid_lft forever preferred_lft forever
-          inet6 fe80::a00:27ff:fe2c:8992/64 scope link
-          valid_lft forever preferred_lft forever
-      4: enp0s9: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
-          link/ether 08:00:27:94:00:7c brd ff:ff:ff:ff:ff:ff
-          inet 192.168.1.33/24 brd 192.168.1.255 scope global dynamic enp0s9
-          valid_lft 86303sec preferred_lft 86303sec
-          inet6 fe80::a00:27ff:fe94:7c/64 scope link
-          valid_lft forever preferred_lft forever
-    ```
-
-### ping
-
--   Sends `icmp` packets to the specified IP.
--   ```
-    $ ping 192.168.33.10
-
-      PING 192.168.33.10 (192.168.33.10) 56(84) bytes of data.
-      64 bytes from 192.168.33.10: icmp_seq=1 ttl=64 time=0.054 ms
-      64 bytes from 192.168.33.10: icmp_seq=2 ttl=64 time=0.057 ms
-      64 bytes from 192.168.33.10: icmp_seq=3 ttl=64 time=0.052 ms
-      64 bytes from 192.168.33.10: icmp_seq=4 ttl=64 time=0.091 ms
-      ^C
-      --- 192.168.33.10 ping statistics ---
-      4 packets transmitted, 4 received, 0% packet loss, time 3079ms
-    ```
-
-### netstat
-
--   Prints network connections, routing tables, interface statistics, masquerade connections, and multicast memberships.
--   ```
-    # Basic Options for netstat :
-        # [--all|-a]: Show both listening and non-listening sockets
-        # [--numeric|-n]: Show numerical addresses instead of trying to determine symbolic host, port or user names.
-        # [--tcp|-t]
-        # [--program|-p]: Show th PID and name of the program to which each socket belongs.
-
-    $ sudo -i       # So that below command shows the PID
-    $ netstat -antp
-
-        Active Internet connections (servers and established)
-        Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
-        tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      650/systemd-resolve
-        tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      851/sshd
-        tcp        0      0 10.0.2.15:51362         91.189.91.39:80         TIME_WAIT   -
-        tcp        0      0 10.0.2.15:22            10.0.2.2:63898          ESTABLISHED 1599/sshd: vagrant
-        tcp6       0      0 :::22                   :::*                    LISTEN      851/sshd
-        tcp6       0      0 :::80                   :::*                    LISTEN      2425/apache2
-    ```
-
--   A **Practical Usecase**, finding the port no for **Apache2** Service:
+-   The `ping` command is used to test connectivity. The command continues to run until `Ctrl+c` is pressed unless options are given to limit the number of packets sent.
 
     ```
-    $ ps -ef | grep apache2
+    $ ping -c3 192.0.2.254
+    PING 192.0.2.1 (192.0.2.254) 56(84) bytes of data.
+    64 bytes from 192.0.2.254: icmp_seq=1 ttl=64 time=4.33 ms
+    64 bytes from 192.0.2.254: icmp_seq=2 ttl=64 time=3.48 ms
+    64 bytes from 192.0.2.254: icmp_seq=3 ttl=64 time=6.83 ms
 
-      root      2425     1  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
-      www-data  2426  2425  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
-      www-data  2428  2425  0 12:19 ?        00:00:00 /usr/sbin/apache2 -k start
-      root      6091  1815  0 12:23 pts/0    00:00:00 grep --color=auto apache2
-
-    $ netstat -antp | grep 2425          # PID obtained using above command
-
-      tcp6       0      0 :::80                   :::*                    LISTEN      2425/apache2
+    --- 192.0.2.254 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+    rtt min/avg/max/mdev = 3.485/4.885/6.837/1.424 ms
     ```
 
-### ss
+-   The `ping6` command is the IPv6 version of ping. It communicates over IPv6 and takes IPv6 addresses, but otherwise works like ping.
+    ```
+    $ ping6 2001:db8:0:1::1
+    PING 2001:db8:0:1::1(2001:db8:0:1::1) 56 data bytes
+    64 bytes from 2001:db8:0:1::1: icmp_seq=1 ttl=64 time=18.4 ms
+    64 bytes from 2001:db8:0:1::1: icmp_seq=2 ttl=64 time=0.178 ms
+    64 bytes from 2001:db8:0:1::1: icmp_seq=3 ttl=64 time=0.180 ms
+    ^C
+    --- 2001:db8:0:1::1 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 2001ms
+    rtt min/avg/max/mdev = 0.178/6.272/18.458/8.616 ms
+    ```
+-   When we ping link-local addresses and the link-local all-nodes multicast group (`ff02::1`), the network interface to use must be specified explicitly with a scope zone identifier (such as `ff02::1%ens3`). If this is left out, the error `connect: Invalid argument` is displayed.
 
--   Another utility to investigate sockets
--   ```
-    $ ss -tunlp
+#### Troubleshooting Routing
 
-      NetidState  Recv-Q Send-Q         Local Address:Port   Peer Address:Port
-      udp  UNCONN 0      0              127.0.0.53%lo:53          0.0.0.0:*     users:(("systemd-resolve",pid=650,fd=12))
-      udp  UNCONN 0      0        192.168.1.33%enp0s9:68          0.0.0.0:*     users:(("systemd-network",pid=1432,fd=25))
-      udp  UNCONN 0      0           10.0.2.15%enp0s3:68          0.0.0.0:*     users:(("systemd-network",pid=1432,fd=22))
-      tcp  LISTEN 0      128            127.0.0.53%lo:53          0.0.0.0:*     users:(("systemd-resolve",pid=650,fd=13))
-      tcp  LISTEN 0      128                  0.0.0.0:22          0.0.0.0:*     users:(("sshd",pid=851,fd=3))
-      tcp  LISTEN 0      128                     [::]:22             [::]:*     users:(("sshd",pid=851,fd=4))
-      tcp  LISTEN 0      128                        *:80                *:*     users:(("apache2",pid=2428,fd=4),("apache2",pid=2426,fd=4),("apache2",pid=2425,fd=4))
+##### Displaying Routing Table
+
+-   Use the `ip` command with the `route` option to show routing information.
+    ```
+    $ ip route
+    default via 192.0.2.254 dev ens3 proto static metric 1024
+    192.0.2.0/24 dev ens3 proto kernel scope link src 192.0.2.2
+    10.0.0.0/8 dev ens4 proto kernel scope link src 10.0.0.11
+    ```
+    This shows the IPv4 routing table. All packets destined for the `10.0.0.0/8` network are sent directly to the destination through the device `ens4`. All packets destined for the `192.0.2.0/24` network are sent directly to the destination through the device `ens3`. All other packets are sent to the default router located at `192.0.2.254`, and also through device `ens3`.
+-   Add the `-6` option to show the IPv6 routing table :
+    ```
+    $ ip -6 route
+    unreachable ::/96 dev lo  metric 1024  error -101
+    unreachable ::ffff:0.0.0.0/96 dev lo  metric 1024  error -101
+    2001:db8:0:1::/64 dev ens3  proto kernel  metric 256
+    unreachable 2002:a00::/24 dev lo  metric 1024  error -101
+    unreachable 2002:7f00::/24 dev lo  metric 1024  error -101
+    unreachable 2002:a9fe::/32 dev lo  metric 1024  error -101
+    unreachable 2002:ac10::/28 dev lo  metric 1024  error -101
+    unreachable 2002:c0a8::/32 dev lo  metric 1024  error -101
+    unreachable 2002:e000::/19 dev lo  metric 1024  error -101
+    unreachable 3ffe:ffff::/32 dev lo  metric 1024  error -101
+    fe80::/64 dev ens3  proto kernel  metric 256
+    default via 2001:db8:0:1::ffff dev ens3  proto static  metric 1024
+    ```
+    In this example, ignore the unreachable routes, which point at unused networks. That leaves three routes:
+    -   The `2001:db8:0:1::/64` network, using the `ens3` interface (which presumably has an address on that network).
+    -   The `fe80::/64` network, using the `ens3` interface, for the link-local address. On a system with multiple interfaces, there is a route to `fe80::/64` out each interface for each link-local address.
+    -   A default route to all networks on the IPv6 Internet (the `::/0` network) that do not have a more specific route on the system, through the router at `2001:db8:0:1::ffff`, reachable with the `ens3` device.
+
+##### Tracing Routes taken by Traffic
+
+-   To trace the path that network traffic takes to reach a remote host through multiple routers, use either `traceroute` or `tracepath`. This can identify whether an issue is with one of our routers or an intermediate one. Both commands use **UDP** packets to trace a path by default; however, many networks block **UDP** and **ICMP** traffic. The `traceroute` command has options to trace the path with **UDP** (default), **ICMP** (`-I`), or **TCP** (`-T`) packets. Typically, however, the `traceroute` command is not installed by default.
+    ```
+    $ tracepath access.redhat.com
+    ...output omitted...
+    4:  71-32-28-145.rcmt.qwest.net                          48.853ms asymm  5
+    5:  dcp-brdr-04.inet.qwest.net                          100.732ms asymm  7
+    6:  206.111.0.153.ptr.us.xo.net                          96.245ms asymm  7
+    7:  207.88.14.162.ptr.us.xo.net                          85.270ms asymm  8
+    8:  ae1d0.cir1.atlanta6-ga.us.xo.net                     64.160ms asymm  7
+    9:  216.156.108.98.ptr.us.xo.net                        108.652ms
+    10:  bu-ether13.atlngamq46w-bcr00.tbone.rr.com           107.286ms asymm 12
+    ...output omitted...
+    ```
+    Each line in the output of `tracepath` represents a router or hop that the packet passes through between the source and the final destination. Additional information is provided as available, including the **round trip timing** (RTT) and any changes in the **maximum transmission unit** (MTU) size. The **asymm indication** means traffic reached that router and returned from that router using different (asymmetric) routes. The routers shown are the ones used for outbound traffic, not the return traffic.
+-   The `tracepath6` and `traceroute -6` commands are the equivalent to `tracepath` and `traceroute` for IPv6.
+    ```
+    $ tracepath6 2001:db8:0:2::451
+    1?: [LOCALHOST]                        0.091ms pmtu 1500
+    1:  2001:db8:0:1::ba                   0.214ms
+    2:  2001:db8:0:1::1                    0.512ms
+    3:  2001:db8:0:2::451                  0.559ms reached
+        Resume: pmtu 1500 hops 3 back 3
     ```
 
-### nmap
+#### Troubleshooting ports and services
+
+-   TCP services use **sockets** as end points for communication and are made up of an **IP address**, **protocol**, and **port number**. Services typically listen on standard ports while clients use a random available port. Well-known names for standard ports are listed in the `/etc/services` file.
+    Some protocls and their ort numbers are as follows :
+
+    | Protocol | Service Name              | UDP & TCP Port No.s        |
+    | -------- | ------------------------- | -------------------------- |
+    | DNS      | Domain Name Service - UDP | UDP 53                     |
+    | DNS TCP  | Domain Name Service - TCP | TCP 53                     |
+    | HTTP     | Web                       | TCP 80                     |
+    | HTTPS    | Secure Web (SSL)          | TCP 443                    |
+    | SMTP     | Simple Mail Transport     | TCP 25                     |
+    | POP      | Post Office Protocol      | TCP 109, 110               |
+    | SNMP     | Simple Network Management | TCP 161, 162, UDP 161, 162 |
+    | TELNET   | Telnet Terminal           | TCP 23                     |
+    | FTP      | File Transfer Protocol    | TCP 20, 21                 |
+    | SSH      | Secure Shell (terminal)   | TCP 22                     |
+    | AFP IP   | Apple File Protocol/IP    | TCP 447, 548               |
+
+##### ss Command - Alternative to netstat
+
+-   The `ss` command is used to display **socket statistics**. The `ss` command is meant to replace the older tool `netstat`, part of the `net-tools` package, which may be more familiar to some system administrators but which is not always installed.
+    ```
+    $ ss -ta
+    State      Recv-Q Send-Q      Local Address:Port          Peer Address:Port
+    LISTEN     0      128                     *:sunrpc                   *:*
+    LISTEN     0      128                   *:ssh                      *:*
+    LISTEN     0      100           127.0.0.1:smtp                     *:*
+    LISTEN     0      128                     *:36889                    *:*
+    ESTAB      0      0         172.25.250.10:ssh         172.25.254.254:59392
+    LISTEN     0      128                    :::sunrpc                  :::*
+    LISTEN     0      128                  :::ssh                     :::*
+    LISTEN     0      100                 ::1:smtp                    :::*
+    LISTEN     0      128                    :::34946                   :::*
+    ```
+    1. The port used for `SSH` is listening on all IPv4 addresses. The “`*`” is used to represent “`all`” when referencing IPv4 addresses or ports.
+    2. The port used for `SMTP` is listening on the `127.0.0.1` IPv4 loopback interface.
+    3. The established `SSH` connection is on the `172.25.250.10` interface and originates from a system with an address of `172.25.254.254`.
+    4. The port used for `SSH` is listening on all IPv6 addresses. The “`::`” syntax is used to represent all IPv6 interfaces.
+    5. The port used for `SMTP` is listening on the `::1` IPv6 loopback interface.
+-   Options for `ss` and `netstat`
+    | Option | Description
+    | --- | ---
+    | `-n` | Show numbers instead of names for interfaces and ports
+    | `-t` | Show **TCP** sockets
+    | `u` | Show **UDP** sockets
+    | `-l` | Show only listening sockets
+    | `-a` | Show all (listening and established) sockets
+    | `-p` | Show the process using the sockets
+    | `-A inet` | Display active connections (but not listening sockets) for the `inet` address family. That is, ignore local UNIX domain sockets.<br><br>For `ss`, bot IPv4 and IPv6 connections are displayed. For `netstat`, only IPv4 connections are displayed. (`netstat -A Inet6` displays IPv6 connections, and `netstat -46` displays the IPv4 and IPv6 at the same time.)
+
+##### nmap
 
 -   Network exploration tool and security / port explorer
 -   Can be used to detect all open ports of a machine
@@ -2654,7 +2685,7 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
       80/tcp open  http
     ```
 
-### dig
+##### dig
 
 -   A **DNS** Lookup Utility
 -   ```
@@ -2681,22 +2712,163 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
       ;; MSG SIZE  rcvd: 115
     ```
 
-### route
+### Configuring Networking from the Command Line
 
--   Show / Manipulate the IP routing table
--   ```
-    $ route -n    #[--numeric|-n]: Show numerical addresses
+#### Describing Network Manager Concepts
 
-    Kernel IP routing table
-    Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-    0.0.0.0         10.0.2.2        0.0.0.0         UG    100    0        0 enp0s3
-    0.0.0.0         192.168.1.1     0.0.0.0         UG    100    0        0 enp0s9
-    10.0.2.0        0.0.0.0         255.255.255.0   U     0      0        0 enp0s3
-    10.0.2.2        0.0.0.0         255.255.255.255 UH    100    0        0 enp0s3
-    192.168.1.0     0.0.0.0         255.255.255.0   U     0      0        0 enp0s9
-    192.168.1.1     0.0.0.0         255.255.255.255 UH    100    0        0 enp0s9
-    192.168.33.0    0.0.0.0         255.255.255.0   U     0      0        0 enp0s8
+-   **NetworkManager** is a daemon that monitors and manages network settings. In addition to the daemon, there is a GNOME Notification Area applet providing network status information. Command-line and graphical tools talk to NetworkManager and save configuration files in the `/etc/sysconfig/network-scripts` directory.
+    -   A **device** is a network interface.
+    -   A **connection** is a collection of settings that can be configured for a device.
+    -   Only one connection can be active for any one device at a time. Multiple connections may exist for use by different devices or to allow a configuration to be altered for the same device. If we need to temporarily change networking settings, instead of changing the configuration of a connection, we can change which connection is active for a device. For example, a device for a wireless network interface on a laptop might use different connections for the wireless network at a work site and for the wireless network at home.
+    -   Each connection has a **name** or **ID** that identifies it.
+    -   The **nmcli** utility is used to create and edit connection files from the command line.
+
+#### Viewing Network Information
+
+-   The `nmcli dev status` command displays the status of all network devices :
     ```
+    $ nmcli dev status
+    DEVICE  TYPE      STATE         CONNECTION
+    eno1    ethernet  connected     eno1
+    ens3    ethernet  connected     static-ens3
+    eno2    ethernet  disconnected  --
+    lo      loopback  unmanaged     --
+    ```
+-   The `nmcli con show` command displays a list of all connections. To list only the active connections, add the `--active` option.
+    ```
+    $ nmcli con show
+    NAME         UUID                                  TYPE            DEVICE
+    eno2         ff9f7d69-db83-4fed-9f32-939f8b5f81cd  802-3-ethernet  --
+    static-ens3  72ca57a2-f780-40da-b146-99f71c431e2b  802-3-ethernet  ens3
+    eno1         87b53c56-1f5d-4a29-a869-8a7bdaf56dfa  802-3-ethernet  eno1
+    [user@host ~]$ nmcli con show --active
+    NAME         UUID                                  TYPE            DEVICE
+    static-ens3  72ca57a2-f780-40da-b146-99f71c431e2b  802-3-ethernet  ens3
+    eno1         87b53c56-1f5d-4a29-a869-8a7bdaf56dfa  802-3-ethernet  eno1
+    ```
+
+#### Adding a network connection
+
+-   The `nmcli con add` command is used to add new network connections. The following example `nmcli con add` commands assume that the name of the network connection being added is not already in use.
+-   The following command adds a new connection named `eno2` for the interface `eno2`, which gets IPv4 networking information using **DHCP** and autoconnects on startup. It also gets IPv6 networking settings by listening for router advertisements on the local link. The name of the configuration file is based on the value of the `con-name` option, `eno2`, and is saved to the `/etc/sysconfig/network-scripts/ifcfg-eno2` file.
+    ```
+    $ nmcli con add con-name eno2 type ethernet ifname eno2
+    ```
+-   The next example creates an `eno2` connection for the `eno2` device with a **static IPv4 address**, using the IPv4 address and network prefix `192.168.0.5/24` and default gateway `192.168.0.254`, but still autoconnects at startup and saves its configuration into the same file. Due to screen size limitations, terminate the first line with a shell `\` escape and complete the command on the next line.
+    ```
+    $ nmcli con add con-name eno2 type ethernet ifname eno2 \
+    ipv4.address 192.168.0.5/24 ipv4.gateway 192.168.0.254
+    ```
+-   This final example creates an `eno2` connection for the `eno2` device with **static IPv6 and IPv4 addresses**, using the IPv6 address and network prefix `2001:db8:0:1::c000:207/64` and default IPv6 gateway `2001:db8:0:1::1`, and the IPv4 address and network prefix `192.0.2.7/24` and default IPv4 gateway `192.0.2.1`, but still autoconnects at startup and saves its configuration into `/etc/sysconfig/network-scripts/ifcfg-eno2`. Due to screen size limitations, terminate the first line with a shell `\` escape and complete the command on the next line.
+    ```
+    nmcli con add con-name eno2 type ethernet ifname eno2 \
+    ipv6.address 2001:db8:0:1::c000:207/64 ipv6.gateway 2001:db8:0:1::1 \
+    ipv4.address 192.0.2.7/24 ipv4.gateway 192.0.2.1
+    ```
+
+#### Controlling network connections
+
+-   The `nmcli con up name` command activates the connection name on the network interface it is bound to. Note that the command takes the name of a connection, not the name of the network interface. Remember that the `nmcli con show` command displays the names of all available connections. <br> `$ nmcli con up static-ens3`
+-   The `nmcli dev disconnect device` command disconnects the network interface device and brings it down. This command can be abbreviated `nmcli dev dis device` : <br> `$ nmcli dev dis ens3`
+-   **Important**
+    -   Use `nmcli dev dis device` to deactivate a network interface.
+    -   The `nmcli con down name` command is normally not the best way to deactivate a network interface because it brings down the connection. However, by default, most wired system connections are configured with `autoconnect` enabled. This activates the connection as soon as its network interface is available. Since the connection's network interface is still available, `nmcli con down name` brings the interface down, but then NetworkManager immediately brings it up again unless the connection is entirely disconnected from the interface.
+
+#### Modifying Network Connection Settings
+
+-   NetworkManager connections have two kinds of settings. There are **static connection properties**, configured by the administrator and stored in the configuration files in `/etc/sysconfig/network-scripts/ifcfg-*`. There may also be **active connection data**, which the connection gets from a DHCP server and which are not stored persistently.
+-   To list the current settings for a connection, run the `nmcli con show name` command, where name is the name of the connection. Settings in lowercase are static properties that the administrator can change. Settings in all caps are active settings in temporary use for this instance of the connection.
+    ```
+    $ nmcli con show static-ens3
+    connection.id:                          static-ens3
+    connection.uuid:                        87b53c56-1f5d-4a29-a869-8a7bdaf56dfa
+    connection.interface-name:              --
+    connection.type:                        802-3-ethernet
+    connection.autoconnect:                 yes
+    connection.timestamp:                   1401803453
+    connection.read-only:                   no
+    connection.permissions:
+    connection.zone:                        --
+    connection.master:                      --
+    connection.slave-type:                  --
+    connection.secondaries:
+    connection.gateway-ping-timeout:        0
+    802-3-ethernet.port:                    --
+    802-3-ethernet.speed:                   0
+    802-3-ethernet.duplex:                  --
+    802-3-ethernet.auto-negotiate:          yes
+    802-3-ethernet.mac-address:             CA:9D:E9:2A:CE:F0
+    802-3-ethernet.cloned-mac-address:      --
+    802-3-ethernet.mac-address-blacklist:
+    802-3-ethernet.mtu:                     auto
+    802-3-ethernet.s390-subchannels:
+    802-3-ethernet.s390-nettype:            --
+    802-3-ethernet.s390-options:
+    ipv4.method:                            manual
+    ipv4.dns:                               192.168.0.254
+    ipv4.dns-search:                        example.com
+    ipv4.addresses:                         { ip = 192.168.0.2/24, gw = 192.168.0.254 }
+    ipv4.routes:
+    ipv4.ignore-auto-routes:                no
+    ipv4.ignore-auto-dns:                   no
+    ipv4.dhcp-client-id:                    --
+    ipv4.dhcp-send-hostname:                yes
+    ipv4.dhcp-hostname:                     --
+    ipv4.never-default:                     no
+    ipv4.may-fail:                          yes
+    ipv6.method:                            manual
+    ipv6.dns:                               2001:4860:4860::8888
+    ipv6.dns-search:                        example.com
+    ipv6.addresses:                         { ip = 2001:db8:0:1::7/64, gw = 2001:db8:0:1::1 }
+    ipv6.routes:
+    ipv6.ignore-auto-routes:                no
+    ipv6.ignore-auto-dns:                   no
+    ipv6.never-default:                     no
+    ipv6.may-fail:                          yes
+    ipv6.ip6-privacy:                       -1 (unknown)
+    ipv6.dhcp-hostname:                     --
+    ...output omitted...
+    ```
+-   The `nmcli con mod name` command is used to change the settings for a connection. These changes are also saved in the `/etc/sysconfig/network-scripts/ifcfg-name` file for the connection. Available settings are documented in the `nm-settings(5)` man page.
+    <br>
+
+-   To set the IPv4 address to `192.0.2.2/24` and default gateway to `192.0.2.254` for the connection `static-ens3` :
+    ```
+    $ nmcli con mod static-ens3 ipv4.address 192.0.2.2/24 \
+    ipv4.gateway 192.0.2.254
+    ```
+-   **Important**
+    -   If a connection that gets its IPv4 information from a DHCPv4 server is being changed to get it from static configuration files only, the setting `ipv4.method` should also be changed from `auto` to `manual`.
+    -   Likewise, if a connection that gets its IPv6 information by SLAAC or a DHCPv6 server is being changed to get it from static configuration files only, the setting `ipv6.method` should also be changed from `auto` or `dhcp` to `manual`.
+    -   Otherwise, the connection may hang or not complete successfully when it is activated, or it may get an IPv4 address from DHCP or an IPv6 address from DHCPv6 or SLAAC in addition to the static address.
+-   A number of settings may have multiple values. A specific value can be added to the list or deleted from the list for a setting by adding a `+` or `-` symbol to the start of the setting name.
+
+#### Deleting a network connection
+
+-   The `nmcli con del name` command deletes the connection named name from the system, disconnecting it from the device and removing the file `/etc/sysconfig/network-scripts/ifcfg-name`. <br> `$ nmcli con del static-ens3`
+
+#### Summary of Commands
+
+| Command                       | Purpose                                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `nmcli dev status`            | Show the Network Manager status of all network interfaces.                       |
+| `nmcli con show`              | List all connections.                                                            |
+| `nmcli con show name`         | List the current settings for the connection `name`.                             |
+| `nmcli con add con-name name` | Add a new connection named `name`.                                               |
+| `nmcli con mod name`          | Modify the connection `name`.                                                    |
+| `nmcli con reload`            | Reload the configuration (useful after they have been edited by hand).           |
+| `nmcli con up name`           | Activate the connection `name`.                                                  |
+| `nmcli dev dis dev`           | Deactivate and disconnect the current connection on the network interface `dev`. |
+| `nmcli con del name`          | Delete the connection `name` and is configuration file.                          |
+
+## Archiving Data
+
+-   `$ tar -czvf <archivename>.tar.gz file1 file2...` - Archiving Data
+-   `$ tar -xzvf archivename.tar.gz -C /opt/ #-C is for giving a path where we want to unzip files` - Unziping data
+
+## Ubuntu Commands
+
+-   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
 
 ## Server Management in Linux
 
