@@ -201,6 +201,10 @@
       - [Examining RPM Packages](#examining-rpm-packages)
       - [Installing RPM Packages](#installing-rpm-packages)
     - [Installing and Updating Software Packages with Yum](#installing-and-updating-software-packages-with-yum)
+    - [Enabling Yum Software Repositories](#enabling-yum-software-repositories)
+      - [Enabling Red Hat software repositories](#enabling-red-hat-software-repositories)
+      - [Creating Yum Repositories](#creating-yum-repositories)
+      - [RPM Configuration Packages for Local Repositories](#rpm-configuration-packages-for-local-repositories)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3348,6 +3352,89 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
     | `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
     | `$ yum clean all` | Clean yum cache |
     | `$ yum history` | View history of yum |
+
+### Enabling Yum Software Repositories
+
+#### Enabling Red Hat software repositories
+
+-   Registering a system to the subscription management service automatically configures access to software repositories based on the attached subscriptions. To view all available repositories : <br> `$ yum repolist all`
+-   The `yum config-manager` command can be used to enable or disable repositories.
+-   To **enable a repository**, the command sets the enabled parameter to 1. For example, the following command enables the `rhel-8-server-debug-rpms` repository : <br> `$ yum config-manager --enable rhel-8-server-debug-rpms`
+    <br>
+-   Non-Red Hat sources provide software through third-party repositories, which can be accessed by the `yum` command from a website, FTP server, or the local file system. For example, Adobe provides some of its software for Linux through a Yum repository.
+    <br>
+-   To enable support for a new third-party repository, create a file in the `/etc/yum.repos.d/` directory. Repository configuration files must end with a `.repo` extension. The repository definition contains the URL of the repository, a name, whether to use GPG to check the package signatures, and if so, the URL pointing to the trusted GPG key.
+
+#### Creating Yum Repositories
+
+-   Create Yum repositories with the `yum config-manager` command. The following command creates a file named `/etc/yum.repos.d/dl.fedoraproject.org_pub_epel_8_Everything_x86_64_.repo` with the output shown.
+
+    ```
+    $ yum config-manager \
+    --add-repo="https://dl.fedoraproject.org/pub/epel/8/Everythin/x86_64/"
+
+    [dl.fedoraproject.org_pub_epel_8_Everything_x86_64_]
+    name=created by yum config-manager from https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/
+    baseurl=https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/
+    enabled=1
+    ```
+
+-   Modify this file to provide customized values and location of a GPG key. Keys are stored in various locations on the remote repository site, such as, `http://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8`. Administrators should download the key to a local file rather than allowing yum to retrieve the key from an external source. For example :
+
+```
+[EPEL]
+name=EPEL 8
+baseurl=https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+```
+
+#### RPM Configuration Packages for Local Repositories
+
+-   Some repositories provide a configuration file and GPG public key as part of an RPM package that can be downloaded and installed using the `yum localinstall` command. For example, the volunteer project called **Extra Packages for Enterprise Linux (EPEL)** provides software not supported by Red Hat but compatible with Red Hat Enterprise Linux.
+    <br>
+-   The following command installs the **Red Hat Enterprise Linux 8 EPEL** repository package :
+    ```
+    $ rpm --import \
+    http://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8
+    $ yum install \
+    https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    ```
+-   Configuration files often list multiple repository references in a single file. Each repository reference begins with a single-word name in square brackets.
+
+    ```
+    $ cat /etc/yum.repos.d/epel.repo
+    [epel]
+    name=Extra Packages for Enterprise Linux $releasever - $basearch
+    #baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch
+    metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+    enabled=1
+    gpgcheck=1
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+
+    [epel-debuginfo]
+    name=Extra Packages for Enterprise Linux $releasever - $basearch - Debug
+    #baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch/debug
+    metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+    enabled=0
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+    gpgcheck=1
+
+    [epel-source]
+    name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+    #baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/SRPMS
+    metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-source-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+    enabled=0
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+    gpgcheck=1
+    ```
+
+-   To define a repository, but not search it by default, insert the `enabled=0` parameter.
+-   Repositories can be enabled and **disabled persistently** with `yum config-manager` command or **temporarily** with `yum` command options, `--enablerepo=PATTERN` and `--disablerepo=PATTERN`.
+    <br>
+-   **Warning**
+    -   Install the RPM GPG key before installing signed packages. This verifies that the packages belong to a key which has been imported. Otherwise, the `yum` command fails due to a missing key. The `--nogpgcheck` option can be used to ignore missing GPG keys, but this could cause forged or insecure packages to be installed on the system, potentially compromising its security.
 
 ## Ubuntu Commands
 
