@@ -188,6 +188,9 @@
       - [Extracting Files from an Archive](#extracting-files-from-an-archive)
       - [Creating a Compressed Archive](#creating-a-compressed-archive)
       - [Extracting a Compressed Archive](#extracting-a-compressed-archive)
+    - [Transferring Files Between Systems Securely](#transferring-files-between-systems-securely)
+      - [Transferring Files Using Secure Copy](#transferring-files-using-secure-copy)
+      - [Transferring Files Using the Secure File Transfer Program](#transferring-files-using-the-secure-file-transfer-program)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3098,12 +3101,65 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
     $ tar -xzf /root/logbackup.tar.bz2
     ```
 -   To extract the contents of a `xz` compressed archive named `/root/sshconfig.tar.xz` in the `/tmp/sshconfig` directory :
-    ` $ mkdir /tmp/sshconfig $ cd /tmp/sshconfig $ tar -xzf /root/sshconfig.tar.xz `
+    `$ mkdir /tmp/sshconfig $ cd /tmp/sshconfig $ tar -xzf /root/sshconfig.tar.xz`
     <br>
 
 -   **Note**
     -   Additionally, `gzip`, `bzip2`, and `xz` can be used independently to compress single files. For example, the `gzip etc.tar` command results in the `etc.tar.gz` compressed file, while the `bzip2 abc.tar` command results in the `abc.tar.bz2` compressed file, and the `xz myarchive.tar` command results in the `myarchive.tar.xz` compressed file.
     -   The corresponding commands to decompress are `gunzip`, `bunzip2`, and `unxz`. For example, the `gunzip /tmp/etc.tar.gz` command results in the `etc.tar` uncompressed tar file, while the `bunzip2 abc.tar.bz2` command results in the `abc.tar` uncompressed tar file, and the `unxz myarchive.tar.xz` command results in the `myarchive.tar` uncompressed tar file.
+
+### Transferring Files Between Systems Securely
+
+#### Transferring Files Using Secure Copy
+
+-   **OpenSSH** is useful for securely running shell commands on remote systems. The **Secure Copy command**, `scp`, which is part of the OpenSSH suite, copies files from a remote system to the local system or from the local system to a remote system. The command uses the SSH server for authentication and encrypts data when it is being transferred.
+-   We can specify a remote location for the source or destination of the files we are copying. The format of the remote location should be in the form `[user@]host:/path`. The `user@` portion of the argument is optional. If it is missing, our current local username will be used. When we run the command, our **scp client** will authenticate to the remote SSH server just like ssh, using **key-based authentication** or **prompting us for your password**.
+    <br>
+
+-   The following example demonstrates how to copy the local `/etc/yum.conf` and `/etc/hosts` files on host, to the remoteuser's home directory on the remotehost remote system :
+    ```
+    $ scp /etc/yum.conf /etc/hosts remoteuser@remotehost:/home/remoteuser
+    remoteuser@remotehost's password:
+    yum.conf                                   100%  813     0.8KB/s   00:00
+    hosts                                      100%  227     0.2KB/s   00:00
+    ```
+-   We can also copy a file in the other direction, from a remote system to the local file system. In this example, the file `/etc/hostname` on remotehost is copyed to the local directory `/home/user`. The `scp` command authenticates to remotehost as the user remoteuser.
+    ```
+    $ scp remoteuser@remotehost:/etc/hostname /home/user
+    remoteuser@remotehost's password: password`
+    hostname                                   100%   22     0.0KB/s   00:00    `
+    ```
+-   To copy a whole directory, use `-r` option.
+
+#### Transferring Files Using the Secure File Transfer Program
+
+-   To interactively upload or download files from a SSH server, use the **Secure File Transfer Program**, `sftp`. A session with the `sftp` command uses the **secure authentication mechanism** and encrypted data transfer to and from the SSH server.
+    <br>
+
+-   Just like the `scp` command, the `sftp` command uses `[user@]host` to identify the target system and user name. If we do not specify a user, the command will attempt to log in using our local user name as the remote user name. We will then be presented with an `sftp>` prompt.
+    ```
+    $ sftp remoteuser@remotehost
+    remoteuser@remotehost's password:
+    Connected to remotehost.
+    sftp>
+    ```
+-   The interactive sftp session accepts various commands that work the same way on the remote file system as they do in the local file system, such as `ls`, `cd`, `mkdir`, `rmdir`, and `pwd`. The `put` command uploads a file to the remote system. The `get` command downloads a file from the remote system. The `exit` command exits the sftp session.
+    ```
+    sftp> mkdir hostbackup
+    sftp> cd hostbackup
+    sftp> put /etc/hosts
+    Uploading /etc/hosts to /home/remoteuser/hostbackup/hosts
+    /etc/hosts                                 100%  227     0.2KB/s   00:00
+    sftp>
+    ```
+-   To download `/etc/yum.conf` from the remote host to the current directory on the local system, execute the command `get /etc/yum.conf` and exit the sftp session with the `exit` command.
+    ```
+    sftp> get /etc/yum.conf
+    Fetching /etc/yum.conf to yum.conf
+    /etc/yum.conf                              100%  813     0.8KB/s   00:00
+    sftp> exit
+    [user@host ~]$
+    ```
 
 ## Ubuntu Commands
 
