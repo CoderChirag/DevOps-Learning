@@ -86,9 +86,6 @@
       - [sticky permission](#sticky-permission)
     - [Default File Permissions - umask](#default-file-permissions---umask)
   - [Sudo](#sudo)
-  - [Package Management](#package-management)
-    - [Basic way of installing any package in CentOS](#basic-way-of-installing-any-package-in-centos)
-    - [yum](#yum)
   - [Processes](#processes)
     - [Definition of a Process](#definition-of-a-process)
     - [Process States](#process-states)
@@ -193,6 +190,16 @@
       - [Transferring Files Using the Secure File Transfer Program](#transferring-files-using-the-secure-file-transfer-program)
     - [Synchronizing Files Betwwen Systems Securely](#synchronizing-files-betwwen-systems-securely)
       - [Synchronizing Files and Directories with rsync](#synchronizing-files-and-directories-with-rsync)
+  - [Package Management](#package-management)
+    - [Registering Systems for Red Hat Support - For RHEL (topic for RHCSA exam)](#registering-systems-for-red-hat-support---for-rhel-topic-for-rhcsa-exam)
+      - [Red Hat Subscription Management](#red-hat-subscription-management)
+      - [Register from the Command Line](#register-from-the-command-line)
+      - [Entitlement Certificates](#entitlement-certificates)
+    - [Explaining and Investigating RPM Software Packages](#explaining-and-investigating-rpm-software-packages)
+      - [Software packages and RPM](#software-packages-and-rpm)
+        - [Updating Software with RPM Packages](#updating-software-with-rpm-packages)
+      - [Examining RPM Packages](#examining-rpm-packages)
+    - [yum](#yum)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -1400,44 +1407,6 @@ Both the command are having almost same options
         ...
         ```
 -   For preventing any human error in `/etc/sudoers` file, we make a new file for the user or group we want to give sudo privilige in the `/etc/sudoers.d` directory.
-
-## Package Management
-
-### Basic way of installing any package in CentOS
-
--   Go to browser, search for package and copy the link
--   `$ curl <package_link> -o <package_name>.rpm`
--   `rpm [-i: interactive] [-v: verbose] [-h: human readable] <package_name>.rpm`
-
-|                                                   |                                                                                |                                                              |
-| ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `$ rpm -qa`                                       | Display list of all installed packages                                         | `$ rpm -qa`                                                  |
-| `$ rpm -qi {package}`                             | Display installed information along with package version and short description | `$ rpm -qi mozilla-mail`                                     |
-| `$ rpm -qf {/path/to/file}`                       | Find out what package a file belongs to, i.e., find what package owns the file | `$ rpm -qf /etc/passwd`                                      |
-| `$ rpm -qc {package-name} `                       | Display list of configuration file(s) for a package                            | `$ rpm -qc httpd`                                            |
-| `$ rpm -qcf {/path/to/file}`                      | Display list of configuration files for a command                              | `$ rpm -qcf /usr/X11R6/bin/xeyes`                            |
-| `$ rpm -qa --last`                                | Display list of all recently installed RPMs                                    | `$ rpm -qa --last`                                           |
-| `$ rpm -qpR {.rpm-file}`<br>`$ rpm -qR {package}` | Find out what dependencies a rpm file has                                      | `$ rpm -qpR mediawiki-1.4rc1-4.i586.rpm`<br>`$ rpm -qR bash` |
-
-### yum
-
--   **yum** is a package manager which manages and downloads all the dependencies along with the required package
-
-|                                              |                                            |
-| -------------------------------------------- | ------------------------------------------ |
-| `$ yum search PACKAGE`                       | search from available repositories         |
-| `$ yum -y install PACKAGE`                   |
-| `$ yum reinstall PACKAGE`                    |
-| `$ yum remove package`                       |
-| `$ yum update`                               | update all packages                        |
-| `$ yum updata PACKAGE`                       | update only a package                      |
-| `$ yum grouplist`                            | List all available Group Packages          |
-| `yum group install "GROUPNAME"`              | Installs all the packages in a group       |
-| `$ yum repolist`                             | List enabled yum repositories              |
-| `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
-| `$ yum clean all`                            | Clean yum cache                            |
-| `$ yum history`                              | View history of yum                        |
-| `$ yum info packagename`                     |
 
 ## Processes
 
@@ -3265,6 +3234,112 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
 
 -   **Note**
     -   To preserve file ownership, we need to be `root` on the destination system. If the destination is remote, authenticate as `root`. If the destination is local, we must run rsync as `root`.
+
+## Package Management
+
+### Registering Systems for Red Hat Support - For RHEL (topic for RHCSA exam)
+
+#### Red Hat Subscription Management
+
+-   Red Hat Subscription Management provides tools that can be used to entitle machines to product subscriptions, allowing administrators to get updates to software packages and track information about support contracts and subscriptions used by the systems. Standard tools such as PackageKit and yum can obtain software packages and updates through a content distribution network provided by Red Hat.
+-   There are four basic tasks performed with Red Hat Subscription Management tools :
+    -   **Register** a system to associate that system to a Red Hat account. This allows Subscription Manager to uniquely inventory the system. When no longer in use, a system may be unregistered.
+    -   **Subscribe** a system to entitle it to updates for selected Red Hat products. Subscriptions have specific levels of support, expiration dates, and default repositories. The tools can be used to either auto-attach or select a specific entitlement. As needs change, subscriptions may be removed.
+    -   **Enable repositories** to provide software packages. Multiple repositories are enabled by default with each subscription, but other repositories such as updates or source code can be enabled or disabled as needed.
+    -   **Review and track** entitlements that are available or consumed. Subscription information can be viewed locally on a specific system or, for an account, in either the Red Hat Customer Portal Subscriptions page or the Subscription Asset Manager (SAM).
+
+#### Register from the Command Line
+
+-   Use the **subscription-manager**(8) command to register a system without using a graphical environment. The **subscription-manager** command can automatically attach a system to the best-matched compatible subscriptions for the system.
+    -   Register a system to a Red Hat account : <br> `$ subscription-manager register --username=yourusername --password=yourpassword`
+    -   View available subscriptions : <br> `$ subscription-manager list --available | less`
+    -   Auto-attach a subscription : <br> `$ subscription-manager attach --auto`
+    -   Alternatively, attach a subscription from a specific pool from the list of available subscriptions : <br> `subscription-manager attach --pool=poolID`
+    -   View consumed subscriptions : <br> `$ subscription-manager list --consumed`
+    -   Unregister a system : <br> `subscription-manager unregister`
+
+#### Entitlement Certificates
+
+-   An entitlement is a subscription that has been attached to a system. Digital certificates are used to store current information about entitlements on the local system. Once registered, entitlement certificates are stored in `/etc/pki` and its subdirectories.
+    -   `/etc/pki/product` contains certificates indicating which Red Hat products are installed on the system.
+    -   `/etc/pki/consumer` contains certificates identifying the Red Hat account to which the system is registered.
+    -   `/etc/pki/entitlement` contains certificates indicating which subscriptions are attached to the system.
+-   The certificates can be inspected with the `rct` utility directly, but the **subscription-manager** tools provide easier ways to examine the subscriptions attached to the system.
+
+### Explaining and Investigating RPM Software Packages
+
+#### Software packages and RPM
+
+-   The **RPM Package Manager**, originally developed by Red Hat, provides a standard way to package software for distribution. Managing software in the form of RPM packages is much simpler than working with software that has simply been extracted into a file system from an archive.
+-   It lets administrators track which files were installed by the software package and which ones need to be removed if it is uninstalled, and check to ensure that supporting packages are present when it is installed.
+-   Information about installed packages is stored in a **local RPM database** on each system. All software provided by Red Hat for Red Hat Enterprise Linux is provided as an RPM package.
+    <br>
+
+-   RPM package files names consist of **four elements** (plus the `.rpm` suffix): `name-version-release.architecture` :
+    ![rpm_name+structure](./images/rpm-name-structure.png)
+    -   **NAME** is one or more words describing the contents (`coreutils`).
+    -   **VERSION** is the version number of the original software (`8.30`).
+    -   **RELEASE** is the release number of the package based on that version, and is set by the packager, who might not be the original software developer (`4.el8`).
+    -   **ARCH** is the processor architecture the package was compiled to run on. `noarch` indicates that this package's contents are not architecture-specific (as opposed to `x86_64` for **64-bit**, `aarch64` for **64-bit ARM**, and so on).
+-   Only the package name is required for installing packages from repositories. If multiple versions exist, the package with the higher version number is installed. If multiple releases of a single version exist, the package with the higher release number is installed.
+-   Each RPM package is a special archive made up of three components :
+
+    -   The files installed by the package.
+    -   Information about the package (metadata), such as the name, version, release, and arch; a summary and description of the package; whether it requires other packages to be installed; licensing; a package change log; and other details.
+    -   Scripts that may run when this package is installed, updated, or removed, or are triggered when other packages are installed, updated, or removed.
+        <br>
+
+-   Typically, software providers digitally sign RPM packages using GPG keys (Red Hat digitally signs all packages it releases). The RPM system verifies package integrity by confirming that the package was signed by the appropriate GPG key. The RPM system refuses to install a package if the GPG signature does not match.
+
+##### Updating Software with RPM Packages
+
+-   Red Hat generates a complete RPM package to update software. An administrator installing that package gets only the most recent version of the package. Red Hat does not require that older packages be installed and then patched. To update software, RPM removes the older version of the package and installs the new version. Updates usually retain configuration files, but the packager of the new version defines the exact behavior.
+    <br>
+
+-   In most cases, only one version or release of a package may be installed at a time. However, if a package is built so that there are no conflicting file names, then multiple versions may be installed. The most important example of this is the kernel package. Since a new kernel can only be tested by booting to that kernel, the package is specifically designed so that multiple versions may be installed at once. If the new kernel fails to boot, the old kernel is still available and bootable.
+
+#### Examining RPM Packages
+
+-   The **rpm** utility is a low-level tool that can get information about the contents of package files and installed packages. By default, it gets information from the local database of installed packages. However, we can use the `-p` option to specify that we want to get information about a downloaded package file. We might want to do this in order to inspect the contents of the package file before installing it.
+    <br>
+
+-   The general form of query is :
+    -   `$ rpm -q [select-options] [query-options]`
+    -   Summary of RPM Query Commands :
+        | Command | Task | Example |
+        | ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+        | `$ rpm -qa` | List all RPM packages currently installed | `$ rpm -qa` |
+        | `$ rpm -qa --last` | Display list of all recently installed RPMs | `$ rpm -qa --last` |
+        | `rpm -q {name}` | Display the version of {name} installed on the system | `rpm -q yum`
+        | `$ rpm -qi {package}` | Display detailed information about a package | `$ rpm -qi mozilla-mail` |
+        | `rpm -ql {name}` | List all files included in the package {name} | `rpm -ql yum`
+        | `$ rpm -qf {/path/to/file}` | Find out what package a file belongs to, i.e., find what package owns the file | `$ rpm -qf /etc/passwd` |
+        | `$ rpm -qc {package-name} ` | Display list of configuration file(s) for a package | `$ rpm -qc httpd` |
+        | `$ rpm -qcf {/path/to/file}` | Display list of configuration files for a command | `$ rpm -qcf /usr/X11R6/bin/xeyes` |
+        | `rpm -qd {name}` | List documentation files included in a package | `rpm -qd yum`
+        | `rpm -q --changelog {name}` | Show a short summary of the reason for a new package release | `rpm -q --changelog yum`
+        | `rpm -q --scripts {name}` | Display the shell scripts run on package installation, upgrade, or removal
+        | `$ rpm -qpR {.rpm-file}`<br>`$ rpm -qR {package}` | Find out what dependencies a rpm file has | `$ rpm -qpR mediawiki-1.4rc1-4.i586.rpm`<br>`$ rpm -qR bash` |
+
+### yum
+
+-   **yum** is a package manager which manages and downloads all the dependencies along with the required package
+
+|                                              |                                            |
+| -------------------------------------------- | ------------------------------------------ |
+| `$ yum search PACKAGE`                       | search from available repositories         |
+| `$ yum -y install PACKAGE`                   |
+| `$ yum reinstall PACKAGE`                    |
+| `$ yum remove package`                       |
+| `$ yum update`                               | update all packages                        |
+| `$ yum updata PACKAGE`                       | update only a package                      |
+| `$ yum grouplist`                            | List all available Group Packages          |
+| `yum group install "GROUPNAME"`              | Installs all the packages in a group       |
+| `$ yum repolist`                             | List enabled yum repositories              |
+| `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
+| `$ yum clean all`                            | Clean yum cache                            |
+| `$ yum history`                              | View history of yum                        |
+| `$ yum info packagename`                     |
 
 ## Ubuntu Commands
 
