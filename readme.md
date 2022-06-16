@@ -217,6 +217,14 @@
         - [Enabling Module Streams and Installing Modules](#enabling-module-streams-and-installing-modules)
       - [Removing Modules and Disabling Module Streams](#removing-modules-and-disabling-module-streams)
         - [Switching Module Streams](#switching-module-streams)
+  - [Accessing Linux File Systems](#accessing-linux-file-systems)
+    - [Identifying File Systems and Devices](#identifying-file-systems-and-devices)
+      - [Storage Management Concepts](#storage-management-concepts)
+        - [Files Systems and Mount Points](#files-systems-and-mount-points)
+        - [File Systems, Storage, and Block Devices](#file-systems-storage-and-block-devices)
+        - [Disk Partitions](#disk-partitions)
+        - [Logical Volumes](#logical-volumes)
+      - [Examining File Systems](#examining-file-systems)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3698,6 +3706,126 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   The new module stream will be enabled and the current stream disabled. It may be necessary to update or downgrade packages from the previous module stream that are not listed in the new profile. Use the `$ yum distro-sync` to perform this task if required. There may also be packages that remain installed from the previous module stream. Remove those using `yum remove`.
+
+## Accessing Linux File Systems
+
+### Identifying File Systems and Devices
+
+#### Storage Management Concepts
+
+- Files on a Linux server are accessed through the file-system hierarchy, a single inverted tree of directories. This file system hierarchy is assembled from file systems provided by the storage devices available to your system. Each file system is a storage device that has been formatted to store files.
+<br>
+
+- In a sense, the Linux file-system hierarchy presents a collection of file systems on separate storage devices as if it were one set of files on one giant storage device that you can navigate. Much of the time, we do not need to know which storage device a particular file is on, we just need to know the directory that file is in.
+  <br>
+
+- Sometimes, however, it can be important. We might need to determine how full a storage device is and what directories in the file-system hierarchy are affected. There might be errors in the logs from a storage device, and we need to know what file systems are at risk. We could just want to create a hard link between two files, and we need to know if they are on the same file system to determine if it is possible.
+
+##### Files Systems and Mount Points
+
+- To make the contents of a file system available in the file-system hierarchy, it must be mounted on an empty directory. This directory is called a **mount point**. Once mounted, if we use `ls` to list that directory, we will see the contents of the mounted file system, and we can access and use those files normally. Many file systems are automatically mounted as part of the boot process.
+  <br>
+
+- If we have only worked with Microsoft Windows drive letters, this is a fundamentally different concept. It is somewhat similar to the NTFS mounted folders feature.
+
+##### File Systems, Storage, and Block Devices
+
+- Low-level access to storage devices in Linux is provided by a special type of file called a **block device**. These block devices must be formatted with a file system before they can be mounted.
+<br>
+
+- Block device files are stored in the `/dev` directory, along with other device files. Device files are created automatically by the operating system. In Red Hat Enterprise Linux, the first **SATA/PATA**, **SAS**, **SCSI**, or **USB hard drive** detected is called `/dev/sda`, the second is `/dev/sdb`, and so on. These names represent the entire hard drive.
+<br>
+
+- Other types of storage will have other forms of naming.
+  | Type of device | Device naming pattern
+  | --- | ---
+  | SATA/SAS/USB-attached storage | `/dev/sda, /dev/sdb ...`
+  | `virtio-blk` paravirtualized storage (some virtual machines) | `/dev/vda, /dev/vdb ...`
+  | NVMe-attached storage (many SSDs) | `/dev/nvme0, /dev/nvme1 ...`
+  | SD/MMC/eMMC storage (SD cards) | `/dev/mmcblk0, /dev/mmcblk1 ...`
+
+##### Disk Partitions
+
+- Normally, we do not make the entire storage device into one file system. Storage devices are typically divided up into smaller chunks called **partitions**.
+<br>
+
+- Partitions allow us to compartmentalize a disk : the various partitions can be formatted with different file systems or used for different purposes. For example, one partition can contain user home directories while another can contain system data and logs. If a user fills up the home directory partition with data, the system partition may still have space available.
+<br>
+
+- Partitions are block devices in their own right. On **SATA-attached storage**, the first partition on the first disk is `/dev/sda1`. The third partition on the second disk is `/dev/sdb3`, and so on. Paravirtualized storage devices have a similar naming system.
+<br>
+
+- An **NVMe-attached SSD** device names its partitions differently. In that case, the first partition on the first disk is `/dev/nvme0p1`. The third partition on the second disk is `/dev/nvme1p3`, and so on. SD or MMC cards have a similar naming system.
+<br>
+
+- A long listing of the /dev/sda1 device file on host reveals its special file type as b, which stands for block device :
+    ```
+    $ ls -l /dev/sda1
+    brw-rw----. 1 root disk 8, 1 Feb 22 08:00 /dev/sda1
+    ```
+
+##### Logical Volumes
+
+- Another way of organizing disks and partitions is with **logical volume management (LVM)**. With LVM, one or more block devices can be aggregated into a storage pool called a **volume group**. Disk space in the volume group is then parceled out to one or more logical volumes, which are the functional equivalent of a partition residing on a physical disk.
+<br>
+
+- The LVM system assigns names to volume groups and logical volumes upon creation. LVM creates a directory in `/dev` that matches the group name and then creates a symbolic link within that new directory with the same name as the logical volume. That logical volume file is then available to be mounted. For example, if a volume group is called `myvg` and the logical volume within it is called `mylv`, then the full path name to the logical volume device file is `/dev/myvg/mylv`.
+<br>
+
+- **Note**
+  - The form of logical volume device name mentioned above is actually implemented as a symbolic link to the actual device file used to access it, which might vary between boots. There is another form of logical volume device name linked from files in `/dev/mapper` that are often used, and are also symbolic links to the actual device file.
+
+#### Examining File Systems
+
+- To get an overview of local and remote file system devices and the amount of free space available, run the `df` command. When the `df` command is run without arguments, it reports **total disk space**, **used disk space**, **free disk space**, and the **percentage of the total disk space used on all mounted regular file systems**. It reports on both local and remote file systems.
+<br>
+
+- The following example displays the file systems and mount points on host.
+    ```
+    $ df
+    Filesystem     1K-blocks    Used Available Use% Mounted on
+    devtmpfs          912584       0    912584   0% /dev
+    tmpfs             936516       0    936516   0% /dev/shm
+    tmpfs             936516   16812    919704   2% /run
+    tmpfs             936516       0    936516   0% /sys/fs/cgroup
+    /dev/vda3        8377344 1411332   6966012  17% /
+    /dev/vda1        1038336  169896    868440  17% /boot
+    tmpfs             187300       0    187300   0% /run/user/1000
+    ```
+<br>
+
+- The partitioning on the host system shows two physical file systems, which are mounted on `/` and `/boot`. This is common for virtual machines. The `tmpfs` and `devtmpfs` devices are file systems in system memory. **All files written into `tmpfs` or `devtmpfs` disappear after system reboot.**
+<br>
+
+- To improve readability of the output sizes, there are two different human-readable options: `-h` or `-H`. The difference between these two options is that `-h` reports in KiB (210), MiB (220), or GiB (230), while the `-H` option reports in SI units: KB (103), MB (106), or GB (109). Hard drive manufacturers usually use SI units when advertising their products.
+<br>
+
+- Show a report on the file systems on the host system with all units converted to human-readable format :
+    ```
+    $ df -h
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        892M     0  892M   0% /dev
+    tmpfs           915M     0  915M   0% /dev/shm
+    tmpfs           915M   17M  899M   2% /run
+    tmpfs           915M     0  915M   0% /sys/fs/cgroup
+    /dev/vda3       8.0G  1.4G  6.7G  17% /
+    /dev/vda1      1014M  166M  849M  17% /boot
+    tmpfs           183M     0  183M   0% /run/user/1000
+    ```
+<br>
+
+- For more detailed information about space used by a certain directory tree, use the `du` command. The `du` command has `-h` and `-H` options to convert the output to human-readable format. The du command shows the size of all files in the current directory tree recursively.
+
+- Show a disk usage report in human-readable format for the `/var/log` directory on host :
+    ```
+    $ du -h /var/log
+    ...output omitted...
+    176K  /usr/share/smartmontools
+    184K  /usr/share/nano
+    8.0K  /usr/share/cmake/bash-completion
+    8.0K  /usr/share/cmake
+    369M  /usr/share
+    ```
 
 ## Ubuntu Commands
 
