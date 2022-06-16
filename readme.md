@@ -199,7 +199,8 @@
       - [Software packages and RPM](#software-packages-and-rpm)
         - [Updating Software with RPM Packages](#updating-software-with-rpm-packages)
       - [Examining RPM Packages](#examining-rpm-packages)
-    - [yum](#yum)
+      - [Installing RPM Packages](#installing-rpm-packages)
+    - [Installing and Updating Software Packages with Yum](#installing-and-updating-software-packages-with-yum)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3320,26 +3321,33 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
         | `rpm -q --changelog {name}` | Show a short summary of the reason for a new package release | `rpm -q --changelog yum`
         | `rpm -q --scripts {name}` | Display the shell scripts run on package installation, upgrade, or removal
         | `$ rpm -qpR {.rpm-file}`<br>`$ rpm -qR {package}` | Find out what dependencies a rpm file has | `$ rpm -qpR mediawiki-1.4rc1-4.i586.rpm`<br>`$ rpm -qR bash` |
+-   Installed packages can be queried directly with the `rpm` command. Add the `-p` option to query a package file before installation.
 
-### yum
+#### Installing RPM Packages
 
--   **yum** is a package manager which manages and downloads all the dependencies along with the required package
+-   `$ rpm -ivh wonderwidgets-1.0.4.x86_64.rpm`
 
-|                                              |                                            |
-| -------------------------------------------- | ------------------------------------------ |
-| `$ yum search PACKAGE`                       | search from available repositories         |
-| `$ yum -y install PACKAGE`                   |
-| `$ yum reinstall PACKAGE`                    |
-| `$ yum remove package`                       |
-| `$ yum update`                               | update all packages                        |
-| `$ yum updata PACKAGE`                       | update only a package                      |
-| `$ yum grouplist`                            | List all available Group Packages          |
-| `yum group install "GROUPNAME"`              | Installs all the packages in a group       |
-| `$ yum repolist`                             | List enabled yum repositories              |
-| `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
-| `$ yum clean all`                            | Clean yum cache                            |
-| `$ yum history`                              | View history of yum                        |
-| `$ yum info packagename`                     |
+### Installing and Updating Software Packages with Yum
+
+-   The low-level `rpm` command can be used to install packages, but it is not designed to work with package repositories or resolve dependencies from multiple sources automatically.
+-   **Yum** is designed to be a better system for managing RPM-based software installation and updates. The `yum` command allows us to install, update, remove, and get information about software packages and their dependencies. We can get a history of transactions performed and work with multiple Red Hat and third-party software repositories.
+    | Command | Description |
+    | -------------------------------------------- | ------------------------------------------ |
+    | `$ yum list` | displays installed and available packages
+    | `$ yum search PACKAGE` | search from available repositories |
+    | `$ yum info PACKAGE` | returns detailed information about a package, including the disk space needed for installation
+    | `$ yum provides PATHNAME` | displays packages that match the path name specified
+    | `$ yum install PACKAGE` | obtains and installs a software package, including any dependencies
+    | `$ yum update PACKAGE` | obtains and installs a newer version of the specified package, including any dependencies |
+    | `$ yum update` | update all packages |
+    | `$ yum reinstall PACKAGE` | reinstalls the specified package
+    | `$ yum remove package` | removes the specified package
+    | `$ yum grouplist` | List all available Group Packages |
+    | `yum group install "GROUPNAME"` | Installs all the packages in a group |
+    | `$ yum repolist` | List enabled yum repositories |
+    | `$ yum --enablerepo=epel install phpmyadmin` | Install a package from Specific repository |
+    | `$ yum clean all` | Clean yum cache |
+    | `$ yum history` | View history of yum |
 
 ## Ubuntu Commands
 
