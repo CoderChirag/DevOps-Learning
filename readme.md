@@ -205,6 +205,18 @@
       - [Enabling Red Hat software repositories](#enabling-red-hat-software-repositories)
       - [Creating Yum Repositories](#creating-yum-repositories)
       - [RPM Configuration Packages for Local Repositories](#rpm-configuration-packages-for-local-repositories)
+    - [Managing Package Module Streams](#managing-package-module-streams)
+      - [Introduction to Application Stream](#introduction-to-application-stream)
+        - [BaseOS](#baseos)
+        - [Application Stream](#application-stream)
+      - [Modules](#modules)
+        - [Module Streams](#module-streams)
+        - [Module Profiles](#module-profiles)
+      - [Managing modules using Yum](#managing-modules-using-yum)
+        - [Listing Modules](#listing-modules)
+        - [Enabling Module Streams and Installing Modules](#enabling-module-streams-and-installing-modules)
+      - [Removing Modules and Disabling Module Streams](#removing-modules-and-disabling-module-streams)
+        - [Switching Module Streams](#switching-module-streams)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3435,6 +3447,257 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 -   **Warning**
     -   Install the RPM GPG key before installing signed packages. This verifies that the packages belong to a key which has been imported. Otherwise, the `yum` command fails due to a missing key. The `--nogpgcheck` option can be used to ignore missing GPG keys, but this could cause forged or insecure packages to be installed on the system, potentially compromising its security.
+
+### Managing Package Module Streams
+
+#### Introduction to Application Stream
+
+-   Red Hat Enterprise Linux 8.0 introduces the concept of **Application Streams**. Multiple versions of user space components shipped with the distribution are now delivered at the same time. They may be updated more frequently than the core operating system packages. This provides us with greater flexibility to customize Red Hat Enterprise Linux without impacting the underlying stability of the platform or specific deployments.
+    <br>
+
+-   Traditionally, managing alternate versions of an application's software package and its related packages meant maintaining different repositories for each different version. For developers who wanted the latest version of an application and administrators who wanted the most stable version of the application, this created a situation that was tedious to manage. This process is simplified in Red Hat Enterprise Linux 8 using a new technology called **Modularity**. **Modularity** allows a single repository to host multiple versions of an application's package and its dependencies.
+-   Red Hat Enterprise Linux 8 content is distributed through two main software repositories: **BaseOS** and **Application Stream (AppStream)**.
+
+##### BaseOS
+
+-   The **BaseOS** repository provides the core operating system content for Red Hat Enterprise Linux as RPM packages. BaseOS components have a life cycle identical to that of content in previous Red Hat Enterprise Linux releases.
+
+##### Application Stream
+
+-   The **Application Stream** repository provides content with varying life cycles as both modules and traditional packages. Application Stream contains necessary parts of the system, as well as a wide range of applications previously available as a part of Red Hat Software Collections and other products and programs.
+-   **Important**
+
+    -   Both BaseOS and AppStream are a necessary part of a Red Hat Enterprise Linux 8 system.
+        <br>
+
+-   The **Application Stream** repository contains two types of content: **Modules** and **traditional RPM packages**.
+    -   A **module** describes a set of RPM packages that belong together.
+    -   Modules can contain several streams to make multiple versions of applications available for installation.
+    -   Enabling a module stream gives the system access to the RPM packages within that module stream.
+
+#### Modules
+
+-   A **module** is a set of RPM packages that are a consistent set that belong together. Typically, this is organized around a specific version of a software application or programming language. A typical module can contain packages with an application, packages with the application’s specific dependency libraries, packages with documentation for the application, and packages with helper utilities.
+
+##### Module Streams
+
+-   Each module can have one or more module **streams**, which hold different versions of the content. Each of the streams receives updates independently. Think of the module stream as a virtual repository in the Application Stream physical repository.
+    <br>
+
+-   For each module, only one of its streams can be enabled and provide its packages.
+
+##### Module Profiles
+
+-   Each module can have one or more **profiles**. A **profile** is a list of certain packages to be installed together for a particular use-case such as for a server, client, development, minimal install, or other.
+    <br>
+
+-   Installing a particular module profile simply installs a particular set of packages from the module stream. You can subsequently install or uninstall packages normally. If you do not specify a profile, the module will install its default profile.
+
+#### Managing modules using Yum
+
+-   Yum version 4, new in Red Hat Enterprise Linux 8, adds support for the new modular features of Application Stream.
+-   For handling the modular content, the `yum module` command has been added. Otherwise, yum works with modules much like does with regular packages.
+
+##### Listing Modules
+
+-   To display a list of available modules, use `$ yum module list` :
+    ```
+    $ yum module list
+    Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+    Name                    Stream        Profiles   Summary
+    389-ds                  1.4           default    389 Directory Server (base)
+    ant                     1.10 [d]      common [d] Java build tool
+    container-tools         1.0 [d]       common [d] Common tools and dependencies for container runtimes
+    ...output omitted...
+    Hint: [d]efault, [e]nabled, [x]disabled, [i]nstalled
+    ```
+-   **Note**
+    -   Use the Hint at the end of the output to help determine which streams and profiles are enabled, disabled, installed, as well as which ones are the defaults.
+        <br>
+-   To list the module streams for a specific module and retrieve their status :
+    ```
+    $ yum module list perl
+    Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+    Name  Stream       Profiles             Summary
+    perl  5.24         common [d], minimal  Practical Extraction and Report Language
+    perl  5.26 [d]     common [d], minimal  Practical Extraction and Report Language
+    ```
+    -   To display details of a module :
+        ```
+        $ yum module info perl
+        Name             : perl
+        Stream           : 5.24
+        Version          : 820190207164249
+        Context          : ee766497
+        Profiles         : common [d], minimal
+        Default profiles : common
+        Repo             : rhel-8-for-x86_64-appstream-rpms
+        Summary          : Practical Extraction and Report Language
+        ...output omitted...
+        Artifacts        : perl-4:5.24.4-403.module+el8+2770+c759b41a.x86_64
+                        : perl-Algorithm-Diff-0:1.1903-9.module+el8+2464+d274aed1.noarch
+                        : perl-Archive-Tar-0:2.30-1.module+el8+2464+d274aed1.noarch
+        ...output omitted...
+        ```
+-   **Note**
+    -   Without specifying a module stream, `yum module info` shows list of packages installed by default profile of a module using the default stream. Use the `module-name:stream` format to view a specific module stream. Add the `--profile` option to display information about packages installed by each of the module's profiles. For example :
+        ```
+        $ yum module info --profile perl:5.24
+        ```
+
+##### Enabling Module Streams and Installing Modules
+
+-   Module streams must be enabled in order to install their module.
+-   To simplify this process, when a module is installed it enables its module stream if necessary.
+-   Module streams can be enabled manually using `yum module enable` and providing the name of the module stream.
+-   **Important**
+
+    -   Only one module stream may be enabled for a given module. Enabling an additional module stream will disable the original module stream.
+        <br>
+
+-   Install a module using the default stream and profiles :
+    ```
+    $ sudo yum module install perl
+    Dependencies resolved.
+    ================================================================================
+    Package         Arch   Version      Repository                            Size
+    ================================================================================
+    Installing group/module packages:
+    perl            x86_64 4:5.26.3-416.el8
+                                        rhel-8-for-x86_64-appstream-htb-rpms  72 k
+    Installing dependencies:
+    ...output omitted...
+    Running transaction
+    Preparing        :                                                        1/1
+    Installing       : perl-Exporter-5.72-396.el8.noarch                    1/155
+    Installing       : perl-Carp-1.42-396.el8.noarch                        2/155
+    ...output omitted...
+    Installed:
+    perl-4:5.26.3-416.el8.x86_64
+    perl-Encode-Locale-1.05-9.el8.noarch
+    ...output omitted...
+    Complete!
+    ```
+-   **Note**
+
+    -   The same results could have been accomplished by running `yum install @perl`. The `@` notation informs yum that the argument is a module name instead of a package name.
+        <br>
+
+-   To verify the status of the module stream and the installed profile :
+
+    ```
+    $ yum module-list perl
+    Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+    Name  Stream       Profiles             Summary
+    perl  5.24         common, minimal      Practical Extraction and Report Language
+    perl  5.26 [d][e]  common [i], minimal  Practical Extraction and Report Language
+
+    Hint: [d]efault, [e]nabled, [x]disabled, [i]nstalled
+    ```
+
+#### Removing Modules and Disabling Module Streams
+
+-   Removing a module removes all of the packages installed by profiles of the currently enabled module stream, and any further packages and modules that depend on these.
+-   Packages installed from this module stream not listed in any of its profiles remain installed on the system and can be removed manually.
+-   **Warning**
+
+    -   Removing modules and switching module streams can be a bit tricky. Switching the stream enabled for a module is equivalent to resetting the current stream and enabling the new stream. It does not automatically change any installed packages. We have to do that manually.
+    -   Directly installing a module stream that is different than the one that is currently installed is not recommended, because upgrade scripts might run during the installation that would break things with the original module stream. That could lead to data loss or other configuration issues.
+    -   Proceed with caution.
+        <br>
+
+-   To remove an installed module :
+    ```
+    $ sudo yum module remove perl
+    Dependencies resolved.
+    ================================================================================
+    Package                        ArchVersion            Repository                            Size
+    ================================================================================
+    Removing:
+    perl                           x86_644:5.26.3-416.el8   @rhel-8.0-for-x86_64-appstream-rpms 0
+    Removing unused dependencies:
+    ...output omitted...
+    Running transaction
+    Preparing        :                                                        1/1
+    Erasing          : perl-4:5.26.3-416.el8.x86_64                         1/155
+    Erasing          : perl-CPAN-2.18-397.el8.noarch                        2/155
+    ...output omitted...
+    Removed:
+    perl-4:5.26.3-416.el8.x86_64
+    dwz-0.12-9.el8.x86_64
+    ...output omitted...
+    Complete!
+    ```
+-   After the module is removed, the module stream is still enabled. To verify the module stream is still enabled :
+
+    ```
+    $ yum module list perl
+    Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+    Name  Stream       Profiles             Summary
+    perl  5.24         common [d], minimal  Practical Extraction and Report Language
+    perl  5.26 [d][e]   common [d], minimal  Practical Extraction and Report Language
+
+    Hint: [d]efault, [e]nabled, [x]disabled, [i]nstalled
+    ```
+
+-   To disable the module stream :
+    ```
+    $ sudo yum module disable perl
+      ...output omitted...
+    Dependencies resolved.
+    =================================================================================
+    Package           Arch             Version              Repository         Size
+    =================================================================================
+    Disabling module streams:
+    perl                               5.26
+    Is this ok [y/N]: y
+    Complete!
+    ```
+
+##### Switching Module Streams
+
+-   Switching module streams generally requires upgrading or downgrading the content to a different version.
+-   To ensure a clean switch, we should remove the modules provided by the module stream first. That will remove all the packages installed by the profiles of the module, and any modules and packages that those packages have dependencies on.
+-   To list the packages installed from the module, in the example below the `postgresql:9.6` module is installed :
+    ```
+    $ sudo yum module info postgresql | grep module_el8 | \
+    sed 's/.*: //g;s/\n/ /g' | xargs yum list installed
+    Installed Packages
+    postgresql.x86_64          9.6.10-1.module+el8+2470+d1bafa0e   @rhel-8.0-for-x86_64-appstream-rpms
+    postgresql-server.x86_64   9.6.10-1.module+el8+2470+d1bafa0e   @rhel-8.0-for-x86_64-appstream-rpms
+    ```
+-   Remove the packages listed from the previous command. Mark the module profiles to be uninstalled.
+    ```
+    $ sudo yum module remove postgresql
+    ...output omitted...
+    Is this ok [y/N]: y
+    ...output omitted...
+    Removed:
+    postgresql-server-9.6.10-1.module+el8+2470+d1bafa0e.x86_64   libpq-10.5-1.el8.x86_64  postgresql-9.6.10-1.module+el8+2470+d1bafa0e.x86_64
+    Complete
+    ```
+-   After removing the module profiles reset the module stream. Use the `yum module reset` command to reset the module stream.
+
+    ```
+    $ sudo yum module reset postgresql
+    =================================================================
+    Package       Arch             Version     Repository      Size
+    =================================================================
+    Resetting module streams:
+    postgresql                      9.6
+
+    Transaction Summary
+    =================================================================
+
+    Is this ok [y/N]: y
+    Complete!
+    ```
+
+-   To enable different module stream and install the module :
+    ` $ sudo yum module install postgresql:10 `
+    <br>
+
+-   The new module stream will be enabled and the current stream disabled. It may be necessary to update or downgrade packages from the previous module stream that are not listed in the new profile. Use the `$ yum distro-sync` to perform this task if required. There may also be packages that remain installed from the previous module stream. Remove those using `yum remove`.
 
 ## Ubuntu Commands
 
