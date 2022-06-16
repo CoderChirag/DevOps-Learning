@@ -179,7 +179,15 @@
       - [Changing system host name](#changing-system-host-name)
       - [Configuring name resolution](#configuring-name-resolution)
       - [Testing DNS Name Resolution](#testing-dns-name-resolution)
-  - [Archiving Data](#archiving-data)
+  - [Archiving and Transferring Files](#archiving-and-transferring-files)
+    - [Managing Compresses tar Archives](#managing-compresses-tar-archives)
+      - [The tar command](#the-tar-command)
+      - [Selected tar Options](#selected-tar-options)
+      - [Archiving Files and Directories](#archiving-files-and-directories)
+      - [Listing Contents of an Archive](#listing-contents-of-an-archive)
+      - [Extracting Files from an Archive](#extracting-files-from-an-archive)
+      - [Creating a Compressed Archive](#creating-a-compressed-archive)
+      - [Extracting a Compressed Archive](#extracting-a-compressed-archive)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -2992,10 +3000,110 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
 -   **Important**
     -   DHCP automatically rewrites the `/etc/resolv.conf` file as interfaces are started unless we specify `PEERDNS=no` in the relevant interface configuration files. Set this using the `nmcli` command.<br> `$ nmcli con mod "static-ens3" ipv4.ignore-auto-dns yes`
 
-## Archiving Data
+## Archiving and Transferring Files
 
--   `$ tar -czvf <archivename>.tar.gz file1 file2...` - Archiving Data
--   `$ tar -xzvf archivename.tar.gz -C /opt/ #-C is for giving a path where we want to unzip files` - Unziping data
+### Managing Compresses tar Archives
+
+#### The tar command
+
+-   Archiving and compressing files are useful when creating backups and transferring data across a network. One of the oldest and most common commands for creating and working with backup archives is the `tar` command.
+    <br>
+
+-   With `tar`, users can gather large sets of files into a single file (archive). A **tar** archive is a structured sequence of file data mixed in with metadata about each file and an index so that individual files can be extracted. The archive can be compressed using `gzip`, `bzip2`, or `xz` compression.
+    <br>
+
+-   The `tar` command can list the contents of archives or extract their files to the current system.
+
+#### Selected tar Options
+
+-   `tar` command options are divided into operations (the action we want to take): **general options** and **compression options**. The table below shows common options, long version of options, and their description :
+    -   Overview of `tar` Operations
+        | Option | Description
+        | --- | ---
+        | `-c`, `--create` | Create a new archive.
+        | `-x`, `--extract` | Extract from an existing archive.
+        | `-t`, `--list` | List the table of contents of an archive.
+    -   Selected `tar` General Options
+        | Option | Description
+        | --- | ---
+        | `-v`, `--verbose` | Verbose. Shows which files get archived or extracted.
+        | `-f`, `--file=` | File name. This option must be followed by the file name of the archive to use or create.
+        | `-p`, `--preserve-permissions` | Preserve the permissions of files and directories when extracting an archive, without subrracting the umask.
+    -   Overview of `tar` Compression Options
+        | Option | Description
+        | --- | ---
+        | `-z`, `--gzip` | Use gzip compression (`.tar.gz`).
+        | `-j`, `--bzip2` | Use bzip2 compression (`.tar.bz2`). bzip2 typically achieves a better compression ratio than gzip.
+        | `-J`, `--xz` | Use xz compression (`.tar.xz`). Tha xz compression typically achieves beter compression ration than bzip2.
+
+#### Archiving Files and Directories
+
+-   The following command creates an archive named `archive.tar` with the contents of `file1`, `file2`, and `file3` in the user's home directory.
+    ```
+    $ tarf -cf archive.tar file1 file2 file2
+    $ ls archive.tar
+    archive.tar
+    ```
+-   **Warning**
+    -   Before creating a tar archive, verify that there is no other archive in the directory with the same name as the new archive to be created. The `tar` command overwrites an existing archive without warning.
+-   The above `tar` command can also be executed using the long version options.<br>`$ tar --file=archive.tar --create file1 file2 file3`
+-   **Note**
+    -   When archiving files by absolute path names, the leading `/` of the path is removed from the file name by default. Removing the leading `/` of the path help users to avoid overwriting important files when extracting the archive. The `tar` command extracts files relative to the current working directory.
+-   For **tar** to be able to archive the selected files, it is mandatory that the user executing the `tar` command can read the files. For example, creating a new archive of the `/etc` folder and all of its content requires root privileges, because only the root user is allowed to read all of the files present in the `/etc` directory. An unprivileged user can create an archive of the `/etc` directory, but the archive **omits files which do not include read permission** for the user, and it **omits directories which do not include both read and execute permission** for the user.
+    ```
+    $ tar -cf /root/etc.tar /etc
+    tar: Removing leading `/' from member names
+    ```
+
+#### Listing Contents of an Archive
+
+-   The `-t` option directs tar to list the contents (table of contents, hence `t`) of the archive. Use the `-f` option with the name of the archive to be queried. For example :
+    ```
+    $ tar -tf /root/etc.tar
+    etc/
+    etc/fstab
+    etc/crypttab
+    etc/mtab
+    ...output omitted...
+    ```
+
+#### Extracting Files from an Archive
+
+-   A tar archive should usually be extracted in an empty directory to ensure it does not overwrite any existing files. **When root extracts an archive**, the tar command preserves the original user and group ownership of the files. **If a regular user extracts files** using tar, the file ownership belongs to the user extracting the files from the archive.
+    ```
+    $ mkdir /root/etcbackup
+    $ cd /root/etcbackup
+    $ tar -xf /root/etc.tar
+    ```
+-   By default, when files get extracted from an archive, the **umask is subtracted from the permissions** of archive content. **To preserve the permissions** of an archived file, the `-p` option when extracting an archive.
+
+#### Creating a Compressed Archive
+
+-   To create a `gzip` compressed archive named `/root/etcbackup.tar.gz`, with the contents from the `/etc` directory on host : <br> `$ tar -czf /root/etcbackup.tar.gz /etc`
+-   To create a `bzip2` compressed archive named `/root/logbackup.tar.bz2`, with the contents from the `/var/log` directory on host : <br> `$ tar -cjf /root/logbackup.tar.bz2 /var/log`
+-   To create a `xz` compressed archive named, `/root/sshconfig.tar.xz`, with the contents from the `/etc/ssh` directory on host : <br> `$ tar -cJf /root/sshconfig.tar.xz /etc/ssh`
+
+#### Extracting a Compressed Archive
+
+-   To extract the contents of a `gzip` compressed archive named `/root/etcbackup.tar.gz` in the `/tmp/etcbackup` directory :
+    ```
+    $ mkdir /tmp/etcbackup
+    $  cd /tmp/etcbackup
+    $ tar -xzf /root/etcbackup.tar.gz
+    ```
+-   To extract the contents of a `bzip2` compressed archive named `/root/logbackup.tar.bz2` in the `/tmp/logbackup` directory :
+    ```
+    $ mkdir /tmp/logbackup
+    $  cd /tmp/logbackup
+    $ tar -xzf /root/logbackup.tar.bz2
+    ```
+-   To extract the contents of a `xz` compressed archive named `/root/sshconfig.tar.xz` in the `/tmp/sshconfig` directory :
+    ` $ mkdir /tmp/sshconfig $ cd /tmp/sshconfig $ tar -xzf /root/sshconfig.tar.xz `
+    <br>
+
+-   **Note**
+    -   Additionally, `gzip`, `bzip2`, and `xz` can be used independently to compress single files. For example, the `gzip etc.tar` command results in the `etc.tar.gz` compressed file, while the `bzip2 abc.tar` command results in the `abc.tar.bz2` compressed file, and the `xz myarchive.tar` command results in the `myarchive.tar.xz` compressed file.
+    -   The corresponding commands to decompress are `gunzip`, `bunzip2`, and `unxz`. For example, the `gunzip /tmp/etc.tar.gz` command results in the `etc.tar` uncompressed tar file, while the `bunzip2 abc.tar.bz2` command results in the `abc.tar` uncompressed tar file, and the `unxz myarchive.tar.xz` command results in the `myarchive.tar` uncompressed tar file.
 
 ## Ubuntu Commands
 
