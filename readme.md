@@ -191,6 +191,8 @@
     - [Transferring Files Between Systems Securely](#transferring-files-between-systems-securely)
       - [Transferring Files Using Secure Copy](#transferring-files-using-secure-copy)
       - [Transferring Files Using the Secure File Transfer Program](#transferring-files-using-the-secure-file-transfer-program)
+    - [Synchronizing Files Betwwen Systems Securely](#synchronizing-files-betwwen-systems-securely)
+      - [Synchronizing Files and Directories with rsync](#synchronizing-files-and-directories-with-rsync)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3160,6 +3162,109 @@ IPv4 is the primary network protocol used on the Internet today. We should have 
     sftp> exit
     [user@host ~]$
     ```
+
+### Synchronizing Files Betwwen Systems Securely
+
+#### Synchronizing Files and Directories with rsync
+
+-   The `rsync` command is another way to securely copy files from one system to another. The tool uses an algorithm that minimizes the amount of data copied by synchronizing only the changed portions of files. It differs from _scp_ in that if two files or directories are similar between two servers, _rsync_ copies only the differences between the file systems, while _scp_ would still copy everything.
+    <br>
+
+-   An advantage of **rsync** is that it can copy files between a local system and a remote system securely and efficiently. While an initial directory synchronization takes about the same time as copying it, subsequent synchronizations only require the differences to be copied over the network, substantially speeding updates.
+    <br>
+
+-   An important option of **rsync** is the `-n` option to perform a **dry run**. A **dry run** is a simulation of what happens when the command gets executed. The dry run shows the changes rsync would perform when the command is run normally. Perform a dry run before the actual rsync operation to ensure no important files get overwritten or deleted.
+-   Two common options when synchronizing with rsync are the `-v` and `-a` options.
+
+    -   The `-v` or `--verbose` option provides more detailed output. This is useful for troubleshooting and to view live progress.
+    -   The `-a` or `--archive` option enables "**archive mode**". This enables recursive copying and turns on a large number of useful options that preserve most characteristics of the files. **Archive mode is the same as specifying the following options** :
+        | Option | Description
+        | --- | ---
+        | `-r`, `--recursive` | synchronize recursively the whole directory tree
+        | `-l`, `--links` | synchronize symbolic links
+        | `-p`, `--perms` | preserve permissions
+        | `-t`, `--times` | preserve time stamps
+        | `-g`, `--group` | preserve group ownership
+        | `-o`, `--owner` | preserve the owner of the files
+        | `-D`, `--devices` | synchronize device file
+    -   Archive mode does not preserve hard links, because this can add significant time to the synchronization. If we want to preserve hard links too, add the `-H` option.
+        <br>
+
+-   **Note**
+
+    -   If we are using advanced permissions, we might need two additional options: - `-A` to preserve **ACLs** - `-X` to preserve **SELinux** contexts
+        <br>
+
+-   We can use **rsync** to synchronize the contents of a local file or directory with a file or directory on a remote machine, using either machine as the source. We can also synchronize the contents of two local files or directories.
+-   For example, to synchronize contents of the `/var/log` directory to the `/tmp` directory :
+
+    ```
+    [user@host ~]$ su -
+    Password:
+    [root@host ~]# rsync -av /var/log /tmp
+    receiving incremental file list
+    log/
+    log/README
+    log/boot.log
+    ...output omitted...
+    log/tuned/tuned.log
+
+    sent 11,592,423 bytes  received 779 bytes  23,186,404.00 bytes/sec
+    total size is 11,586,755  speedup is 1.00
+    [user@host ~]$ ls /tmp
+    log  ssh-RLjDdarkKiW1
+    [user@host ~]$
+    ```
+
+-   A trailing slash on the source directory synchronizes the content of that directory without newly creating the subdirectory in the target directory. In this example, the `log` directory is not created in the `/tmp` directory, only the content of `/var/log/` is synchronized into `/tmp`.
+
+    ```
+    [root@host ~]# rsync -av /var/log/ /tmp
+    sending incremental file list
+    ./
+    README
+    boot.log
+    ...output omitted...
+    tuned/tuned.log
+
+    sent 11,592,389 bytes  received 778 bytes  23,186,334.00 bytes/sec
+    total size is 11,586,755  speedup is 1.00
+    [root@host ~]# ls /tmp
+    anaconda                  dnf.rpm.log-20190318  private
+    audit                     dnf.rpm.log-20190324  qemu-ga
+    boot.log                  dnf.rpm.log-20190331  README
+    ...output omitted...
+    ```
+
+-   In this example, synchronize the local `/var/log` directory to the `/tmp` directory on the remotehost system :
+    ```
+    [root@host ~]# rsync -av /var/log remotehost:/tmp
+    root@remotehost's password:
+    receiving incremental file list
+    log/
+    log/README
+    log/boot.log
+    ...output omitted...
+    sent 9,783 bytes  received 290,576 bytes  85,816.86 bytes/sec
+    total size is 11,585,690  speedup is 38.57
+    ```
+-   In the same way, the `/var/log` remote directory on remotehost can be synchronized to the `/tmp` local directory on host :
+
+    ```
+    [root@host ~]# rsync -av remotehost:/var/log /tmp
+    root@remotehost's password:
+    receiving incremental file list
+    log/boot.log
+    log/dnf.librepo.log
+    log/dnf.log
+    ...output omitted...
+
+    sent 9,783 bytes  received 290,576 bytes  85,816.86 bytes/sec
+    total size is 11,585,690  speedup is 38.57
+    ```
+
+-   **Note**
+    -   To preserve file ownership, we need to be `root` on the destination system. If the destination is remote, authenticate as `root`. If the destination is local, we must run rsync as `root`.
 
 ## Ubuntu Commands
 
