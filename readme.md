@@ -225,6 +225,13 @@
         - [Disk Partitions](#disk-partitions)
         - [Logical Volumes](#logical-volumes)
       - [Examining File Systems](#examining-file-systems)
+    - [Mounting and Unmounting File Systems](#mounting-and-unmounting-file-systems)
+      - [Mounting File Systems Manually](#mounting-file-systems-manually)
+        - [Identifying the Block Device](#identifying-the-block-device)
+        - [Mounting by Block Device Name](#mounting-by-block-device-name)
+        - [Mounting by File-system UUID](#mounting-by-file-system-uuid)
+      - [Automatic Mounting of Removable Storage Devices](#automatic-mounting-of-removable-storage-devices)
+      - [Unmounting File Systems](#unmounting-file-systems)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3702,7 +3709,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     ```
 
 -   To enable different module stream and install the module :
-    ` $ sudo yum module install postgresql:10 `
+    `$ sudo yum module install postgresql:10`
     <br>
 
 -   The new module stream will be enabled and the current stream disabled. It may be necessary to update or downgrade packages from the previous module stream that are not listed in the new profile. Use the `$ yum distro-sync` to perform this task if required. There may also be packages that remain installed from the previous module stream. Remove those using `yum remove`.
@@ -3713,52 +3720,52 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 
 #### Storage Management Concepts
 
-- Files on a Linux server are accessed through the file-system hierarchy, a single inverted tree of directories. This file system hierarchy is assembled from file systems provided by the storage devices available to your system. Each file system is a storage device that has been formatted to store files.
-<br>
+-   Files on a Linux server are accessed through the file-system hierarchy, a single inverted tree of directories. This file system hierarchy is assembled from file systems provided by the storage devices available to your system. Each file system is a storage device that has been formatted to store files.
+    <br>
 
-- In a sense, the Linux file-system hierarchy presents a collection of file systems on separate storage devices as if it were one set of files on one giant storage device that you can navigate. Much of the time, we do not need to know which storage device a particular file is on, we just need to know the directory that file is in.
-  <br>
+-   In a sense, the Linux file-system hierarchy presents a collection of file systems on separate storage devices as if it were one set of files on one giant storage device that you can navigate. Much of the time, we do not need to know which storage device a particular file is on, we just need to know the directory that file is in.
+    <br>
 
-- Sometimes, however, it can be important. We might need to determine how full a storage device is and what directories in the file-system hierarchy are affected. There might be errors in the logs from a storage device, and we need to know what file systems are at risk. We could just want to create a hard link between two files, and we need to know if they are on the same file system to determine if it is possible.
+-   Sometimes, however, it can be important. We might need to determine how full a storage device is and what directories in the file-system hierarchy are affected. There might be errors in the logs from a storage device, and we need to know what file systems are at risk. We could just want to create a hard link between two files, and we need to know if they are on the same file system to determine if it is possible.
 
 ##### Files Systems and Mount Points
 
-- To make the contents of a file system available in the file-system hierarchy, it must be mounted on an empty directory. This directory is called a **mount point**. Once mounted, if we use `ls` to list that directory, we will see the contents of the mounted file system, and we can access and use those files normally. Many file systems are automatically mounted as part of the boot process.
-  <br>
+-   To make the contents of a file system available in the file-system hierarchy, it must be mounted on an empty directory. This directory is called a **mount point**. Once mounted, if we use `ls` to list that directory, we will see the contents of the mounted file system, and we can access and use those files normally. Many file systems are automatically mounted as part of the boot process.
+    <br>
 
-- If we have only worked with Microsoft Windows drive letters, this is a fundamentally different concept. It is somewhat similar to the NTFS mounted folders feature.
+-   If we have only worked with Microsoft Windows drive letters, this is a fundamentally different concept. It is somewhat similar to the NTFS mounted folders feature.
 
 ##### File Systems, Storage, and Block Devices
 
-- Low-level access to storage devices in Linux is provided by a special type of file called a **block device**. These block devices must be formatted with a file system before they can be mounted.
-<br>
+-   Low-level access to storage devices in Linux is provided by a special type of file called a **block device**. These block devices must be formatted with a file system before they can be mounted.
+    <br>
 
-- Block device files are stored in the `/dev` directory, along with other device files. Device files are created automatically by the operating system. In Red Hat Enterprise Linux, the first **SATA/PATA**, **SAS**, **SCSI**, or **USB hard drive** detected is called `/dev/sda`, the second is `/dev/sdb`, and so on. These names represent the entire hard drive.
-<br>
+-   Block device files are stored in the `/dev` directory, along with other device files. Device files are created automatically by the operating system. In Red Hat Enterprise Linux, the first **SATA/PATA**, **SAS**, **SCSI**, or **USB hard drive** detected is called `/dev/sda`, the second is `/dev/sdb`, and so on. These names represent the entire hard drive.
+    <br>
 
-- Other types of storage will have other forms of naming.
-  | Type of device | Device naming pattern
-  | --- | ---
-  | SATA/SAS/USB-attached storage | `/dev/sda, /dev/sdb ...`
-  | `virtio-blk` paravirtualized storage (some virtual machines) | `/dev/vda, /dev/vdb ...`
-  | NVMe-attached storage (many SSDs) | `/dev/nvme0, /dev/nvme1 ...`
-  | SD/MMC/eMMC storage (SD cards) | `/dev/mmcblk0, /dev/mmcblk1 ...`
+-   Other types of storage will have other forms of naming.
+    | Type of device | Device naming pattern
+    | --- | ---
+    | SATA/SAS/USB-attached storage | `/dev/sda, /dev/sdb ...`
+    | `virtio-blk` paravirtualized storage (some virtual machines) | `/dev/vda, /dev/vdb ...`
+    | NVMe-attached storage (many SSDs) | `/dev/nvme0, /dev/nvme1 ...`
+    | SD/MMC/eMMC storage (SD cards) | `/dev/mmcblk0, /dev/mmcblk1 ...`
 
 ##### Disk Partitions
 
-- Normally, we do not make the entire storage device into one file system. Storage devices are typically divided up into smaller chunks called **partitions**.
-<br>
+-   Normally, we do not make the entire storage device into one file system. Storage devices are typically divided up into smaller chunks called **partitions**.
+    <br>
 
-- Partitions allow us to compartmentalize a disk : the various partitions can be formatted with different file systems or used for different purposes. For example, one partition can contain user home directories while another can contain system data and logs. If a user fills up the home directory partition with data, the system partition may still have space available.
-<br>
+-   Partitions allow us to compartmentalize a disk : the various partitions can be formatted with different file systems or used for different purposes. For example, one partition can contain user home directories while another can contain system data and logs. If a user fills up the home directory partition with data, the system partition may still have space available.
+    <br>
 
-- Partitions are block devices in their own right. On **SATA-attached storage**, the first partition on the first disk is `/dev/sda1`. The third partition on the second disk is `/dev/sdb3`, and so on. Paravirtualized storage devices have a similar naming system.
-<br>
+-   Partitions are block devices in their own right. On **SATA-attached storage**, the first partition on the first disk is `/dev/sda1`. The third partition on the second disk is `/dev/sdb3`, and so on. Paravirtualized storage devices have a similar naming system.
+    <br>
 
-- An **NVMe-attached SSD** device names its partitions differently. In that case, the first partition on the first disk is `/dev/nvme0p1`. The third partition on the second disk is `/dev/nvme1p3`, and so on. SD or MMC cards have a similar naming system.
-<br>
+-   An **NVMe-attached SSD** device names its partitions differently. In that case, the first partition on the first disk is `/dev/nvme0p1`. The third partition on the second disk is `/dev/nvme1p3`, and so on. SD or MMC cards have a similar naming system.
+    <br>
 
-- A long listing of the /dev/sda1 device file on host reveals its special file type as b, which stands for block device :
+-   A long listing of the /dev/sda1 device file on host reveals its special file type as b, which stands for block device :
     ```
     $ ls -l /dev/sda1
     brw-rw----. 1 root disk 8, 1 Feb 22 08:00 /dev/sda1
@@ -3766,57 +3773,37 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 
 ##### Logical Volumes
 
-- Another way of organizing disks and partitions is with **logical volume management (LVM)**. With LVM, one or more block devices can be aggregated into a storage pool called a **volume group**. Disk space in the volume group is then parceled out to one or more logical volumes, which are the functional equivalent of a partition residing on a physical disk.
-<br>
+-   Another way of organizing disks and partitions is with **logical volume management (LVM)**. With LVM, one or more block devices can be aggregated into a storage pool called a **volume group**. Disk space in the volume group is then parceled out to one or more logical volumes, which are the functional equivalent of a partition residing on a physical disk.
+    <br>
 
-- The LVM system assigns names to volume groups and logical volumes upon creation. LVM creates a directory in `/dev` that matches the group name and then creates a symbolic link within that new directory with the same name as the logical volume. That logical volume file is then available to be mounted. For example, if a volume group is called `myvg` and the logical volume within it is called `mylv`, then the full path name to the logical volume device file is `/dev/myvg/mylv`.
-<br>
+-   The LVM system assigns names to volume groups and logical volumes upon creation. LVM creates a directory in `/dev` that matches the group name and then creates a symbolic link within that new directory with the same name as the logical volume. That logical volume file is then available to be mounted. For example, if a volume group is called `myvg` and the logical volume within it is called `mylv`, then the full path name to the logical volume device file is `/dev/myvg/mylv`.
+    <br>
 
-- **Note**
-  - The form of logical volume device name mentioned above is actually implemented as a symbolic link to the actual device file used to access it, which might vary between boots. There is another form of logical volume device name linked from files in `/dev/mapper` that are often used, and are also symbolic links to the actual device file.
+-   **Note**
+    -   The form of logical volume device name mentioned above is actually implemented as a symbolic link to the actual device file used to access it, which might vary between boots. There is another form of logical volume device name linked from files in `/dev/mapper` that are often used, and are also symbolic links to the actual device file.
 
 #### Examining File Systems
 
-- To get an overview of local and remote file system devices and the amount of free space available, run the `df` command. When the `df` command is run without arguments, it reports **total disk space**, **used disk space**, **free disk space**, and the **percentage of the total disk space used on all mounted regular file systems**. It reports on both local and remote file systems.
-<br>
+-   To get an overview of local and remote file system devices and the amount of free space available, run the `df` command. When the `df` command is run without arguments, it reports **total disk space**, **used disk space**, **free disk space**, and the **percentage of the total disk space used on all mounted regular file systems**. It reports on both local and remote file systems.
+    <br>
 
-- The following example displays the file systems and mount points on host.
-    ```
-    $ df
-    Filesystem     1K-blocks    Used Available Use% Mounted on
-    devtmpfs          912584       0    912584   0% /dev
-    tmpfs             936516       0    936516   0% /dev/shm
-    tmpfs             936516   16812    919704   2% /run
-    tmpfs             936516       0    936516   0% /sys/fs/cgroup
-    /dev/vda3        8377344 1411332   6966012  17% /
-    /dev/vda1        1038336  169896    868440  17% /boot
-    tmpfs             187300       0    187300   0% /run/user/1000
-    ```
-<br>
+-   The following example displays the file systems and mount points on host.
+    ` $ df Filesystem 1K-blocks Used Available Use% Mounted on devtmpfs 912584 0 912584 0% /dev tmpfs 936516 0 936516 0% /dev/shm tmpfs 936516 16812 919704 2% /run tmpfs 936516 0 936516 0% /sys/fs/cgroup /dev/vda3 8377344 1411332 6966012 17% / /dev/vda1 1038336 169896 868440 17% /boot tmpfs 187300 0 187300 0% /run/user/1000 `
+    <br>
 
-- The partitioning on the host system shows two physical file systems, which are mounted on `/` and `/boot`. This is common for virtual machines. The `tmpfs` and `devtmpfs` devices are file systems in system memory. **All files written into `tmpfs` or `devtmpfs` disappear after system reboot.**
-<br>
+-   The partitioning on the host system shows two physical file systems, which are mounted on `/` and `/boot`. This is common for virtual machines. The `tmpfs` and `devtmpfs` devices are file systems in system memory. **All files written into `tmpfs` or `devtmpfs` disappear after system reboot.**
+    <br>
 
-- To improve readability of the output sizes, there are two different human-readable options: `-h` or `-H`. The difference between these two options is that `-h` reports in KiB (210), MiB (220), or GiB (230), while the `-H` option reports in SI units: KB (103), MB (106), or GB (109). Hard drive manufacturers usually use SI units when advertising their products.
-<br>
+-   To improve readability of the output sizes, there are two different human-readable options: `-h` or `-H`. The difference between these two options is that `-h` reports in KiB (210), MiB (220), or GiB (230), while the `-H` option reports in SI units: KB (103), MB (106), or GB (109). Hard drive manufacturers usually use SI units when advertising their products.
+    <br>
 
-- Show a report on the file systems on the host system with all units converted to human-readable format :
-    ```
-    $ df -h
-    Filesystem      Size  Used Avail Use% Mounted on
-    devtmpfs        892M     0  892M   0% /dev
-    tmpfs           915M     0  915M   0% /dev/shm
-    tmpfs           915M   17M  899M   2% /run
-    tmpfs           915M     0  915M   0% /sys/fs/cgroup
-    /dev/vda3       8.0G  1.4G  6.7G  17% /
-    /dev/vda1      1014M  166M  849M  17% /boot
-    tmpfs           183M     0  183M   0% /run/user/1000
-    ```
-<br>
+-   Show a report on the file systems on the host system with all units converted to human-readable format :
+    ` $ df -h Filesystem Size Used Avail Use% Mounted on devtmpfs 892M 0 892M 0% /dev tmpfs 915M 0 915M 0% /dev/shm tmpfs 915M 17M 899M 2% /run tmpfs 915M 0 915M 0% /sys/fs/cgroup /dev/vda3 8.0G 1.4G 6.7G 17% / /dev/vda1 1014M 166M 849M 17% /boot tmpfs 183M 0 183M 0% /run/user/1000 `
+    <br>
 
-- For more detailed information about space used by a certain directory tree, use the `du` command. The `du` command has `-h` and `-H` options to convert the output to human-readable format. The du command shows the size of all files in the current directory tree recursively.
+-   For more detailed information about space used by a certain directory tree, use the `du` command. The `du` command has `-h` and `-H` options to convert the output to human-readable format. The du command shows the size of all files in the current directory tree recursively.
 
-- Show a disk usage report in human-readable format for the `/var/log` directory on host :
+-   Show a disk usage report in human-readable format for the `/var/log` directory on host :
     ```
     $ du -h /var/log
     ...output omitted...
@@ -3826,6 +3813,114 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     8.0K  /usr/share/cmake
     369M  /usr/share
     ```
+
+### Mounting and Unmounting File Systems
+
+#### Mounting File Systems Manually
+
+-   A file system residing on a removable storage device needs to be mounted in order to access it. The `mount` command allows the root user to manually mount a file system. The first argument of the mount command specifies the file system to mount. The second argument specifies the directory to use as the mount point in the file-system hierarchy.
+    <br>
+
+-   There are two common ways to specify the file system on a disk partition to the `mount` command :
+
+    -   With the **name of the device file** in `/dev` containing the file system.
+    -   With the **UUID** written to the file system, a **universally-unique identifier**.
+        <br>
+
+-   Mounting a device is relatively simple. We need to identify the device we want to mount, make sure the mount point exists, and mount the device on the mount point.
+
+##### Identifying the Block Device
+
+-   A hot-pluggable storage device, whether a hard disk drive (HDD) or solid-state device (SSD) in a server caddy, or a USB storage device, might be plugged into a different port each time they are attached to a system.
+    <br>
+
+-   Use the `lsblk` command to list the details of a specified block device or all the available devices.
+    ```
+    $ lsblk
+    NAME                      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+    vda                       253:0    0   12G  0 disk
+    ├─vda1                    253:1    0    1G  0 part /boot
+    ├─vda2                    253:2    0    1G  0 part [SWAP]
+    └─vda3                    253:3    0   11G  0 part /
+    vdb                       253:16   0   64G  0 disk
+    └─vdb1                    253:17   0   64G  0 part
+    ```
+    If we know that we just added a 64 GB storage device with one partition, then we can guess from the preceding output that `/dev/vdb1` is the partition that we want to mount.
+
+##### Mounting by Block Device Name
+
+-   The following example mounts the file system in the `/dev/vdb1` partition on the directory `/mnt/data`. <br> `$ mount /dev/vdb1 /mnt/data`
+    <br>
+
+-   To mount a file system, the destination directory must already exist. The `/mnt` directory exists by default and is intended for use as a temporary mount point.
+    <br>
+
+-   We can use `/mnt` directory, or better yet create a subdirectory of `/mnt` to use as a temporary mount point, unless we have a good reason to mount it in a specific location in the file-system hierarchy.
+    <br>
+
+-   **Important**
+
+    -   If the directory acting as mount point is not empty, any files copied to that directory before the file system was mounted are not accessible until the file system is unmounted again.
+        <br>
+
+-   This approach works fine in the short run. However, the order in which the operating system detects disks can change if devices are added to or removed from the system. This will change the device name associated with that storage device. A better approach would be to mount by some characteristic built into the file system.
+
+##### Mounting by File-system UUID
+
+-   One stable identifier that is associated with a file system is its **UUID**, a very long hexadecimal number that acts as a **universally-unique identifier**. This UUID is part of the file system and remains the same as long as the file system is not recreated.
+    <br>
+
+-   The `lsblk -fp` command lists the full path of the device, along with the UUIDs and mount points, as well as the type of file system in the partition. If the file system is not mounted, the mount point will be blank.
+    ```
+    $ lsblk -fp
+    NAME        FSTYPE LABEL UUID                                 MOUNTPOINT
+    /dev/vda
+    ├─/dev/vda1 xfs          23ea8803-a396-494a-8e95-1538a53b821c /boot
+    ├─/dev/vda2 swap         cdf61ded-534c-4bd6-b458-cab18b1a72ea [SWAP]
+    └─/dev/vda3 xfs          44330f15-2f9d-4745-ae2e-20844f22762d /
+    /dev/vdb
+    └─/dev/vdb1 xfs          46f543fd-78c9-4526-a857-244811be2d88
+    ```
+-   Mount the file system by the UUID of the file system.<br> `$ mount UUID="46f543fd-78c9-4526-a857-244811be2d88" /mnt/data`
+
+#### Automatic Mounting of Removable Storage Devices
+
+-   If we are logged in and using the graphical desktop environment, it will automatically mount any removable storage media when it is inserted.
+    <br>
+
+-   The removable storage device is mounted at `/run/media/USERNAME/LABEL` where `USERNAME` is the name of the user logged into the graphical environment and `LABEL` is an identifier, often the name given to the file system when it was created if one is available.
+    <br>
+
+-   Before removing the device, we should unmount it manually.
+
+#### Unmounting File Systems
+
+-   The shutdown and reboot procedures unmount all file systems automatically. As part of this process, any file system data cached in memory is flushed to the storage device thus ensuring that the file system suffers no data corruption.
+    <br>
+
+-   **Warning**
+
+    -   File system data is often cached in memory. Therefore, in order to avoid corrupting data on the disk, it is essential that we unmount removable drives before unplugging them. The unmount procedure synchronizes data before releasing the drive, ensuring data integrity.
+        <br>
+
+-   To unmount a file system, the `umount` command expects the mount point as an argument. <br> `$ umount /mnt/data`
+    Unmounting is not possible if the mounted file system is in use. For the `umount` command to succeed, all processes needs to stop accessing data under the mount point.
+    <br>
+
+-   The `lsof` command lists all open files and the process accessing them in the provided directory. It is useful to identify which processes currently prevent the file system from successful unmounting.
+    ```
+    $ lsof /mnt/data
+    COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+    bash    1593 root  cwd    DIR 253,17        6  128 /mnt/data
+    lsof    2532 root  cwd    DIR 253,17       19  128 /mnt/data
+    lsof    2533 root  cwd    DIR 253,17       19  128 /mnt/data
+    ```
+-   Once the processes are identified, an action can be taken, such as waiting for the process to complete or sending a `SIGTERM` or `SIGKILL` signal to the process. In this case, it is sufficient to change the current working directory to a directory outside the mount point.
+    ` $ cd $ umount /mnt/data `
+    <br>
+
+-   **Note**
+    -   A common reason for file systems to fail to unmount is that a Bash shell is using the mount point or a subdirectory as a current working directory. Use the `cd` command to change out of the file system to resolve this problem.
 
 ## Ubuntu Commands
 
