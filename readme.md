@@ -232,6 +232,14 @@
         - [Mounting by File-system UUID](#mounting-by-file-system-uuid)
       - [Automatic Mounting of Removable Storage Devices](#automatic-mounting-of-removable-storage-devices)
       - [Unmounting File Systems](#unmounting-file-systems)
+    - [Locating Files on the System](#locating-files-on-the-system)
+      - [Searching for Files](#searching-for-files)
+      - [Locating Files by Name](#locating-files-by-name)
+      - [Searching for Files in Real Time](#searching-for-files-in-real-time)
+        - [Searching Files Based on Ownership or Permission](#searching-files-based-on-ownership-or-permission)
+      - [Searching Files Based on Size](#searching-files-based-on-size)
+      - [Searching Files Based on Modification Time](#searching-files-based-on-modification-time)
+      - [Searching Files Based on File Type](#searching-files-based-on-file-type)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -3788,7 +3796,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   The following example displays the file systems and mount points on host.
-    ` $ df Filesystem 1K-blocks Used Available Use% Mounted on devtmpfs 912584 0 912584 0% /dev tmpfs 936516 0 936516 0% /dev/shm tmpfs 936516 16812 919704 2% /run tmpfs 936516 0 936516 0% /sys/fs/cgroup /dev/vda3 8377344 1411332 6966012 17% / /dev/vda1 1038336 169896 868440 17% /boot tmpfs 187300 0 187300 0% /run/user/1000 `
+    `$ df Filesystem 1K-blocks Used Available Use% Mounted on devtmpfs 912584 0 912584 0% /dev tmpfs 936516 0 936516 0% /dev/shm tmpfs 936516 16812 919704 2% /run tmpfs 936516 0 936516 0% /sys/fs/cgroup /dev/vda3 8377344 1411332 6966012 17% / /dev/vda1 1038336 169896 868440 17% /boot tmpfs 187300 0 187300 0% /run/user/1000`
     <br>
 
 -   The partitioning on the host system shows two physical file systems, which are mounted on `/` and `/boot`. This is common for virtual machines. The `tmpfs` and `devtmpfs` devices are file systems in system memory. **All files written into `tmpfs` or `devtmpfs` disappear after system reboot.**
@@ -3798,7 +3806,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   Show a report on the file systems on the host system with all units converted to human-readable format :
-    ` $ df -h Filesystem Size Used Avail Use% Mounted on devtmpfs 892M 0 892M 0% /dev tmpfs 915M 0 915M 0% /dev/shm tmpfs 915M 17M 899M 2% /run tmpfs 915M 0 915M 0% /sys/fs/cgroup /dev/vda3 8.0G 1.4G 6.7G 17% / /dev/vda1 1014M 166M 849M 17% /boot tmpfs 183M 0 183M 0% /run/user/1000 `
+    `$ df -h Filesystem Size Used Avail Use% Mounted on devtmpfs 892M 0 892M 0% /dev tmpfs 915M 0 915M 0% /dev/shm tmpfs 915M 17M 899M 2% /run tmpfs 915M 0 915M 0% /sys/fs/cgroup /dev/vda3 8.0G 1.4G 6.7G 17% / /dev/vda1 1014M 166M 849M 17% /boot tmpfs 183M 0 183M 0% /run/user/1000`
     <br>
 
 -   For more detailed information about space used by a certain directory tree, use the `du` command. The `du` command has `-h` and `-H` options to convert the output to human-readable format. The du command shows the size of all files in the current directory tree recursively.
@@ -3916,11 +3924,266 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     lsof    2533 root  cwd    DIR 253,17       19  128 /mnt/data
     ```
 -   Once the processes are identified, an action can be taken, such as waiting for the process to complete or sending a `SIGTERM` or `SIGKILL` signal to the process. In this case, it is sufficient to change the current working directory to a directory outside the mount point.
-    ` $ cd $ umount /mnt/data `
+    `$ cd $ umount /mnt/data`
     <br>
 
 -   **Note**
     -   A common reason for file systems to fail to unmount is that a Bash shell is using the mount point or a subdirectory as a current working directory. Use the `cd` command to change out of the file system to resolve this problem.
+
+### Locating Files on the System
+
+#### Searching for Files
+
+-   A system administrator needs tools to search for files matching certain criteria on the file system. Here we will discuss two commands that can search for files in the file-system hierarchy.
+    -   The `locate` command searches a pregenerated index for file names or file paths and returns the results instantly.
+    -   The `find` command searches for files in real time by crawling through the file-system hierarchy.
+
+#### Locating Files by Name
+
+-   The `locate` command finds files based on the name or path to the file. It is fast because it looks up this information from the `mlocate database`. However, this database is not updated in real time, and it must be frequently updated for results to be accurate. This also means that locate will not find files that have been created since the last update of the database.
+    <br>
+
+-   The `locate` database is automatically updated every day. However, at any time the root user can issue the `$ updatedb` command to force an immediate update.
+    <br>
+
+-   The `locate` command restricts results for unprivileged users. In order to see the resulting file name, the user must have search permission on the directory in which the file resides.
+-   Search for files with `passwd` in the name or path in directory trees readable by user on host.
+    ```
+    $ locate passwd
+    /etc/passwd
+    /etc/passwd-
+    /etc/pam.d/passwd
+    /etc/security/opasswd
+    /usr/bin/gpasswd
+    /usr/bin/grub2-mkpasswd-pbkdf2
+    /usr/bin/lppasswd
+    /usr/bin/passwd
+    ...output omitted...
+    ```
+-   Results are returned even when the file name or path is only a partial match to the search query.
+    ```
+    $ locate image
+    /etc/selinux/targeted/contexts/virtual_image_context
+    /usr/bin/grub2-mkimage
+    /usr/lib/sysimage
+    /usr/lib/dracut/dracut.conf.d/02-generic-image.conf
+    /usr/lib/firewalld/services/ovirt-imageio.xml
+    /usr/lib/grub/i386-pc/lnxboot.image
+    ...output omitted...
+    ```
+-   The `-i` option performs a **case-insensitive** search. With this option, all possible combinations of upper and lowercase letters match the search.
+    ```$
+    locate -i messages
+    ...output omitted...
+    /usr/share/vim/vim80/lang/zh_TW/LC_MESSAGES
+    /usr/share/vim/vim80/lang/zh_TW/LC_MESSAGES/vim.mo
+    /usr/share/vim/vim80/lang/zh_TW.UTF-8/LC_MESSAGES
+    /usr/share/vim/vim80/lang/zh_TW.UTF-8/LC_MESSAGES/vim.mo
+    /usr/share/vim/vim80/syntax/messages.vim
+    /usr/share/vim/vim80/syntax/msmessages.vim
+    /var/log/messages
+    ```
+-   The `-n` option limits the number of returned search results by the locate command. The following example limits the search results returned by locate to the first five matches :
+    ```$
+    locate -n 5 snow.png
+    /usr/share/icons/HighContrast/16x16/status/weather-snow.png
+    /usr/share/icons/HighContrast/22x22/status/weather-snow.png
+    /usr/share/icons/HighContrast/24x24/status/weather-snow.png
+    /usr/share/icons/HighContrast/256x256/status/weather-snow.png
+    /usr/share/icons/HighContrast/32x32/status/weather-snow.png
+    ```
+
+#### Searching for Files in Real Time
+
+-   The `find` command locates files by performing a real-time search in the file-system hierarchy. It is slower than locate, but more accurate. It can also search for files based on criteria other than the file name, such as the permissions of the file, type of file, its size, or its modification time.
+    <br>
+
+-   The `find` command looks at files in the file system using the user account that executed the search. The user invoking the find command must have read and execute permission on a directory to examine its contents.
+    <br>
+
+-   The first argument to the `find` command is the **directory to search**. If the directory argument is omitted, find starts the search in the current directory and looks for matches in any subdirectory.
+    <br>
+
+-   To search for files by file name, use the `-name FILENAME` option. With this option, find returns the path to files matching `FILENAME` exactly. For example, to search for files named `sshd_config` starting from the `/` directory, run the following command :
+    ```
+    $ find / -name sshd_config
+    /etc/ssh/sshd_config
+    ```
+-   **Note**
+
+    -   With the `find` command, the **full word options use a single dash** and options follow the path name argument, unlike most other Linux commands.  
+        <br>
+
+-   Wildcards are available to search for a file name and return all results that are a partial match. When using wildcards, it is important to quote the file name to look for to prevent the terminal from interpreting the wildcard.
+
+-   In the following example, search for files starting in the `/` directory that end in `.txt` :
+    ```
+    $ find / -name '*.txt'
+    /etc/pki/nssdb/pkcs11.txt
+    /etc/brltty/brl-lt-all.txt
+    /etc/brltty/brl-mb-all.txt
+    /etc/brltty/brl-md-all.txt
+    /etc/brltty/brl-mn-all.txt
+    ...output omitted...
+    ```
+-   To search for files in the `/etc/` directory that contain the word, pass, anywhere in their names on host, run the following command :
+    ```
+    $ find /etc -name '*pass*'
+    /etc/security/opasswd
+    /etc/pam.d/passwd
+    /etc/pam.d/password-auth
+    /etc/passwd-
+    /etc/passwd
+    /etc/authselect/password-auth
+    ```
+-   To perform a **case-insensitive** search for a given file name, use the `-iname` option, followed by the file name to search. To search files with case-insensitive text, messages, in their names in the `/` directory on host, run the following command :
+    ```
+    $ find / -iname '*messages*'
+    ...output omitted...
+    /usr/share/vim/vim80/lang/zh_CN.UTF-8/LC_MESSAGES
+    /usr/share/vim/vim80/lang/zh_CN.cp936/LC_MESSAGES
+    /usr/share/vim/vim80/lang/zh_TW/LC_MESSAGES
+    /usr/share/vim/vim80/lang/zh_TW.UTF-8/LC_MESSAGES
+    /usr/share/vim/vim80/syntax/messages.vim
+    /usr/share/vim/vim80/syntax/msmessages.vim
+    ```
+
+##### Searching Files Based on Ownership or Permission
+
+-   The `find` command can search for files based on their ownership or permissions. Useful options when searching by owner are `-user` and `-group`, which search by name, and `-uid` and `-gid`, which search by ID.
+
+-   Search for files owned by **user** in the `/home/user` directory on host.
+    ```
+    $ find -user user
+    .
+    ./.bash_logout
+    ./.bash_profile
+    ./.bashrc
+    ./.bash_history
+    ```
+-   Search for files owned by the **group user** in the `/home/user` directory on host.
+    ```
+    $ find -group user
+    .
+    ./.bash_logout
+    ./.bash_profile
+    ./.bashrc
+    ./.bash_history
+    ```
+-   Search for files owned by **user ID 1000** in the `/home/user` directory on host.
+    ```
+    $ find -uid 1000
+    .
+    ./.bash_logout
+    ./.bash_profile
+    ./.bashrc
+    ./.bash_history
+    ```
+-   Search for files owned by **group ID 1000** in the `/home/user` directory on host.
+    ```
+    $ find -gid 1000
+    .
+    ./.bash_logout
+    ./.bash_profile
+    ./.bashrc
+    ./.bash_history
+    ```
+-   The `-user`, and `-group` options can be used together to search files where file owner and group owner are different. The example below list files that are both owned by **user root** and affiliated with **group mail**.
+    ```
+    $ find / -user root -group mail
+    /var/spool/mail
+    ...output omitted...
+    ```
+-   The `-perm` option is used to look for files with a **particular set of permissions**. Permissions can be described as octal values, with some combination of 4, 2, and 1 for read, write, and execute. Permissions can be preceded by a `/` or `-` sign.
+    <br>
+
+-   A numeric permission preceded by `/` matches files that have **at least one bit of user, group, or other for that permission set**. A file with permissions `r--r--r--` does not match `/222`, but one with `rw-r--r--` does. A `-` sign before a permission means that **all three instances of that bit must be on**, so neither of the previous examples would match, but something like `rw-rw-rw-`> would.
+    <br>
+
+-   To use a more complex example, the following command matches any file for which the **user has read, write, and execute permissions**, members of the **group have read and write permissions**, and **others have read-only access** : <br> `$ find /home -perm 764`
+    <br>
+
+-   To match files for which the **user has at least write and execute permissions**, and the **group has at least write permissions**, and **others have at least read access** : <br> 1`$find /hoe -perm -324`
+    <br>
+-   To match files for which the **user has read permissions, or the group has at least read permissions, or others have at least write access** : <br> `$ find /home -perm /442`
+    <br>
+
+-   When used with `/` or `-`, a value of `0` works like a wildcard, since it means a **permission of at least nothing**.
+    <br>
+
+-   To match any file in the `/home/user` directory for which **others have at least read access on host**, run :<br> `$ find -perm -004`
+    <br>
+
+-   Find all files in the `/home/user` directory where **other has write permissions on host**.<br>`$ find -perm -002`
+
+#### Searching Files Based on Size
+
+-   The `find` command can look up files that match a size specified with the `-size` option, followed by a numerical value and the unit. Use the following list as the units with the `-size` option :
+
+    -   `k`, for **kilobyte**
+    -   `M`, for **megabyte**
+    -   `G`, for **gigabyte**
+
+-   The example below shows how to search for files with a size of `10 megabytes`, rounded up.<br>`$ find -size 10M`
+    <br>
+
+-   To search the files with a size **more than 10 gigabytes**.<br>`$ find -size +10G`
+    <br>
+
+-   To list all files with a size **less than 10 kilobytes**.<br>`$ find -size -10k`
+    <br>
+
+-   **Important**
+    -   The `-size` option unit modifiers round everything up to single units. For example, the `find -size 1M` command shows files smaller than 1 MB because it rounds all files up to 1 MB.
+
+#### Searching Files Based on Modification Time
+
+-   The `-mmin` option, followed by the time in minutes, searches for all files that had their content changed at `n` minutes ago in the past. The file's timestamp is always rounded down. It also supports fractional values when used with ranges (`+n` and `-n`).
+    <br>
+
+-   To find all files that had their file content changed **120 minutes ago** on host, run :<br>`$ find / -mmin 120`
+    <br>
+
+-   The `+` modifier in front of the amount of minutes looks for all files in the `/` that have been modified **more than `n` minutes ago**. In this example, files that were modified **more than 200 minutes ago** are listed.<br>`$ find / -mmin +200`
+    <br>
+
+-   The `-` modifier changes the search to look for all files in the `/` directory which have been changed **less than `n` minutes ago**. In this example, files that were modified **less than 150 minutes ago** are listed.<br>`$ find / -mmin -150`
+
+#### Searching Files Based on File Type
+
+-   The `-type` option in the `find` command limits the search scope to a given file type. Use the following list to pass the required flags to limit the scope of search :
+
+    -   `f`, for **regular file**
+    -   `d`, for **directory**
+    -   `l`, for **soft link**
+    -   `b`, for **block device**
+        <br>
+
+-   Search for all **directories** in the `/etc` directory on host.
+    ```
+    $ find /etc -type d
+    /etc
+    /etc/tmpfiles.d
+    /etc/systemd
+    /etc/systemd/system
+    /etc/systemd/system/getty.target.wants
+    ...output omitted...
+    ```
+-   Search for all **soft links** on host.<br>`$ find / -type l`
+    <br>
+
+-   Generate a list of all **block devices** in the `/dev` directory on host :
+
+    ```
+    $ find /dev -type b
+    /dev/vda1
+    /dev/vda
+    ```
+
+-   The `-links` option followed by a number looks for all files that have a certain **hard link count**. The number can be preceded by a `+` modifier to look for files with a count **higher than the given hard link count**. If the number is preceded with a `-` modifier, the search is limited to all files with a hard link count that is **less than** the given number.
+    <br>
+
+-   Search for all **regular files with more than one hard link** on host :<br>`$ find / -type f -links +1`
 
 ## Ubuntu Commands
 
