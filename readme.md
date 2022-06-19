@@ -19,6 +19,10 @@
     - [Launching an EC2 Instance](#launching-an-ec2-instance)
       - [Creating the Instance](#creating-the-instance)
       - [Connecting to the Instance](#connecting-to-the-instance)
+- [AWS CLI](#aws-cli)
+  - [Downloading and Installing AWS CLI](#downloading-and-installing-aws-cli)
+  - [Configuring IAM](#configuring-iam)
+  - [Configuring AWS CLI](#configuring-aws-cli)
 
 ---
 
@@ -247,7 +251,7 @@ Steps for creation of an EC2 Instance:
 -   Now configure the **Storage**.
 -   Go to Advanced details > User Data. This is just like Vagrant Provisioning in the local setup. Whatever commands we give here, it will be executing that commands on the startup of the Instance.
     Give the following commands. (Make sure you have choosen Cent OS7 if you are using these commands).
-    ` #!/bin/bash sudo yum install http -y sudo systemctl start httpd sudo systemctl enable httpd mkdir /tmp/test1 `
+    `#!/bin/bash sudo yum install http -y sudo systemctl start httpd sudo systemctl enable httpd mkdir /tmp/test1`
 -   Now finally click on **Launch Instance**.
 
 #### Connecting to the Instance
@@ -289,3 +293,49 @@ So with this we have created and set up an EC2 instance successfully :sunglasses
 **Note**
 
 -   Don't forget to **terminate the instance** after using it.
+
+# AWS CLI
+
+The **AWS Command Line Interface** (AWS CLI) is a unified tool to manage our AWS services. With just one tool to download and configure, we can control multiple AWS services from the command line and automate them through scripts.
+
+## Downloading and Installing AWS CLI
+
+The downloading and installation of AWS CLI is covered in the [prereqs](https://github.com/coderchirag/DevOps-Learning/tree/prereqs) branch. Refer to that branch if you have not downloaded and installed AWS CLI on your machine.
+
+## Configuring IAM
+
+-   On the AWS console, search for **IAM** and open the IAM dashboard page.
+-   Go to **Users section** from the left navigation panel and click on **Add User**.
+    ![iam-add-user](./images/aws/iam-add-user.jpg)
+-   Name the user as **awscli** and select the **Access key - Programmatic access**, and then click on **Next: Permissions** button.
+    ![iam-add-user-awscli](./images/aws/iam-add-user-awscli.jpg)
+-   Now select **Attach existing policies directly** and select **AdministratorAcess** from the policy list, and the **Next: Tags** button.
+    ![iam-add-user-awscli-permissions](./images/aws/iam-add-user-awscli-permissions.jpg)
+-   Click on **Next: Review** button > **Create User** button
+-   Now download the credentials csv file and store it safely as we would be needing the credentials later, and then click on **close**.
+    ![iam-add-user-awscli-credentials](./images/aws/iam-add-user-awscli-credentials.jpg)
+
+## Configuring AWS CLI
+
+-   Open git bash and type the following command to configure the **AWS CLI** so that it can authenticate us.
+
+    ```
+    $ aws configure
+    AWS Access Key ID [None]: <your_access_key>
+    AWS Secret Access Key [None]: <your_secret_key>
+    Default region name [None]: us-east-1
+    Default output format [None]: json
+
+    $ ls ~/.aws
+    config  credentials
+
+    $ cat ~/.aws/config
+    [default]
+    region = us-east-1
+    output = json
+
+    $ cat ~/.aws/credentials
+    [default]
+    aws_access_key_id = <acess_key>
+    aws_secret_access_key = <secret_key>
+    ```
