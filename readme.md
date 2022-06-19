@@ -240,6 +240,22 @@
       - [Searching Files Based on Size](#searching-files-based-on-size)
       - [Searching Files Based on Modification Time](#searching-files-based-on-modification-time)
       - [Searching Files Based on File Type](#searching-files-based-on-file-type)
+  - [Analyzing Servers and Getting Support in Red Hat Linux](#analyzing-servers-and-getting-support-in-red-hat-linux)
+    - [Analyzing and Managing Remote Servers](#analyzing-and-managing-remote-servers)
+      - [Describing the Web Console](#describing-the-web-console)
+      - [Enabling the Web Console](#enabling-the-web-console)
+      - [Logging into the Web Console](#logging-into-the-web-console)
+      - [Changing Passwords](#changing-passwords)
+      - [Troubleshooting with the Web Console](#troubleshooting-with-the-web-console)
+        - [Monitoring System Statistics in Real Time](#monitoring-system-statistics-in-real-time)
+        - [Inspecting and Filtering Syslog Events](#inspecting-and-filtering-syslog-events)
+        - [Running Commands from a Terminal Session](#running-commands-from-a-terminal-session)
+        - [Creating Diagnostic Reports](#creating-diagnostic-reports)
+      - [Managing System Services with the Web Console](#managing-system-services-with-the-web-console)
+        - [System Power Options](#system-power-options)
+        - [Controlling Running System Services](#controlling-running-system-services)
+        - [Configuring Network Interfaces and the Firewall](#configuring-network-interfaces-and-the-firewall)
+        - [Administering User Accounts](#administering-user-accounts)
   - [Ubuntu Commands](#ubuntu-commands)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
@@ -4184,6 +4200,147 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   Search for all **regular files with more than one hard link** on host :<br>`$ find / -type f -links +1`
+
+## Analyzing Servers and Getting Support in Red Hat Linux
+
+### Analyzing and Managing Remote Servers
+
+#### Describing the Web Console
+
+-   Web Console is a web-based management interface for Red Hat Enterprise Linux 8 designed for managing and monitoring our servers. It is based on the open source **Cockpit** service.
+
+-   We can use Web Console to monitor system logs and view graphs of system performance. Additionally, we can use our web browser to change settings using graphical tools in the Web Console interface, including a fully-functional interactive terminal session.
+
+#### Enabling the Web Console
+
+-   Red Hat Enterprise Linux 8 installs Web Console by default in all installation variants except a minimal installation. Use the following command to install Web Console : <br>`$ sudo yum install cockpit`
+    <br>
+
+-   Enable and start the `cockpit.socket` service, which runs a web server. This step is necessary if we need to connect to the system through the web interface.
+
+    ```
+    $ sudo systemctl enable --now cockpit.socket
+    Created symlink /etc/systemd/system/sockets.target.wants/cockpit.socket -> /usr/lib/systemd/system/cockpit.socket.
+    ```
+
+-   If we are using a custom firewall profile, we need to add the cockpit service to `firewalld` to open `port 9090` in the firewall :
+    ```
+    $ sudo firewall-cmd --add-service=cockpit --permanent
+    success
+    $ sudo firewall-cmd --reload
+    success
+    ```
+
+#### Logging into the Web Console
+
+-   Web Console provides its own web server. Launch Firefox to log in to Web Console. We can log in with the user name and password of any local account on the system, including the root user.
+    <br>
+
+-   Open `https://servername:9090` in the web browser, where servername is the **host name** or **IP address** of our server. The connection will be protected by a TLS session. The system is installed with a self-signed TLS certificate by default, and when we initially connect our web browser will probably display a security warning. The `cockpit-ws(8) man` page provides instructions on how to replace the TLS certificate with one that is properly signed.
+    <br>
+
+-   Enter the user name and password at the login screen.
+    ![cockpit_login](./images/cockpit-login.png)
+-   Optionally, click the **Reuse my password for privileged tasks** option. This permits us to execute commands with sudo privileges, allowing us to perform tasks such as modifying system information or configuring new accounts.
+-   Click **Log In**.
+-   Web Console displays the user name on the right side of the title bar. If we choose the **Reuse my password for privileged tasks** option, the Privileged icon displays to the left of the user name.
+    ![cockpit-titlebar-priviliged](./images/cockpit-title-bar-privileged.png)
+-   If we are logged in as a non-privileged user, the **Privileged** icon is not displayed.
+    ![cockpit-title-bar-nonpriviliged](./images/cockpit-title-bar-nonprivileged.png)
+
+#### Changing Passwords
+
+-   Privileged and non-privileged users can change their own passwords while logged in to Web Console. Click **Accounts** on the navigation bar. Click our account label to open the account details page.
+    ![accunt-student-main](./images/accounts-student-main.png)
+-   As a non-privileged user, we are restricted to setting or resetting our password and managing public SSH keys. To set or reset our password, click **Set Password**.
+    ![account-student-details](./images/accounts-student-details.png)
+-   Enter our information in the **Old Password**, **New Password**, and **Confirm New Password** fields. Click **Set** to activate the new password.
+    ![account-student-set-new-password](./images/accounts-student-set-new-password.png)
+
+#### Troubleshooting with the Web Console
+
+-   Web Console is a powerful troubleshooting tool. We can monitor basic system statistics in real time, inspect system logs, and quickly switch to a terminal session within Web Console to gather additional information from the command-line interface.
+
+##### Monitoring System Statistics in Real Time
+
+-   Click **Overview** on the navigation bar to view information about the system, such as its type of hardware, operating system, host name, and more. Notice that if we are logged in as a non-privileged user, we see all the information but we are not permitted to modify values. The following image displays part of the Overview page.
+    ![non-privliged-system-menu-top](./images/nonprivileged-system-menu-top.png)
+-   Click **View graphs** on the **Overview** page to view graphs of current system performance for CPU activity, memory use, disk I/O, and network utilization.
+    ![nonpriviliged-system-menu-bottom](./images/nonprivileged-system-menu-bottom.png)
+
+##### Inspecting and Filtering Syslog Events
+
+-   **Logs** in the navigation bar provides access to analysis tools for the system logs. We can use the menus on the page to filter log messages based on a logging date range, severity level, or both. Web Console uses the current date as the default, but we can click the date menu and specify any range of dates. Similarly, the **Severity** menu provides options ranging from **Everything** to more specific severity conditions such as **Alert and above**, **Debug and above**, and so on.
+    ![nonpriviliged-logs-main-filter](./images/nonprivileged-logs-main-filters.png)
+-   Click a row to view details of the log report. In the example below, note the first row that reports on a `sudo` log message.
+    ![nonpriviliged-logs-eanda](./images/nonprivileged-logs-eanda.png)
+-   The example below shows the details displayed when we click the `sudo` row. Details of the report include the selected log entry (`sudo`), the date, time, priority, and syslog facility of the log entry, the host name of the system that reported the log message, and more.
+    ![nonpriviliged-logs-entry](./images/nonprivileged-logs-entry.png)
+
+##### Running Commands from a Terminal Session
+
+-   **Terminal** in the navigation bar provides access to a fully-functional terminal session within the Web Console interface. This allows us to run arbitrary commands to manage and work with the system and to perform tasks not supported by the other tools provided by Web Console.
+    <br>
+
+-   The following image displays examples of common commands used to gather additional information. Listing the contents of the `/var/log` directory provides reminders of log files that may have valuable information. The `id` command provides quick information such as group membership that may help troubleshoot file access restrictions. The `ps au` command provides a quick view of processes running in the terminal and the user associated with the process.
+    ![nonpriviliged-terminal](./images/nonprivileged-terminal.png)
+
+##### Creating Diagnostic Reports
+
+-   A diagnostic report is a collection of configuration details, system information, and diagnostic information from a Red Hat Enterprise Linux system. Data collected in the completed report includes system logs and debug information that can be used to troubleshoot issues.
+    <br>
+
+-   Log in to Web Console as a privileged user. Click **Diagnostic Reports** on the navigation bar to open the page that creates these reports. Click **Create Report** to generate a new diagnostic report.
+    ![diagnostic-reorts-main-page](./images/diagnostic-reports-main-page.png)
+-   The interface displays **Done!** when the report is complete. Click **Download report** to save the report.
+    ![diagnostic-report-download](./images/diagnostic-report-download.png)
+-   Click **Save File** to save the file and complete the process.
+    ![diagnostinc-reports-save-file](./images/diagnostic-reports-save-file.png)
+-   The completed report is saved to the `Downloads` directory on the system hosting the web browser used to access Web Console. In this example, the host is `workstation`.
+    ![diagnostic-reports-workstation-sos-report](./images/diagnostic-reports-workstation-sosreport.png)
+
+#### Managing System Services with the Web Console
+
+-   As a privileged user in Web Console, we can stop, start, enable, and restart system services. Additionally, we can configure network interfaces, configure firewall services, administer user accounts, and more.
+
+##### System Power Options
+
+-   Web Console allows us to restart or shut down the system. Log in to Web Console as a privileged user. Click **Overview** on the navigation bar to access system power options.
+-   Select the desired option from the menu on the upper right to either restart or shut down a system.
+    ![system-power-options](./images/system-power-options.png)
+
+##### Controlling Running System Services
+
+-   We can start, enable, disable, and stop services with graphical tools in Web Console. Click **Services** on the navigation bar to access the Web Console's services initial page. To manage services, click **System Services** at the top of the services initial page. Search in the search bar or scroll through the page to select the service you want to manage.
+
+-   In the example below, select the `chronyd.service` row to open thee service management page.
+    ![services-main](./images/services-main.png)
+-   Click **Stop**, **Restart**, or **Disallow running (mask)** as appropriate to manage the service. In this view the service is already running. Additional information related to the service is available by clicking on any of the highlighted links or by scrolling through the service logs displayed below the service management section.
+    ![services-chronyd](./images/services-chronyd.png)
+
+##### Configuring Network Interfaces and the Firewall
+
+-   To manage firewall rules and network interfaces, click **Networking** on the navigation bar. The following example shows how to gather information about network interfaces and how to manage them.
+    ![networking-main-view](./images/networking-main-view.png)
+-   Click the desired interface name in the **Interfaces** section to access the management page. In this example, the `eth0` interface is selected.
+    ![networking-interfaces-section](./images/networking-interfaces-section.png)
+-   The top part of the management page displays network traffic activity for the selected device. Scroll down to view configuration settings and management options.
+    ![networking-ens3-details](./images/networking-ens3-details.png)
+-   To modify or add configuration options to an interface, click the highlighted links for the desired configuration. In this example, the IPv4 link shows a single IP address and netmask, `172.25.250.10/24` for the `eth0` network interface. To add an additional IP address to the `eth0` network interface, click the highlighted link.
+    ![networking-ens3-configure-section](./images/networking-ens3-configure-section.png)
+-   Click **+** on the right side of the **Manual** list selection to add an additional IP address. Enter an IP address and network mask in the appropriate fields. Click **Apply** to activate the new settings.
+    ![networking-ipv4-add-new-ip](./images/networking-ipv4-add-new-ip.png)
+-   The display automatically switches back to the interface's management page where we can confirm the new IP address.
+    ![netwroking-ipv4-confirm-new-ip](./images/networking-ipv4-confirm-new-ip.png)
+
+##### Administering User Accounts
+
+-   As a privileged user you can create new user accounts in Web Console. Click **Accounts** on the navigation bar to view existing accounts. Click **Create New Account** to open the account management page.
+    ![accounts-main-view](./images/accounts-main-view.png)
+-   Enter the information for the new account and then click **Create**.
+    ![accounts-create-new-user](./images/accounts-create-new-user.png)
+-   The display automatically switches back to the account management page where we can confirm the new user account.
+    ![accounts-verify-new-user](./images/accounts-verify-new-user.png)
 
 ## Ubuntu Commands
 
