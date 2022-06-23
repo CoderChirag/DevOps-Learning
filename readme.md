@@ -257,6 +257,12 @@
         - [Configuring Network Interfaces and the Firewall](#configuring-network-interfaces-and-the-firewall)
         - [Administering User Accounts](#administering-user-accounts)
   - [Ubuntu Commands](#ubuntu-commands)
+  - [Scheduling Future Tasks](#scheduling-future-tasks)
+    - [Scheduling a Deferred User Job](#scheduling-a-deferred-user-job)
+      - [Describing Deferred Users Tasks](#describing-deferred-users-tasks)
+        - [Scheduling Deferred User Tasks](#scheduling-deferred-user-tasks)
+      - [Inspecting and Managing Deferred User Jobs](#inspecting-and-managing-deferred-user-jobs)
+        - [Removing Jobs](#removing-jobs)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -4345,6 +4351,52 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 ## Ubuntu Commands
 
 -   In ubuntu `useradd` command don't create any home directory and many other things, so instead we can use `adduser` command.
+
+## Scheduling Future Tasks
+
+### Scheduling a Deferred User Job
+
+#### Describing Deferred Users Tasks
+
+-   Sometimes we might need to run a command, or set of commands, at a set point in the future. Examples include people who want to schedule an email to their boss, or a system administrator working on a firewall configuration who puts a “safety” job in place to reset the firewall settings in ten minutes' time, unless they deactivate the job beforehand.
+    <br>
+
+-   These scheduled commands are often called **tasks** or **jobs**, and the term deferred indicates that these tasks or jobs are going to run in the future.
+    <br>
+
+-   One of the solutions available for scheduling deferred tasks is `at`. The `at` package provides the (`atd`) system daemon along with a set of command-line tools to interact with the daemon (`at`, `atq`, and more). In a default Red Hat Enterprise Linux installation, the `atd` daemon is installed and enabled automatically.
+    <br>
+
+-   Users (including `root`) can queue up jobs for the `atd` daemon using the `at` command. The `atd` daemon provides **26 queues**, **a** to **z**, with jobs in alphabetically later queues getting lower system priority (higher `nice` values).
+
+##### Scheduling Deferred User Tasks
+
+-   Use the `at TIMESPEC` command to schedule a new job. The `at` command then reads the commands to execute from the stdin channel. While manually entering commands, we can finish our input by pressing `Ctrl+D`. For more complex commands that are prone to typographical errors, it is often easier to use input redirection from a script file, for example, `$ at now +5min < myscript`, rather than typing all the commands manually in a terminal window.
+    <br>
+
+-   The `TIMESPEC` argument with the at command accepts many powerful combinations, allowing users to describe exactly when a job should run. Typically, they start with a time, for example, `02:00pm`, `15:59`, or even `teatime`, followed by an optional date or number of days in the future. The following lists some examples of combinations that can be used.
+    -   `now +5min`
+    -   `teatime tomorrow (teatime is 16:00)`
+    -   `noon +4 days`
+    -   `5pm august 3 2021`
+
+#### Inspecting and Managing Deferred User Jobs
+
+-   To get an overview of the pending jobs for the current user, use the command `atq` or the `at -l` commands.
+    `$ atq 28 Mon Feb 2 05:13:00 2015 a user 29 Mon Feb 3 16:00:00 2014 h user 27 Tue Feb 4 12:00:00 2014 a user`
+    In the preceding output, every line represents a different job scheduled to run in the future. - The **unique job number** for this job. - The **execution date and time** for the scheduled job. - Indicates that the job is scheduled with the **default queue a**. Different jobs may be scheduled with different queues. - The **owner of the job** (and the user that the job will run as).
+    <br>
+
+-   Important
+
+    -   Unprivileged users can only see and control their own jobs. The root user can see and manage all jobs.
+        <br>
+
+-   To inspect the actual commands that will run when a job is executed, use the `$ at -c JOBNUMBER` command. This command shows the environment for the job being set up to reflect the environment of the user who created the job at the time it was created, followed by the actual commands to be run.
+
+##### Removing Jobs
+
+-   The `$ atrm JOBNUMBER` command removes a scheduled job. Remove the scheduled job when it is no longer needed, for example, when a remote firewall configuration succeeded, and does not need to be reset.
 
 ## Server Management in Linux
 
