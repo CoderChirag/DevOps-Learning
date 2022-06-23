@@ -263,6 +263,11 @@
         - [Scheduling Deferred User Tasks](#scheduling-deferred-user-tasks)
       - [Inspecting and Managing Deferred User Jobs](#inspecting-and-managing-deferred-user-jobs)
         - [Removing Jobs](#removing-jobs)
+    - [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs)
+      - [Describing Recurring User Jobs](#describing-recurring-user-jobs)
+      - [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs-1)
+      - [Describing User Job Format](#describing-user-job-format)
+        - [Example Recurring User Jobs](#example-recurring-user-jobs)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -4387,7 +4392,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     In the preceding output, every line represents a different job scheduled to run in the future. - The **unique job number** for this job. - The **execution date and time** for the scheduled job. - Indicates that the job is scheduled with the **default queue a**. Different jobs may be scheduled with different queues. - The **owner of the job** (and the user that the job will run as).
     <br>
 
--   Important
+-   **Important**
 
     -   Unprivileged users can only see and control their own jobs. The root user can see and manage all jobs.
         <br>
@@ -4397,6 +4402,84 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 ##### Removing Jobs
 
 -   The `$ atrm JOBNUMBER` command removes a scheduled job. Remove the scheduled job when it is no longer needed, for example, when a remote firewall configuration succeeded, and does not need to be reset.
+
+### Scheduling Recurring User Jobs
+
+#### Describing Recurring User Jobs
+
+-   Jobs scheduled to run repeatedly are called **recurring jobs**. Linux systems ship with the `crond` daemon, provided by the `cronie` package, enabled and started by default specifically for recurring jobs. The `crond` daemon reads multiple configuration files: one per user (edited with the `crontab` command), and a set of system-wide files. These configuration files give users and administrators fine-grained control over when their recurring jobs should be executed.
+    <br>
+
+-   If a scheduled command produces any output or error that is not redirected, the `crond` daemon attempts to email that output or error to the user who owns that job (unless overridden) using the mail server configured on the system. Depending on the environment, this may need additional configuration. The output or error of the scheduled command can be redirected to different files.
+
+#### Scheduling Recurring User Jobs
+
+-   Normal users can use the `crontab` command to manage their jobs. This command can be called in four different ways:
+    | Command | Intended Use
+    | --- | ---
+    | `crontab -l` | List the jobs for the current user.
+    | `crontab -r` | Remove all the jobs for the current user.
+    | `crontab -e` | Edit jobs for the current user.
+    | `crontab filename` | Remove all jobs, and replace with the jobs read from `filename`. If no file is specified, `stdin` is used.
+
+-   **Note**
+    -   The superuser can use the `-u` option with the crontab command to manage jobs for another user.
+
+#### Describing User Job Format
+
+-   The `$ crontab -e` command invokes Vim by default, unless the EDITOR environment variable has been set to something different.
+    -   Enter one job per line.
+    -   Other valid entries include:
+        -   **Empty lines** typically for ease of reading
+        -   **Comments**, identified by lines starting with the number sign (`#`)
+        -   **Environment variables** using the format `NAME=value`, which affects all lines below the line where they are declared.
+            Common variable settings include the **`SHELL` variable**, which declares which shell to use to interpret the remaining lines of the crontab file; and the **`MAILTO` variable**, which determines who should receive any emailed output.
+-   **Important**
+
+    -   Sending email may require additional configuration of the local mail server or SMTP relay on a system.
+        <br>
+
+-   Fields in the `crontab` file appear in the following order:
+    -   Minutes
+    -   Hours
+    -   Day of month
+    -   Month
+    -   Day of week
+    -   Command
+-   **Important**
+    -   When the `Day of month` and `Day of week` fields are both other than `*`, the command is executed when either of these two fields are satisfied. For example, to run a command on the **15th of every month, and every Friday at 12:15**, use the following job format:
+        ```
+        15 12 15 * Fri command
+        ```
+-   The **first five fields** all use the same syntax rules:
+    -   **`*`** for **“Do not Care”/always**.
+    -   A **number** to specify a number of minutes or hours, a date, or a weekday. For weekdays, **0 equals Sunday**, 1 equals Monday, 2 equals Tuesday, and so on. **7 also equals Sunday**.
+    -   **`x-y`** for a **range**, x to y **inclusive**.
+    -   **`x,y`** for **lists**. Lists can include ranges as well, for example, `5,10-13,17` in the Minutes column to indicate that a job should run at 5, 10, 11, 12, 13, and 17 minutes past the hour.
+    -   **`*/x`** to indicate an interval of x, for example, `*/7` in the Minutes column runs a job every seven minutes.
+-   Additionally, 3-letter English abbreviations can be used for both months and weekdays, for example, `Jan`, `Feb`, and `Mon`, `Tue`.
+    <br>
+-   The last field contains the command to execute using the default shell. The `SHELL` environment variable can used to change the shell for the scheduled command. If the command contains an unescaped percentage sign (`%`), then that percentage sign is treated as a **newline character**, and everything after the percentage sign is passed to the command on stdin.
+
+##### Example Recurring User Jobs
+
+-   The following job executes the command `/usr/local/bin/yearly_backup` at exactly **9 a.m. on February 2nd, every year**.
+    ```
+    0 9 2 2 * /usr/local/bin/yearly_backup
+    ```
+-   The following job sends an email containing the word Chime to the owner of this job, **every five minutes between 9 a.m. and 5 p.m., on every Friday in July**.
+    ```
+    */5 9-16 * Jul 5 ehco "Chime"
+    ```
+    The preceding `9-16` range of hours means that the job timer starts at the ninth hour (`09:00`) and continues until the end of the sixteenth hour (`16:59`). The job starts executing at `09:00` with the last execution at `16:55` because five minutes from `16:55` is `17:00` which is beyond the given scope of hours.
+-   The following job runs the command `/usr/local/bin/daily_report` **every weekday at two minutes before midnight**.
+    ```
+    58 11 * * 1-5 /usr/local/bin/daily_report
+    ```
+-   The following job executes the `mutt` command to send the mail message Checking in to the recipient `boss@example.com` on **every workday (Monday to Friday), at 9 a.m**.
+    ```
+    0 9 * * 1-5 mutt -s "Checking in" boss@example.com % Hi there boss, just checking in.
+    ```
 
 ## Server Management in Linux
 
