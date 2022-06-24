@@ -23,6 +23,10 @@
   - [Downloading and Installing AWS CLI](#downloading-and-installing-aws-cli)
   - [Configuring IAM](#configuring-iam)
   - [Configuring AWS CLI](#configuring-aws-cli)
+- [Elastic Block Storage](#elastic-block-storage)
+  - [EBS Types](#ebs-types)
+  - [Creating a new EBS Volume](#creating-a-new-ebs-volume)
+  - [Configuring and Partitioning the Volume](#configuring-and-partitioning-the-volume)
 
 ---
 
@@ -338,4 +342,221 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
     [default]
     aws_access_key_id = <acess_key>
     aws_secret_access_key = <secret_key>
+    ```
+
+# Elastic Block Storage
+
+-   **Amazon Elastic Block Store** (Amazon EBS) is an easy-to-use, scalable, high-performance block-storage service designed for Amazon Elastic Compute Cloud (Amazon EC2).
+    ![ebs](./images/aws/ebs.png)
+
+-   Block Based Storage.
+-   Run EC2 OS, store data from db, file data etc.
+-   Placed in specific Availability Zone (AZ) **replicated within the AZ** to protect from failure.
+-   Can only be attached to the instances placed within the same Availability Zone (AZ).
+-   Snapshot is backup of a volume.
+
+## EBS Types
+
+-   General Purpose (SSD)
+    -   Most Work Loads
+-   Provisioned IOPS
+    -   Large Databases
+-   Throughput Optimized HD
+    -   Big Data & Data Warehouses
+-   Cold HDD
+    -   File Servers
+-   Magnetic
+    -   Backups & Archives
+
+## Creating a new EBS Volume
+
+-   From AWS console Go to **EC2** > **Elastic Block Store** > **Volumes** > **Create Volume**.
+-   Now create a new **gp2** volume of **5 GB**.
+-   After the volume is created, select it from the volumes dashboard, click on **Actions** > **Attach Volume** and the select the EC2 instance running.
+
+## Configuring and Partitioning the Volume
+
+-   SSH into your EC2 instance and follow the commands :
+    <br>
+-   Switch to sudo user : `$ sudo -i`
+    <br>
+-   List all the available disks :
+
+    ```
+    $ fdisk -l
+    Disk /dev/xvda: 10.7 GB, 10737418240 bytes, 20971520 sectors
+    Units = sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disk label type: dos
+    Disk identifier: 0x000b050e
+
+        Device Boot      Start         End      Blocks   Id  System
+    /dev/xvda1   *        2048    20971486    10484719+  83  Linux
+
+    Disk /dev/xvdf: 5368 MB, 5368709120 bytes, 10485760 sectors
+    Units = sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    ```
+
+    -   Here `/dev/xvda` is our root volume, which we alloted during creation of the instance. It is having a partition `/dev/xvda1` of size 10 GB, i.e., the entire disk size.
+    -   Also, `/dev/xvdf` is the 5 GB General Purpose 2 (gp2) disk we just attached to our VM. At present it is not having any partition.
+        <br>
+
+-   To confirm that `/dev/xvda1` is the root volume.
+    ```
+    $ df  -h
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        471M     0  471M   0% /dev
+    tmpfs           495M     0  495M   0% /dev/shm
+    tmpfs           495M   13M  482M   3% /run
+    tmpfs           495M     0  495M   0% /sys/fs/cgroup
+    /dev/xvda1       10G  1.4G  8.7G  14% /
+    tmpfs            99M     0   99M   0% /run/user/1000
+    ```
+    So we can clearly see that `/dev/xvda1` is mounted to `/` that is, the **root directory**.
+    <br>
+-   Now let's create a partition of `/dev/xvdf` disk using `fdisk` utility.
+
+    ```
+    $ fdisk /dev/xvdf
+    Welcome to fdisk (util-linux 2.23.2).
+
+    Changes will remain in memory only, until you decide to write them.
+    Be careful before using the write command.
+
+    Device does not contain a recognized partition table
+    Building a new DOS disklabel with disk identifier 0xe84a5c8e.
+
+    Command (m for help): m
+    Command action
+    a   toggle a bootable flag
+    b   edit bsd disklabel
+    c   toggle the dos compatibility flag
+    d   delete a partition
+    g   create a new empty GPT partition table
+    G   create an IRIX (SGI) partition table
+    l   list known partition types
+    m   print this menu
+    n   add a new partition
+    o   create a new empty DOS partition table
+    p   print the partition table
+    q   quit without saving changes
+    s   create a new empty Sun disklabel
+    t   change a partition's system id
+    u   change display/entry units
+    v   verify the partition table
+    w   write table to disk and exit
+    x   extra functionality (experts only)
+
+    Command (m for help): n
+    Partition type:
+    p   primary (0 primary, 0 extended, 4 free)
+    e   extended
+    Select (default p): p
+    Partition number (1-4, default 1): 1
+    First sector (2048-10485759, default 2048):
+    Using default value 2048
+    Last sector, +sectors or +size{K,M,G} (2048-10485759, default 10485759):
+    Using default value 10485759
+    Partition 1 of type Linux and of size 5 GiB is set
+
+    Command (m for help): p
+
+    Disk /dev/xvdf: 5368 MB, 5368709120 bytes, 10485760 sectors
+    Units = sectors of 1 * 512 = 512 bytes
+    Sector size (logical/physical): 512 bytes / 512 bytes
+    I/O size (minimum/optimal): 512 bytes / 512 bytes
+    Disk label type: dos
+    Disk identifier: 0xe84a5c8e
+
+        Device Boot      Start         End      Blocks   Id  System
+    /dev/xvdf1            2048    10485759     5241856   83  Linux
+
+    Command (m for help): w
+    The partition table has been altered!
+
+    Calling ioctl() to re-read partition table.
+    Syncing disks.
+    ```
+
+    So with this, we have created a partition `/dev/xvdf1` of **10 GB** of the `/dev/xvdf` disk.
+    <br>
+
+-   Now format the disk using `ext4` format :
+
+    ```
+    $ mkfs.ext4 /dev/xvdf1
+        mke2fs 1.42.9 (28-Dec-2013)
+    Filesystem label=
+    OS type: Linux
+    Block size=4096 (log=2)
+    Fragment size=4096 (log=2)
+    Stride=0 blocks, Stripe width=0 blocks
+    327680 inodes, 1310464 blocks
+    65523 blocks (5.00%) reserved for the super user
+    First data block=0
+    Maximum filesystem blocks=1342177280
+    40 block groups
+    32768 blocks per group, 32768 fragments per group
+    8192 inodes per group
+    Superblock backups stored on blocks:
+            32768, 98304, 163840, 229376, 294912, 819200, 884736
+
+    Allocating group tables: done
+    Writing inode tables: done
+    Creating journal (32768 blocks): done
+    Writing superblocks and filesystem accounting information: done
+    ```
+
+      <br>
+
+-   Mounting our disk temporarily in `/media/xvdf1` dir temporarily and then unmounting it.
+
+    ```
+    $ mkdir -p /media/xvdf1
+    $ mount /dev/xvdf1 /media/xvdf1
+    $ df -h
+    [root@ip-172-31-27-115 ~]# df -h
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        471M     0  471M   0% /dev
+    tmpfs           495M     0  495M   0% /dev/shm
+    tmpfs           495M   13M  482M   3% /run
+    tmpfs           495M     0  495M   0% /sys/fs/cgroup
+    /dev/xvda1       10G  1.4G  8.7G  14% /
+    tmpfs            99M     0   99M   0% /run/user/1000
+    /dev/xvdf1      4.8G   20M  4.6G   1% /media/xvdf1
+
+    $ umount /dev/xvdf1
+    ```
+
+      <br>
+
+-   Mounting the disk permanently so that it is not unmounted on the reboot of the VM by editing the `/etc/fstab` file.
+
+    ```
+    $ echo "/dev/xvdf1    /media/xvdf1    ext4 defaults 0 0" >> /etc/fstab
+    $ cat /etc/fstab
+
+    #
+    # /etc/fstab
+    # Created by anaconda on Sun Nov 14 11:52:41 2021
+    #
+    # Accessible filesystems, by reference, are maintained under '/dev/disk'
+    # See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info
+    #
+    UUID=44a6a613-4e21-478b-a909-ab653c9d39df /                       xfs     defaults        0 0
+    /dev/xvdf1    /media/xvdf1    ext4 defaults 0 0
+
+    $ mount -a
+    $ df -h
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        471M     0  471M   0% /dev
+    tmpfs           495M     0  495M   0% /dev/shm
+    tmpfs           495M   13M  482M   3% /run
+    tmpfs           495M     0  495M   0% /sys/fs/cgroup
+    /dev/xvda1       10G  1.4G  8.7G  14% /
+    tmpfs            99M     0   99M   0% /run/user/1000
+    /dev/xvdf1      4.8G   20M  4.6G   1% /media/xvdf1
     ```
