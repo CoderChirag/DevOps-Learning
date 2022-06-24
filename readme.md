@@ -268,6 +268,14 @@
       - [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs-1)
       - [Describing User Job Format](#describing-user-job-format)
         - [Example Recurring User Jobs](#example-recurring-user-jobs)
+    - [Scheduling RecurringSystem Jobs](#scheduling-recurringsystem-jobs)
+      - [Describing Recurring System Jobs](#describing-recurring-system-jobs)
+      - [Introducing Systemd Timer](#introducing-systemd-timer)
+        - [Sample Timer Unit](#sample-timer-unit)
+    - [Managing Temporary Files](#managing-temporary-files)
+      - [Cleaning Temporary Files with a Systemd Timer](#cleaning-temporary-files-with-a-systemd-timer)
+      - [Cleaning Temporary Files Manually](#cleaning-temporary-files-manually)
+      - [Configuration File Precedence](#configuration-file-precedence)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -4480,6 +4488,223 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     ```
     0 9 * * 1-5 mutt -s "Checking in" boss@example.com % Hi there boss, just checking in.
     ```
+
+### Scheduling RecurringSystem Jobs
+
+#### Describing Recurring System Jobs
+
+-   System administrators often need to run recurring jobs. Best practice is to run these jobs from system accounts rather than from user accounts. That is, do not schedule to run these jobs using the `crontab` command, but instead use **system-wide crontab files**.
+-   Job entries in the system-wide crontab files are similar to those of the users' crontab entries, excepting only that the system-wide crontab files have an extra field before the command field; the user under whose authority the command should run.
+    <br>
+
+-   The `/etc/crontab` file has a useful syntax diagram in the included comments.
+
+    ```
+     # For details see man 4 crontabs
+
+    # Example of job definition:
+    # .---------------- minute (0 - 59)
+    # |  .------------- hour (0 - 23)
+    # |  |  .---------- day of month (1 - 31)
+    # |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+    # |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue ...
+    # |  |  |  |  |
+    # *  *  *  *  * user-name  command to be executed
+    ```
+
+-   Recurring system jobs are defined in two locations: the `/etc/crontab` file, and files within the `/etc/cron.d/` directory.
+-   We should always create your custom crontab files under the `/etc/cron.d` directory to schedule recurring system jobs.
+-   Place the custom crontab file in `/etc/cron.d` to protect it from being overwritten if any package update occurs to the provider of `/etc/crontab`, which may overwrite the existing contents in `/etc/crontab`.
+-   Packages that require recurring system jobs place their crontab files in `/etc/cron.d/` containing the job entries. Administrators also use this location to group related jobs into a single file.
+    <br>
+
+-   The crontab system also includes repositories for scripts that need to run every hour, day, week, and month. These repositories are directories called `/etc/cron.hourly/`, `/etc/cron.daily/`, `/etc/cron.weekly/`, and `/etc/cron.monthly/`. Again, these directories contain executable shell scripts, not crontab files.
+    <br>
+
+-   **Important**
+    -   Remember to make any script we place in these directories _executable_. If a script is not _executable_, it will not run. To make a script executable, use the `chmod +x script_name` command.
+-   A command called `run-parts` called from the `/etc/cron.d/0hourly` file runs the `/etc/cron.hourly/*` scripts. The `run-parts` command also runs the daily, weekly, and monthly jobs, but it is called from a different configuration file called `/etc/anacrontab` .
+    <br>
+
+-   **Note**
+
+    -   In the past, a separate service called **anacron** used to handle the `/etc/anacrontab` file, but in Red Hat Enterprise Linux 7 and later, the regular **crond** service parses this file.
+        <br>
+
+-   The purpose of `/etc/anacrontab` is to make sure that important jobs always run, and not skipped accidentally because the system was turned off or hibernating when the job should have been executed.
+-   For example, if a system job that runs daily was not executed last time it was due because the system was rebooting, the job is executed when the system becomes ready. However, there may be a delay of several minutes in starting the job depending on the value of the Delay in minutes parameter specified for the job in `/etc/anacrontab`.
+    <br>
+
+-   There are different files in `/var/spool/anacron/` for each of the daily, weekly, and monthly jobs to determine if a particular job has run.
+-   When **crond** starts a job from `/etc/anacrontab`, it updates the time stamps of those files. The same time stamp is used to determine when a job was last run. The syntax of `/etc/anacrontab` is different from the regular `crontab` configuration files. It contains exactly **four fields** per line, as follows.
+
+    -   **Period in days**
+        The interval in days for the job that runs on a repeating schedule. This field accepts an integer or a macro as its value. For example, the macro `@daily` is equivalent to the integer `1`, which means that the job is executed on a daily basis. Similarly, the macro `@weekly` is equivalent to the integer `7`, which means that the job is executed on a weekly basis.
+    -   **Delay in minutes**
+        The amount of time the `crond` daemon should wait before starting this job.
+    -   **Job identifier**
+        The unique name the job is identified as in the log messages.
+    -   **Command**
+        The command to be executed.
+
+-   The `/etc/anacrontab` file also contains environment variable declarations using the syntax `NAME=value`.
+-   Of special interest is the variable `START_HOURS_RANGE`, which specifies the time interval for the jobs to run. Jobs are not started outside of this range. If on a particular day, a job does not run within this time interval, the job has to wait until the next day for execution.
+
+#### Introducing Systemd Timer
+
+-   With the advent of `systemd` in Red Hat Enterprise Linux 7, a new scheduling function is now available: **_`systemd` timer units_**.
+-   A `systemd` timer unit activates another unit of a different type (such as a service) whose unit name matches the timer unit name. The timer unit allows timer-based activation of other units. For easier debugging, `systemd` logs timer events in system journals.
+
+##### Sample Timer Unit
+
+-   The `sysstat` package provides a `systemd` timer unit called `sysstat-collect.timer` to collect system statistics every 10 minutes. The following output shows the configuration lines of `/usr/lib/systemd/system/sysstat-collect.timer`.
+
+    ```
+    ...output omitted...
+    [Unit]
+    Description=Run system activity accounting tool every 10 minutes
+
+    [Timer]
+    OnCalendar=*:00/10
+
+    [Install]
+    WantedBy=sysstat.service
+    ```
+
+    -   The parameter `OnCalendar=*:00/10` signifies that this timer unit activates the corresponding unit (`sysstat-collect.service`) every 10 minutes.
+    -   However, we can specify more complex time intervals.
+    -   For example, a value of `2019-03-* 12:35,37,39:16` against the `OnCalendar` parameter causes the timer unit to activate the corresponding service unit at `12:35:16`, `12:37:16`, and `12:39:16` every day throughout the entire month of `March, 2019`.
+    -   We can also specify relative timers using parameters such as `OnUnitActiveSec`.
+    -   For example, the `OnUnitActiveSec=15min` option causes the timer unit to trigger the corresponding unit 15 minutes after the last time the timer unit activated its corresponding unit.
+
+-   **Important**
+
+    -   Do not modify any unit configuration file under the `/usr/lib/systemd/system` directory because any update to the provider package of the configuration file may override the configuration changes we made in that file.
+    -   So, make a copy of the unit configuration file we intend to change under the `/etc/systemd/system` directory and then modify the copy so that the configuration changes we make with respect to a unit does not get overridden by any update to the provider package.
+    -   If two files exist with the same name under the `/usr/lib/systemd/system` and `/etc/systemd/system` directories, `systemd` parses the file under the `/etc/systemd/system` directory.
+        <br>
+
+-   After we change the timer unit configuration file, use the `systemctl daemon-reload` command to ensure that `systemd` is aware of the changes. This command reloads the `systemd` manager configuration.
+    ```
+    $ systemctl daemon-reload
+    ```
+-   After we reload the `systemd` manager configuration, use the following `systemctl command` to activate the timer unit.
+    ```
+    $ systemctl enable --now <unitname>.timer
+    ```
+
+### Managing Temporary Files
+
+-   A modern system requires a large number of temporary files and directories. Some applications (and users) use the `/tmp` directory to hold temporary data, while others use a more task-specific location such as daemon and user-specific volatile directories under `/run`. In this context, volatile means that the file system storing these files only exists in memory. When the system reboots or loses power, all the contents of volatile storage will be gone.
+    <br>
+
+-   To keep a system running cleanly, it is necessary for these directories and files to be created when they do not exist, because daemons and scripts might rely on them being there, and for old files to be purged so that they do not fill up disk space or provide faulty information.
+    <br>
+
+-   Red Hat Enterprise Linux 7 and later include a new tool called `systemd-tmpfiles`, which provides a structured and configurable method to manage temporary directories and files.
+    <br>
+
+-   When `systemd` starts a system, one of the first service units launched is `systemd-tmpfiles-setup`. This service runs the command `$ systemd-tmpfiles --create --remove`.
+-   This command reads configuration files from `/usr/lib/tmpfiles.d/*.conf`, `/run/tmpfiles.d/*.conf`, and `/etc/tmpfiles.d/*.conf`.
+-   Any files and directories marked for deletion in those configuration files is removed, and any files and directories marked for creation (or permission fixes) will be created with the correct permissions if necessary.
+
+#### Cleaning Temporary Files with a Systemd Timer
+
+-   To ensure that long-running systems do not fill up their disks with stale data, a `systemd` timer unit called `systemd-tmpfiles-clean.timer` triggers `systemd-tmpfiles-clean.service` on a regular interval, which executes the `$ systemd-tmpfiles --clean` command.
+    <br>
+
+-   The `systemd` timer unit configuration files have a `[Timer]` section that indicates how often the service with the same name should be started.
+    <br>
+
+-   Use the following `systemctl` command to view the contents of the `systemd-tmpfiles-clean.timer` unit configuration file.
+
+    ```
+    $ systemctl cat systemd-tmpfiles-clean.timer
+    # /usr/lib/systemd/system/systemd-tmpfiles-clean.timer
+    #  SPDX-License-Identifier: LGPL-2.1+
+    #
+    #  This file is part of systemd.
+    #
+    #  systemd is free software; you can redistribute it and/or modify it
+    #  under the terms of the GNU Lesser General Public License as published
+    #  by
+    #  the Free Software Foundation; either version 2.1 of the License, or
+    #  (at your option) any later version.
+
+    [Unit]
+    Description=Daily Cleanup of Temporary Directories
+    Documentation=man:tmpfiles.d(5) man:systemd-tmpfiles(8)
+
+    [Timer]
+    OnBootSec=15min
+    OnUnitActiveSec=1d
+    ```
+
+-   In the preceding configuration the parameter `OnBootSec=15min` indicates that the service unit called `systemd-tmpfiles-clean.service` gets triggered 15 minutes after the system has booted up.
+-   The parameter `OnUnitActiveSec=1d` indicates that any further trigger to the `systemd-tmpfiles-clean.service` service unit happens 24 hours after the service unit was activated last.
+    <br>
+
+-   Based on our requirement, we can change the parameters in the `systemd-tmpfiles-clean.timer` timer unit configuration file.
+-   For example, the value `30min` for the parameter `OnUnitActiveSec` triggers the `systemd-tmpfiles-clean.service` service unit 30 minutes after the service unit was last activated. As a result, `systemd-tmpfiles-clean.service` gets triggered every 30 minutes after bringing the changes into effect.
+    <br>
+
+-   After changing the timer unit configuration file, use the `$ systemctl daemon-reload` command to ensure that systemd is aware of the change. This command reloads the `systemd` manager configuration.
+    ```
+    $ systemctl daemon-reload
+    ```
+-   After we reload the `systemd` manager configuration, use the following `systemctl` command to activate the `systemd-tmpfiles-clean.timer` unit.
+    ```
+    $ systemctl enable --now systemd-tmpfiles-clean.timer
+    ```
+
+#### Cleaning Temporary Files Manually
+
+-   The command `systemd-tmpfiles --clean` parses the same configuration files as the `systemd-tmpfiles --create` command, but instead of creating files and directories, it will purge all files which have not been accessed, changed, or modified more recently than the maximum age defined in the configuration file.
+    <br>
+
+-   The format of the configuration files for `systemd-tmpfiles` is detailed in the `tmpfiles.d(5)` manual page.
+-   The basic syntax consists of **seven columns** : **Type**, **Path**, **Mode**, **UID**, **GID**, **Age**, and **Argument**.
+-   **Type** refers to the action that `systemd-tmpfiles` should take; for example, `d` to create a directory if it does not yet exist, or `Z` to recursively restore SELinux contexts and file permissions and ownership.
+    <br>
+
+-   The following are some examples with explanations.
+    `d /run/systemd/seats 0755 root root -`
+    When creating files and directories, create the `/run/systemd/seats` directory if it does not yet exist, owned by the user `root` and the group `root`, with permissions set to `rwxr-xr-x`. This directory will not be automatically purged.
+    <br>
+    `D /home/student 0700 student student 1d`
+    Create the `/home/student` directory if it does not yet exist. If it does exist, empty it of all contents. When `systemd-tmpfiles --clean` is run, remove all files which have not been accessed, changed, or modified in more than one day.
+    <br>
+
+        ```
+        L /run/fstablink - root root - /etc/fstab
+        ```
+        Create the symbolic link `/run/fstablink` pointing to `/etc/fstab`. Never automatically purge this line.
+
+    <br>
+
+#### Configuration File Precedence
+
+-   Configuration files can exist in **three places** :
+
+    -   `/etc/tmpfiles.d/*.conf`
+    -   `/run/tmpfiles.d/*.conf`
+    -   `/usr/lib/tmpfiles.d/*.conf`
+
+-   The files in `/usr/lib/tmpfiles.d/` are provided by the relevant RPM packages, and we should not edit these files.
+-   The files under `/run/tmpfiles.d/` are themselves volatile files, normally used by daemons to manage their own runtime temporary files.
+-   The files under `/etc/tmpfiles.d/` are meant for administrators to configure custom temporary locations, and to override vendor-provided defaults.
+    <br>
+
+-   If a file in `/run/tmpfiles.d/` has the same file name as a file in `/usr/lib/tmpfiles.d/`, then the file in `/run/tmpfiles.d/` is used.
+-   If a file in `/etc/tmpfiles.d/` has the same file name as a file in either `/run/tmpfiles.d/` or `/usr/lib/tmpfiles.d/`, then the file in `/etc/tmpfiles.d/` is used.
+    <br>
+
+-   Given these precedence rules, we can easily override vendor-provided settings by copying the relevant file to `/etc/tmpfiles.d/`, and then editing it.
+-   Working in this fashion ensures that administrator-provided settings can be easily managed from a central configuration management system, and not be overwritten by an update to a package.
+    <br>
+
+-   **Note**
+    -   When testing new or modified configurations, it can be useful to only apply the commands from one configuration file. This can be achieved by specifying the name of the configuration file on the command line.
 
 ## Server Management in Linux
 
