@@ -276,6 +276,14 @@
       - [Cleaning Temporary Files with a Systemd Timer](#cleaning-temporary-files-with-a-systemd-timer)
       - [Cleaning Temporary Files Manually](#cleaning-temporary-files-manually)
       - [Configuration File Precedence](#configuration-file-precedence)
+  - [Tuning System Performance](#tuning-system-performance)
+    - [Adjusting Tuning profiles](#adjusting-tuning-profiles)
+      - [Tuning Systems](#tuning-systems)
+        - [Configuring Static Tuning](#configuring-static-tuning)
+        - [Configuring Dynamic Tuning](#configuring-dynamic-tuning)
+      - [Installing and Enablined `tuned`](#installing-and-enablined-tuned)
+      - [Selecting a Tuning Profile](#selecting-a-tuning-profile)
+      - [Managing profiles from the command line](#managing-profiles-from-the-command-line)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -4705,6 +4713,109 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 
 -   **Note**
     -   When testing new or modified configurations, it can be useful to only apply the commands from one configuration file. This can be achieved by specifying the name of the configuration file on the command line.
+
+## Tuning System Performance
+
+### Adjusting Tuning profiles
+
+#### Tuning Systems
+
+-   System administrators can optimize the performance of a system by adjusting various device settings based on a variety of use case workloads. The `tuned` daemon applies tuning adjustments both statically and dynamically, using tuning profiles that reflect particular workload requirements.
+
+##### Configuring Static Tuning
+
+-   The `tuned` daemon applies system settings when the service starts or upon selection of a new tuning profile. **Static tuning** configures predefined kernel parameters in profiles that tuned applies at runtime. With static tuning, kernel parameters are set for overall performance expectations, and are not adjusted as activity levels change.
+
+##### Configuring Dynamic Tuning
+
+-   With **dynamic tuning**, the `tuned` daemon monitors system activity and adjusts settings depending on runtime behavior changes.
+-   **Dynamic tuning** is continuously adjusting tuning to fit the current workload, starting with the initial settings declared in the chosen tuning profile.
+    <br>
+
+-   For example, storage devices experience high use during startup and login, but have minimal activity when user workloads consist of using web browsers and email clients.
+-   Similarly, CPU and network devices experience activity increases during peak usage throughout a workday.
+-   The `tuned` daemon monitors the activity of these components and adjusts parameter settings to maximize performance during high-activity times and reduce settings during low activity. The tuned daemon uses performance parameters provided in predefined tuning profiles.
+
+#### Installing and Enablined `tuned`
+
+    ```
+    $ yum install tuned
+    $ systemctl enable --now tuned
+    Created symlink /etc/systemd/system/multi-user.target.wants/tuned.service → /usr/lib/systemd/system/tuned.service.
+    ```
+
+#### Selecting a Tuning Profile
+
+-   The Tuned application provides profiles divided into the following categories :
+    -   **Power-saving** profiles
+    -   **Performance-boosting** profiles
+-   The **performance-boosting** profiles include profiles that focus on the following aspects :
+
+    -   **Low latency** for storage and network
+    -   **High throughput** for storage and network
+    -   **Virtual machine performance**
+    -   **Virtualization host performance**
+
+        | Tuned Profile            | Purpose                                                                                                                                 |
+        | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+        | `balanced`               | Ideal for systems that require a **compromise between power saving and performance**.                                                   |
+        | `desktop`                | Derived from the `balanced` profile. Provides **faster response of interactive applications**.                                          |
+        | `throughput-performance` | Tunes the system for **maximum throughput**.                                                                                            |
+        | `latency-performance`    | Ideal for server systems that require **low latency at the expense of power consumption**.                                              |
+        | `network-latency`        | Derived from the `latency-performance` profile. It enables additional network tuning parameters to provide **low network latency**.     |
+        | `network-throughput`     | Derived from the `throughput-performance` profile. Additional network tuning parameters are applied for **maximum network throughput**. |
+        | `powersave`              | Tunes the system for **maximum power saving**.                                                                                          |
+        | `oracle`                 | **Optimized for Oracle database loads** based on the throughput-performance profile.                                                    |
+        | `virtual-guest`          | Tunes the system for **maximum performance if it runs on a virtual machine**.                                                           |
+        | `virtual-host`           | Tunes the system for **maximum performance if it acts as a host for virtual machines**.                                                 |
+
+#### Managing profiles from the command line
+
+-   The `tuned-adm` command is used to change settings of the `tuned` daemon. The `tuned-adm` command can query current settings, list available profiles, recommend a tuning profile for the system, change profiles directly, or turn off tuning.
+    <br>
+
+-   A system administrator identifies the currently active tuning profile with `$ tuned-adm active`.
+    ```
+    $ tuned-adm active
+    Current active profile: virtual-guest
+    ```
+-   The `$ tuned-adm list` command lists all available tuning profiles, including both built-in profiles and custom tuning profiles created by a system administrator.
+    ```
+    $ tuned-adm list
+    Available profiles:
+    - balanced
+    - desktop
+    - latency-performance
+    - network-latency
+    - network-throughput
+    - powersave
+    - sap
+    - throughput-performance
+    - virtual-guest
+    - virtual-host
+    Current active profile: virtual-guest
+    ```
+-   Use `$ tuned-adm profile profilename` to switch the active profile to a different one that better matches the system's current tuning requirements.
+    ```
+    $ tuned-adm profile throughput-performance
+    $ tuned-adm active
+    Current active profile: throughput-performance
+    ```
+-   The `tuned-adm` command can recommend a tuning profile for the system. This mechanism is used to determine the default profile of a system after installation.
+    ` $ tuned-adm recommend virtual-guest `
+    <br>
+
+-   **Note**
+
+    -   The `$ tuned-adm recommend` output is based on various system characteristics, including whether the system is a virtual machine and other predefined categories selected during system installation.
+        <br>
+
+-   To revert the setting changes made by the current profile, either switch to another profile or deactivate the `tuned` daemon. Turn off tuned tuning activity with `tuned-adm off`.
+    ```
+    $ tuned-adm off
+    $ tuned-adm active
+    No current active profile.
+    ```
 
 ## Server Management in Linux
 
