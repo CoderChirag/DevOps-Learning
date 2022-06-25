@@ -23,10 +23,13 @@
   - [Downloading and Installing AWS CLI](#downloading-and-installing-aws-cli)
   - [Configuring IAM](#configuring-iam)
   - [Configuring AWS CLI](#configuring-aws-cli)
-- [Elastic Block Storage](#elastic-block-storage)
+- [AWS Elastic Block Storage](#aws-elastic-block-storage)
   - [EBS Types](#ebs-types)
   - [Creating a new EBS Volume](#creating-a-new-ebs-volume)
   - [Configuring and Partitioning the Volume](#configuring-and-partitioning-the-volume)
+  - [EBS Snapshots](#ebs-snapshots)
+    - [Introduction](#introduction)
+    - [Hands-On on EBS Snapshots](#hands-on-on-ebs-snapshots)
 
 ---
 
@@ -344,7 +347,7 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
     aws_secret_access_key = <secret_key>
     ```
 
-# Elastic Block Storage
+# AWS Elastic Block Storage
 
 -   **Amazon Elastic Block Store** (Amazon EBS) is an easy-to-use, scalable, high-performance block-storage service designed for Amazon Elastic Compute Cloud (Amazon EC2).
     ![ebs](./images/aws/ebs.png)
@@ -560,3 +563,90 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
     tmpfs            99M     0   99M   0% /run/user/1000
     /dev/xvdf1      4.8G   20M  4.6G   1% /media/xvdf1
     ```
+
+-   **Note**
+    -   Don't forget to **terminate** the instance and **detach** and **delete** the EBS Volume after use.
+
+## EBS Snapshots
+
+### Introduction
+
+-   We can back up the data on our Amazon EBS volumes to Amazon S3 by taking point-in-time snapshots.
+-   Snapshots are **incremental backups**, which means that only the blocks on the device that have changed after our most recent snapshot are saved. This minimizes the time required to create the snapshot and saves on storage costs by not duplicating data.
+-   Each snapshot contains all of the information that is needed to restore our data (from the moment when the snapshot was taken) to a new EBS volume.
+    <br>
+
+-   When we create an EBS volume based on a snapshot, the new volume begins as an exact replica of the original volume that was used to create the snapshot.
+-   The replicated volume loads data in the background so that we can begin using it immediately.
+-   If we access data that hasn't been loaded yet, the volume immediately downloads the requested data from Amazon S3, and then continues loading the rest of the volume's data in the background.
+
+### Hands-On on EBS Snapshots
+
+-   Firstly, **create and mount an EBS Volume**. As it is shown above how to do it, so I will mention only the commands here leaving the details.
+    ```
+    $ fdisk /dev/xvdf   # After that n , p, 1, Enter, +3G, w
+    $ mkfs.ext4 /dev/xvdf1
+    $ mkdir -p /var/lib/mysql
+    $ echo "/dev/xvdf1    /var/lib/mysql  ext4  defaults 0 0" >> /etc/fstab
+    $ mount -a
+    $ df -h
+    ```
+-   Install **mysql** package `$ yum install mariadb-server`
+-   Start the **mysql** package and check the status of it.
+    ```
+    $ systemctl start mariadb
+    $ systemctl status mariadb
+    ● mariadb.service - MariaDB database server
+    Loaded: loaded (/usr/lib/systemd/system/mariadb.service; disabled; vendor preset: disabled)
+    Active: active (running) since Sat 2022-06-25 20:20:12 UTC; 7s ago
+    Process: 9338 ExecStartPost=/usr/libexec/mariadb-wait-ready $MAINPID (code=exited, status=0/SUCCESS)
+    Process: 9255 ExecStartPre=/usr/libexec/mariadb-prepare-db-dir %n (code=exited, status=0/SUCCESS)
+    Main PID: 9337 (mysqld_safe)
+    CGroup: /system.slice/mariadb.service
+            ├─9337 /bin/sh /usr/bin/mysqld_safe --basedir=/usr
+            └─9502 /usr/libexec/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mysql/plugin --log-error=/var...
+    Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: MySQL manual for more instructions.
+    Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: Please report any problems at http://mariadb.org/jira
+    Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: The latest information about MariaDB is available at...g/.Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: You can find additional information about the MySQL ...at:Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: http://dev.mysql.com
+    Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: Consider joining MariaDB's strong and vibrant community:
+    Jun 25 20:20:09 ip-172-31-91-238.ec2.internal mariadb-prepare-db-dir[9255]: https://mariadb.org/get-involved/
+    Jun 25 20:20:10 ip-172-31-91-238.ec2.internal mysqld_safe[9337]: 220625 20:20:10 mysqld_safe Logging to '/var/log/mariadb/maria...og'.Jun 25 20:20:10 ip-172-31-91-238.ec2.internal mysqld_safe[9337]: 220625 20:20:10 mysqld_safe Starting mysqld daemon with databa...ysqlJun 25 20:20:12 ip-172-31-91-238.ec2.internal systemd[1]: Started MariaDB database server.
+    Hint: Some lines were ellipsized, use -l to show in full.
+    ```
+-   Now check if there is some data in our volume :
+    ```
+    $ cat /var/lib/mysql
+    aria_log.00000001  aria_log_control  ibdata1  ib_logfile0  ib_logfile1  lost+found  mysql  mysql.sock  performance_schema  test
+    ```
+-   So now, go to AWS EBS Dashboard console, select this volume, click on actions and then **Create Snapshot**.
+-   Now we would delete the data from our volume, to create a scenario that a user mistakenly deleted the useful data.
+    ```
+    $ cd /var/lib/mysql
+    $ rm -rf *
+    ```
+-   Now stop mysql service and unmount the disk.
+    ```
+    $ systemctl stop mariadb
+    $ umount /dev/xvdf1
+    ```
+-   Go to **AWS EBS Dashboard** and select this disk and click on actions and then **Detach disk**.
+-   Now go to **AWS EBS Snapshots Dashboard**, select your snapshot, click on actions and **Create volume from snapshot** and create a snapshot with required details.
+-   After the volume is create select the volume, and attach it to the instance, and we would see that it is automatically mounted and our data is restored.
+
+    ```
+    $ df -h
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        471M     0  471M   0% /dev
+    tmpfs           495M     0  495M   0% /dev/shm
+    tmpfs           495M   13M  482M   3% /run
+    tmpfs           495M     0  495M   0% /sys/fs/cgroup
+    /dev/xvda1       10G  1.7G  8.4G  17% /
+    tmpfs            99M     0   99M   0% /run/user/1000
+    tmpfs            99M     0   99M   0% /run/user/0
+    /dev/xvdf1      2.9G   39M  2.7G   2% /var/lib/mysql
+    $ ls /var/lib/mysql
+    aria_log.00000001  aria_log_control  ibdata1  ib_logfile0  ib_logfile1  lost+found  mysql  mysql.sock  performance_schema  test
+    ```
+
+-   **Note**
+    -   Don't forget to Cleanup everything you created for the exercise, terminate the VM, delete the snapshot and delete all the EBS Volumes.
