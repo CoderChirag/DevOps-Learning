@@ -300,6 +300,16 @@
       - [Viewing and Interpreting ACL Information](#viewing-and-interpreting-acl-information)
         - [View File ACLs](#view-file-acls)
         - [View directory ACLs](#view-directory-acls)
+        - [The ACL Mask](#the-acl-mask)
+        - [ACL Permission Precedence](#acl-permission-precedence)
+    - [Securing Files with ACLs](#securing-files-with-acls)
+      - [Changing ACL File Permissions](#changing-acl-file-permissions)
+        - [Adding or Modifying ACLs](#adding-or-modifying-acls)
+        - [Using getfacl as input](#using-getfacl-as-input)
+        - [Setting an Explicit ACL Mask](#setting-an-explicit-acl-mask)
+        - [Recursive ACL Modifications](#recursive-acl-modifications)
+        - [Deleting ACLs](#deleting-acls)
+      - [Controlling Default ACL File Permissions](#controlling-default-acl-file-permissions)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -3855,7 +3865,19 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   The following example displays the file systems and mount points on host.
-    `$ df Filesystem 1K-blocks Used Available Use% Mounted on devtmpfs 912584 0 912584 0% /dev tmpfs 936516 0 936516 0% /dev/shm tmpfs 936516 16812 919704 2% /run tmpfs 936516 0 936516 0% /sys/fs/cgroup /dev/vda3 8377344 1411332 6966012 17% / /dev/vda1 1038336 169896 868440 17% /boot tmpfs 187300 0 187300 0% /run/user/1000`
+
+    ```
+    $ df
+    Filesystem     1K-blocks    Used Available Use% Mounted on
+    devtmpfs          912584       0    912584   0% /dev
+    tmpfs             936516       0    936516   0% /dev/shm
+    tmpfs             936516   16812    919704   2% /run
+    tmpfs             936516       0    936516   0% /sys/fs/cgroup
+    /dev/vda3        8377344 1411332   6966012  17% /
+    /dev/vda1        1038336  169896    868440  17% /boot
+    tmpfs             187300       0    187300   0% /run/user/1000
+    ```
+
     <br>
 
 -   The partitioning on the host system shows two physical file systems, which are mounted on `/` and `/boot`. This is common for virtual machines. The `tmpfs` and `devtmpfs` devices are file systems in system memory. **All files written into `tmpfs` or `devtmpfs` disappear after system reboot.**
@@ -3865,7 +3887,19 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     <br>
 
 -   Show a report on the file systems on the host system with all units converted to human-readable format :
-    `$ df -h Filesystem Size Used Avail Use% Mounted on devtmpfs 892M 0 892M 0% /dev tmpfs 915M 0 915M 0% /dev/shm tmpfs 915M 17M 899M 2% /run tmpfs 915M 0 915M 0% /sys/fs/cgroup /dev/vda3 8.0G 1.4G 6.7G 17% / /dev/vda1 1014M 166M 849M 17% /boot tmpfs 183M 0 183M 0% /run/user/1000`
+
+    ```
+    $ df
+    Filesystem      Size  Used Avail Use% Mounted on
+    devtmpfs        892M     0  892M   0% /dev
+    tmpfs           915M     0  915M   0% /dev/shm
+    tmpfs           915M   17M  899M   2% /run
+    tmpfs           915M     0  915M   0% /sys/fs/cgroup
+    /dev/vda3       8.0G  1.4G  6.7G  17% /
+    /dev/vda1      1014M  166M  849M  17% /boot
+    tmpfs           183M     0  183M   0% /run/user/1000
+    ```
+
     <br>
 
 -   For more detailed information about space used by a certain directory tree, use the `du` command. The `du` command has `-h` and `-H` options to convert the output to human-readable format. The du command shows the size of all files in the current directory tree recursively.
@@ -5047,6 +5081,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 ##### View directory ACLs
 
 -   To display ACL settings on a directory, use the `getfacl directory` command :
+
     ```
     $ getfacl .
     # file: .
@@ -5068,7 +5103,9 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
     default:mask::rwx
     default:other::---
     ```
+
     Review each section of the previous example :
+
     -   **Opening comment entries :**
         ```
         # file: .
@@ -5116,128 +5153,135 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
         -   Default other or "world" permissions. All other UIDs and GIDs have no permissions to new files or new subdirectories.
         -   The default entries in the above example do not include the named user (UID 1005) and named group (GID 2210); consequently, they will not automatically get initial ACL entries added for them to any new files or new subdirectories. This effectively limits them to files and subdirectories that they already have ACLs on, or if the relevant file owner adds the ACL later using `setfacl`. They can still create their own files and subdirectories.
 
-- **Note**
-  - The output from `getfacl` command can be used as input to `setfacl` for restoring ACLs, or for copying ACLs from a source file or directory and save them into a new file. 
-  - For example, to restore ACLs from a backup, use `$ getfacl -R /dir1 > file1` to generate a recursive ACL output dump file for the directory and its contents. The output can then be used for recovery of the original ACLs, passing the saved output as input to the `setfacl` command. 
-  - For example, to perform a bulk update of the same directory in the current path use the following command : `$ setfacl --set-file=file1`
+-   **Note**
+    -   The output from `getfacl` command can be used as input to `setfacl` for restoring ACLs, or for copying ACLs from a source file or directory and save them into a new file.
+    -   For example, to restore ACLs from a backup, use `$ getfacl -R /dir1 > file1` to generate a recursive ACL output dump file for the directory and its contents. The output can then be used for recovery of the original ACLs, passing the saved output as input to the `setfacl` command.
+    -   For example, to perform a bulk update of the same directory in the current path use the following command : `$ setfacl --set-file=file1`
 
 ##### The ACL Mask
 
-- The ACL mask defines the maximum permissions that you can grant to named users, the group owner, and named groups. It does not restrict the permissions of the file owner or other users. All files and directories that implement ACLs will have an ACL mask.
-<br>
+-   The ACL mask defines the maximum permissions that you can grant to named users, the group owner, and named groups. It does not restrict the permissions of the file owner or other users. All files and directories that implement ACLs will have an ACL mask.
+    <br>
 
-- The mask can be viewed with `getfacl` and explicitly set with `setfacl`. It will be calculated and added automatically if it is not explicitly set, but it could also be inherited from a parent directory default mask setting. 
-- By default, the mask is recalculated whenever any of the affected ACLs are added, modified, or deleted.
+-   The mask can be viewed with `getfacl` and explicitly set with `setfacl`. It will be calculated and added automatically if it is not explicitly set, but it could also be inherited from a parent directory default mask setting.
+-   By default, the mask is recalculated whenever any of the affected ACLs are added, modified, or deleted.
 
 ##### ACL Permission Precedence
 
-- When determining whether a process (a running program) can access a file, file permissions and ACLs are applied as follows:
-  - If the process is running as the user that owns the file, then the file's user ACL permissions apply.
-  - If the process is running as a user that is listed in a named user ACL entry, then the named user ACL permissions apply (as long as it is permitted by the mask).
-  - If the process is running as a group that matches the group owner of the file, or as a group with an explicitly named group ACL entry, then the matching ACL permissions apply (as long as it is permitted by the mask).
-  - Otherwise, the file's other ACL permissions apply.
+-   When determining whether a process (a running program) can access a file, file permissions and ACLs are applied as follows:
+    -   If the process is running as the user that owns the file, then the file's user ACL permissions apply.
+    -   If the process is running as a user that is listed in a named user ACL entry, then the named user ACL permissions apply (as long as it is permitted by the mask).
+    -   If the process is running as a group that matches the group owner of the file, or as a group with an explicitly named group ACL entry, then the matching ACL permissions apply (as long as it is permitted by the mask).
+    -   Otherwise, the file's other ACL permissions apply.
 
 ### Securing Files with ACLs
 
 #### Changing ACL File Permissions
 
-- Use `setfacl` to add, modify, or remove standard ACLs on files and directories.
-<br>
+-   Use `setfacl` to add, modify, or remove standard ACLs on files and directories.
+    <br>
 
-- ACLs use the normal file system representation of permissions, "`r`" for read permission, "`w`" for write permission, and "`x`" for execute permission. 
-- A "`-`" (dash) indicates that the relevant permission is absent. 
-- When (recursively) setting ACLs, an uppercase "`X`" can be used to indicate that execute permission should only be set on directories and not regular files, unless the file already has the relevant execute permission. This is the same behavior as `chmod`.
+-   ACLs use the normal file system representation of permissions, "`r`" for read permission, "`w`" for write permission, and "`x`" for execute permission.
+-   A "`-`" (dash) indicates that the relevant permission is absent.
+-   When (recursively) setting ACLs, an uppercase "`X`" can be used to indicate that execute permission should only be set on directories and not regular files, unless the file already has the relevant execute permission. This is the same behavior as `chmod`.
 
 ##### Adding or Modifying ACLs
 
-- ACLs can be set via the command-line using the `-m` option, or passed in via a file using the `-M` option (use "`-`" (dash) instead of a file name for `stdin`). 
-- These two options are the "`modify`" options; they add new ACL entries or replace specific existing ACL entries on a file or directory. Any other existing ACL entries on the file or directory remain untouched.
+-   ACLs can be set via the command-line using the `-m` option, or passed in via a file using the `-M` option (use "`-`" (dash) instead of a file name for `stdin`).
+-   These two options are the "`modify`" options; they add new ACL entries or replace specific existing ACL entries on a file or directory. Any other existing ACL entries on the file or directory remain untouched.
 
-- **Note**
-  - Use the `--set` or `--set-file` options to completely replace the ACL settings on a file.
-  <br>
+-   **Note**
 
-- When first defining an ACL on a file, if the add operation does not include settings for the file owner, group owner, or other permissions, then these will be set based on the current standard file permissions (these are also known as the base ACL entries and cannot be deleted), and a new mask value will be calculated and added as well.
-  <br>
+    -   Use the `--set` or `--set-file` options to completely replace the ACL settings on a file.
+        <br>
 
-- To add or modify a user or named user ACL : <br> `$ setfacl -m u:name:rX file`
-  - If `name` is left blank, then it applies to the file owner, otherwise `name` can be a username or UID value. 
-  - In this example, the permissions granted would be read-only, and if already set, execute (unless file was a directory, in which case the directory would get the execute permission set to allow directory search).
-  <br>
-  - ACL file owner and standard file owner permissions are equivalent; consequently, using `chmod` on the file owner permissions is equivalent to using `setfacl` on the file owner permissions. `chmod` has no effect on named users.
-  <br>
-
-- To add or modify a group or named group ACL : <br> `$ setfacl -m g:name:rw file`
-  - This follows the same pattern for adding or modifying a user ACL entry. If name is left blank, then it applies to the group owner. Otherwise, specify a group name or GID value for a named group. The permissions would be read and write in this example.
+-   When first defining an ACL on a file, if the add operation does not include settings for the file owner, group owner, or other permissions, then these will be set based on the current standard file permissions (these are also known as the base ACL entries and cannot be deleted), and a new mask value will be calculated and added as well.
     <br>
-  - `chmod` has no effect on any group permissions for files with ACL settings, but it updates the ACL mask.
-  <br>
 
-- To add or modify the other ACL : <br> `$ setfacl -m o::- file`
-  - other only accepts permission settings. Typical permission settings for others are: no permissions at all, set with a dash (`-`); and read-only permissions set as usual with `r`. Of course, we can set any of the standard permissions.
-  <br>
-  - ACL other and standard other permissions are equivalent, so using `chmod` on the other permissions is equivalent to using `setfacl` on the other permissions.
-  <br>
+-   To add or modify a user or named user ACL : <br> `$ setfacl -m u:name:rX file`
 
-- We can add multiple entries with the same command; use a comma-separated list of entries : <br> `$ setfacl -m u::rwx,g:consultants:rX,o::- file`
+    -   If `name` is left blank, then it applies to the file owner, otherwise `name` can be a username or UID value.
+    -   In this example, the permissions granted would be read-only, and if already set, execute (unless file was a directory, in which case the directory would get the execute permission set to allow directory search).
+        <br>
+    -   ACL file owner and standard file owner permissions are equivalent; consequently, using `chmod` on the file owner permissions is equivalent to using `setfacl` on the file owner permissions. `chmod` has no effect on named users.
+        <br>
+
+-   To add or modify a group or named group ACL : <br> `$ setfacl -m g:name:rw file`
+
+    -   This follows the same pattern for adding or modifying a user ACL entry. If name is left blank, then it applies to the group owner. Otherwise, specify a group name or GID value for a named group. The permissions would be read and write in this example.
+        <br>
+    -   `chmod` has no effect on any group permissions for files with ACL settings, but it updates the ACL mask.
+        <br>
+
+-   To add or modify the other ACL : <br> `$ setfacl -m o::- file`
+
+    -   other only accepts permission settings. Typical permission settings for others are: no permissions at all, set with a dash (`-`); and read-only permissions set as usual with `r`. Of course, we can set any of the standard permissions.
+        <br>
+    -   ACL other and standard other permissions are equivalent, so using `chmod` on the other permissions is equivalent to using `setfacl` on the other permissions.
+        <br>
+
+-   We can add multiple entries with the same command; use a comma-separated list of entries : <br> `$ setfacl -m u::rwx,g:consultants:rX,o::- file`
 
 ##### Using getfacl as input
 
-- We can use the output from `getfacl` as input to `setfacl` : <br> `$ getfacl file-A | setfacl --set-file=- file-B`
-  - The `--set-file` option accepts input from a file or from `stdin`. The dash character (`-`) specifies the use of `stdin`. In this case, file-B will have the same ACL settings as file-A.
+-   We can use the output from `getfacl` as input to `setfacl` : <br> `$ getfacl file-A | setfacl --set-file=- file-B`
+    -   The `--set-file` option accepts input from a file or from `stdin`. The dash character (`-`) specifies the use of `stdin`. In this case, file-B will have the same ACL settings as file-A.
 
 ##### Setting an Explicit ACL Mask
 
-- We can set an ACL mask explicitly on a file or directory to limit the maximum effective permissions for named users, the group owner, and named groups. 
-- This restricts any existing permissions that exceed the mask, but does not affect permissions that are less permissive than the mask. <br> `$ setfacl -m m::r file`
-<br>
+-   We can set an ACL mask explicitly on a file or directory to limit the maximum effective permissions for named users, the group owner, and named groups.
+-   This restricts any existing permissions that exceed the mask, but does not affect permissions that are less permissive than the mask. <br> `$ setfacl -m m::r file`
+    <br>
 
-- **Important**
-  - By default, each time one of the impacted ACL settings (named users, group owner, or named groups) is modified or deleted, the ACL mask is recalculated, potentially resetting a previous explicit mask setting.
-<br>
+-   **Important**
 
-  - To avoid the mask recalculation, use the `-n` option or include a mask setting (`-m m::perms`) with any `setfacl` operation that modifies mask-affected ACL settings.
+    -   By default, each time one of the impacted ACL settings (named users, group owner, or named groups) is modified or deleted, the ACL mask is recalculated, potentially resetting a previous explicit mask setting.
+        <br>
+
+    -   To avoid the mask recalculation, use the `-n` option or include a mask setting (`-m m::perms`) with any `setfacl` operation that modifies mask-affected ACL settings.
 
 ##### Recursive ACL Modifications
 
-- When setting an ACL on a directory, use the `-R` option to apply the ACL recursively. 
-- Remember that we are likely to want to use the "`X`" (capital X) permission with recursion so that files with the execute permission set retain the setting and directories get the execute permission set to allow directory search. 
-- It is considered good practice to also use the uppercase "`X`" when non-recursively setting ACLs because it prevents administrators from accidentally adding execute permissions to a regular file. <br> `$ setfacl -R -m u:name:rX directory`
-  - This adds the user name to the directory directory and all existing files and subdirectories, setting read-only and conditional execute permissions.
+-   When setting an ACL on a directory, use the `-R` option to apply the ACL recursively.
+-   Remember that we are likely to want to use the "`X`" (capital X) permission with recursion so that files with the execute permission set retain the setting and directories get the execute permission set to allow directory search.
+-   It is considered good practice to also use the uppercase "`X`" when non-recursively setting ACLs because it prevents administrators from accidentally adding execute permissions to a regular file. <br> `$ setfacl -R -m u:name:rX directory`
+    -   This adds the user name to the directory directory and all existing files and subdirectories, setting read-only and conditional execute permissions.
 
 ##### Deleting ACLs
 
-- Deleting specific ACL entries follows the same basic format as the modify operation, except that "`:perms`" is not specified. <br> `$ setfacl -x u :name,g:name file`
-  - This removes only the named user and the named group from the file or directory ACL. Any other existing ACL entries remain active.
-- We can include both the delete (`-x`) and modify (`-m`) operations in the same setfacl operation.
-  <br>
+-   Deleting specific ACL entries follows the same basic format as the modify operation, except that "`:perms`" is not specified. <br> `$ setfacl -x u :name,g:name file`
+    -   This removes only the named user and the named group from the file or directory ACL. Any other existing ACL entries remain active.
+-   We can include both the delete (`-x`) and modify (`-m`) operations in the same setfacl operation.
+    <br>
 
-- The mask can only be deleted if there are no other ACLs set (excluding the base ACL which cannot be deleted), so it must be deleted last. The file will no longer have any ACLs and `ls -l` will not show the plus sign (`+`) next to the permissions string. 
-- Alternatively, to delete all ACL entries on a file or directory (including default ACL on directories), use the following command : <br> `setfacl -b file`
+-   The mask can only be deleted if there are no other ACLs set (excluding the base ACL which cannot be deleted), so it must be deleted last. The file will no longer have any ACLs and `ls -l` will not show the plus sign (`+`) next to the permissions string.
+-   Alternatively, to delete all ACL entries on a file or directory (including default ACL on directories), use the following command : <br> `setfacl -b file`
 
 #### Controlling Default ACL File Permissions
 
-- To ensure that files and directories created within a directory inherit certain ACLs, use the default ACL on a directory. 
-- We can set a default ACL and any of the standard ACL settings, including a default mask.
-<br>
-
-- The directory itself still requires standard ACLs for access control because the default ACLs do not implement access control for the directory; they only provide ACL permission inheritance support. For example: <br> `$ setfacl -m d:u:name:rx directory`
-  - This adds a default named user (`d:u:name`) with read-only permission and execute permission on subdirectories.
-- The `setfacl` command for adding a default ACL for each of the ACL types is exactly the same as for standard ACLs, but prefaced with `d:`. 
-- Alternatively, use the `-d` option on the command line.
-  <br>
-
-- **Important**
-  - When setting default ACLs on a directory, ensure that users will be able to access the contents of new subdirectories created in it by including the execute permission on the default ACL.
+-   To ensure that files and directories created within a directory inherit certain ACLs, use the default ACL on a directory.
+-   We can set a default ACL and any of the standard ACL settings, including a default mask.
     <br>
 
-  - Users will not automatically get the execute permission set on newly created regular files because unlike new directories, the ACL mask of a new regular file is rw-.
-  <br>
+-   The directory itself still requires standard ACLs for access control because the default ACLs do not implement access control for the directory; they only provide ACL permission inheritance support. For example: <br> `$ setfacl -m d:u:name:rx directory`
+    -   This adds a default named user (`d:u:name`) with read-only permission and execute permission on subdirectories.
+-   The `setfacl` command for adding a default ACL for each of the ACL types is exactly the same as for standard ACLs, but prefaced with `d:`.
+-   Alternatively, use the `-d` option on the command line.
+    <br>
 
-- **Note**
-  - New files and new subdirectories continue to get their owner UID and primary group GID values set from the creating user, except when the parent directory setgid flag is enabled, in which case the primary group GID is the same as the parent directory GID.
+-   **Important**
 
-- **To Delete all *default* ACL entries on a directory :** `$ setfacl -k directory`
+    -   When setting default ACLs on a directory, ensure that users will be able to access the contents of new subdirectories created in it by including the execute permission on the default ACL.
+        <br>
+
+    -   Users will not automatically get the execute permission set on newly created regular files because unlike new directories, the ACL mask of a new regular file is rw-.
+        <br>
+
+-   **Note**
+
+    -   New files and new subdirectories continue to get their owner UID and primary group GID values set from the creating user, except when the parent directory setgid flag is enabled, in which case the primary group GID is the same as the parent directory GID.
+
+-   **To Delete all _default_ ACL entries on a directory :** `$ setfacl -k directory`
 
 ## Server Management in Linux
 
