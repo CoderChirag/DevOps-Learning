@@ -293,6 +293,13 @@
         - [Displaying Nice Levels from the Command Line](#displaying-nice-levels-from-the-command-line)
       - [Starting Processes with Different Nice Levels](#starting-processes-with-different-nice-levels)
       - [Changing the Nice Level of an Existing Process](#changing-the-nice-level-of-an-existing-process)
+  - [Controlling Access to Files with ACLs](#controlling-access-to-files-with-acls)
+    - [Interpreting File ACLs](#interpreting-file-acls)
+      - [Acess Control List Concepts](#acess-control-list-concepts)
+        - [File System ACL Support](#file-system-acl-support)
+      - [Viewing and Interpreting ACL Information](#viewing-and-interpreting-acl-information)
+        - [View File ACLs](#view-file-acls)
+        - [View directory ACLs](#view-directory-acls)
   - [Server Management in Linux](#server-management-in-linux)
     - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
     - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
@@ -4938,6 +4945,176 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
 
 -   The `top` command can also be used to change the nice level on a process.
 -   From within the `top` interactive interface, press the `r` option to access the `renice` command, followed by the `PID` to be changed and the new nice level.
+
+## Controlling Access to Files with ACLs
+
+### Interpreting File ACLs
+
+#### Acess Control List Concepts
+
+-   Standard Linux file permissions are satisfactory when files are used by only a single owner, and a single designated group of people. However, some use cases require that files are accessed with different file permission sets by multiple named users and groups. **Access Control Lists (ACLs)** provide this function.
+    <br>
+
+-   With ACLs, we can grant permissions to multiple users and groups, identified by user name, group name, UID, or GID, using the same permission flags used with regular file permissions: read, write, and execute. These additional users and groups, beyond the file owner and the file's group affiliation, are called **named users** and **named groups** respectively, because they are named not in a long listing, but rather within an ACL.
+    <br>
+
+-   Users can set ACLs on files and directories that they own.
+-   Privileged users, assigned the `CAP_FOWNER` Linux capability, can set ACLs on any file or directory.
+-   New files and subdirectories automatically inherit ACL settings from the parent directory's default ACL, if they are set.
+-   Similar to normal file access rules, the parent directory hierarchy needs at least the other search (execute) permission set to enable named users and named groups to have access.
+
+##### File System ACL Support
+
+-   File systems need to be mounted with ACL support enabled.
+-   XFS file systems have built-in ACL support.
+-   Other file systems, such as ext3 or ext4 have the acl option enabled by default, although on earlier versions we should confirm that ACL support is enabled.
+-   To enable file-system ACL support, use the ACL option with the `mount` command or in the file system's entry in `/etc/fstab` configuration file.
+
+#### Viewing and Interpreting ACL Information
+
+-   The `ls -l` command only outputs minimal ACL setting details :
+
+    ```
+    $ ls -l reports.txt
+    -rwxrw----+ 1 user operators 130 Mar 19 23:56 reports.txt
+    ```
+
+    -   The **plus sign** (`+`) at the end of the 10-character permission string indicates that an extended ACL structure with entries exists on this file.
+    -   **user :**
+        -   Shows the user ACL settings, which are the same as the standard user file settings; `rwx`.
+    -   **group :**
+        -   Shows the current ACL mask settings, not the group owner settings; `rw`.
+    -   **other :**
+        -   Shows the other ACL settings, which are the same as the standard other file settings; `no access`.
+
+-   **Important**
+    -   Changing group permissions on a file with an ACL by using chmod does not change the group owner permissions, but does change the ACL mask. Use `setfacl -m g::perms file` if the intent is to update the file's group owner permissions.
+
+##### View File ACLs
+
+-   To display ACL settings on a file, use `getfacl file` :
+    ```
+    $ getfacl reports.txt
+    # file: reports.txt
+    # owner: user
+    # group: operators
+    user::rwx
+    user:consultant3:---
+    user:1005:rwx       #effective:rw-
+    group::rwx          #effective:rw-
+    group:consultant1:r--
+    group:2210:rwx      #effective:rw-
+    mask::rw-
+    other::---
+    ```
+    Review each section of this example :
+    -   **Commented entries :**
+        ```
+        # file: reports.txt
+        # owner: user
+        # group: operators
+        ```
+        -   The first three lines are comments that identify the file name, owner (user), and group owner (operators). If there are any additional file flags, such as setuid or setgid, then a fourth comment line will appear showing which flags are set.
+    -   **User entries :**
+        ```
+        user::rwx
+        user:consultant3:---
+        user:1005:rwx        #effective:rw-
+        ```
+        1. **File owner permissions**. `user` has `rwx`.
+        2. **Named user permissions**. One entry for each named user associated with this file. `consultant3` has `no permissions`.
+        3. **Named user permissions**. `UID 1005` has `rwx`, but the mask limits the effective permissions to `rw` only.
+    -   **Group Entries :**
+        ```
+        group::rwx              #effective:rw-
+        group:consultant1:r--
+        group:2210:rwx          #effective:rw-
+        ```
+        1. **Group owner permissions**. operators has `rwx`, but the mask limits the effective permissions to `rw` only.
+        2. **Named group permissions**. One entry for each named group associated with this file. `consultant1` has `r` only.
+        3. **Named group permissions**. `GID 2210` has `rwx`, but the mask limits the effective permissions to `rw` only.
+    -   **Mask entry :**
+        ```
+        mask::rw-
+        ```
+        -   Mask settings show the maximum permissions possible for all named users, the group owner, and named groups. UID 1005, operators, and GID 2210 cannot execute this file, even though each entry has the execute permission set.
+    -   **Other entry :**
+        ```
+        other::---
+        ```
+        -   Other or "world" permissions. All other UIDs and GIDs have NO permissions.
+
+##### View directory ACLs
+
+-   To display ACL settings on a directory, use the `getfacl directory` command :
+    ```
+    $ getfacl .
+    # file: .
+    # owner: user
+    # group: operators
+    # flags: -s-
+    user::rwx
+    user:consultant3:---
+    user:1005:rwx
+    group::rwx
+    group:consultant1:r-x
+    group:2210:rwx
+    mask::rwx
+    other::---
+    default:user::rwx
+    default:user:consultant3:---
+    default:group::rwx
+    default:group:consultant1:r-x
+    default:mask::rwx
+    default:other::---
+    ```
+    Review each section of the previous example :
+    -   **Opening comment entries :**
+        ```
+        # file: .
+        # owner: users
+        # group: operators
+        # flag: -s-
+        ```
+        -   The first three lines are comments that identify the directory name, owner (user), and group owner (operators). If there are any additional directory flags (setuid, setgid, sticky), then a fourth comment line shows which flags are set; in this case, setgid.
+    -   **Standard ACL entries :**
+        ```
+        user::rwx
+        user:consultant3:---
+        user:1005:rwx
+        group::rwx
+        group:consultant1:r-x
+        group:2210:rwx
+        mask::rwx
+        other::---
+        ```
+        -   The ACL permissions on this directory are the same as the file example shown above, but apply to the directory.
+        -   The key difference is the inclusion of the execute permission on these entries (when appropriate) to allow directory search permission.
+    -   **Default user entries :**
+        ```
+        default:user::rwx
+        default:user:consultant3:---
+        ```
+        1. **Default file owner ACL permissions**. The file owner will get `rwx`, **read/write** on new files and **execute** on new subdirectories.
+        2. **Default named user ACL permissions**. One entry for each named user who will automatically get the default ACL applied to new files or subdirectories. `consultant3` always defaults to `no permissions`.
+    -   **Default group entries :**
+        ```
+        default:group::rwx
+        default:group:consultant1:r-x
+        ```
+        1. **Default group owner ACL permissions**. The file group owner will get `rwx`, **read/write** on new files and **execute** on new subdirectories.
+        2. **Default named group ACL permissions**. One entry for each named group which will automatically get the default ACL. `consultant1` will get `rx`, **read-only** on new files, and **execute** on new subdirectories.
+    -   **Default ACL mask entry :**
+        ```
+        default:mask::rwx
+        ```
+        -   Default mask settings show the initial maximum permissions possible for all new files or directories created that have named user ACLs, the group owner ACL, or named group ACLs: read and write for new files and execute permission on new subdirectories. New files never get execute permission.
+    -   **Default other entry :**
+        ```
+        default:other::---
+        ```
+        -   Default other or "world" permissions. All other UIDs and GIDs have no permissions to new files or new subdirectories.
+        -   The default entries in the previous example do not include the named user (UID 1005) and named group (GID 2210); consequently, they will not automatically get initial ACL entries added for them to any new files or new subdirectories. This effectively limits them to files and subdirectories that they already have ACLs on, or if the relevant file owner adds the ACL later using `setfacl`. They can still create their own files and subdirectories.
 
 ## Server Management in Linux
 
