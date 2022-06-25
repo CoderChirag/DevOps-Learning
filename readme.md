@@ -30,6 +30,13 @@
   - [EBS Snapshots](#ebs-snapshots)
     - [Introduction](#introduction)
     - [Hands-On on EBS Snapshots](#hands-on-on-ebs-snapshots)
+- [AWS Elastic Load balancers](#aws-elastic-load-balancers)
+  - [Load Balancer Ports](#load-balancer-ports)
+  - [Classic Load Balancer / Gateway Load Balancer](#classic-load-balancer--gateway-load-balancer)
+  - [Application Load Balancer](#application-load-balancer)
+    - [Overview](#overview)
+  - [Network Load Balancer](#network-load-balancer)
+  - [Gateway Load Balancers](#gateway-load-balancers)
 
 ---
 
@@ -649,4 +656,72 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
     ```
 
 -   **Note**
-    -   Don't forget to Cleanup everything you created for the exercise, terminate the VM, delete the snapshot and delete all the EBS Volumes.
+    -   Don't forget to Cleanup everything we created for the exercise, terminate the VM, delete the snapshot and delete all the EBS Volumes.
+
+# AWS Elastic Load balancers
+
+-   **Elastic Load Balancing (ELB)** automatically distributes incoming application or network traffic across multiple targets and virtual appliances such as Amazon EC2 instances, containers, and IP addresses, in one or more Availability Zones (AZs).
+    <br>
+
+-   Elastic Load Balancing automatically distributes our incoming traffic across multiple targets, such as EC2 instances, containers, and IP addresses, in one or more Availability Zones.
+-   It monitors the health of its registered targets, and routes traffic only to the healthy targets.
+-   Elastic Load Balancing scales our load balancer as our incoming traffic changes over time.
+-   It can automatically scale to the vast majority of workloads.
+    <br>
+
+-   Elastic Load Balancing supports 3 types of load balancers :
+    -   Application Load Balancer
+    -   Network Load Balancer
+    -   Classic Load Balancer
+    -   Gateway Load Balancer
+
+## Load Balancer Ports
+
+-   **Frontend Port :** Listens from the User Requests on this port AKA **Listeners**
+    -   eg : 80, 443, 25 etc
+-   **Backend Ports :** Services running on OS listening on this port
+    -   eg : 80, 443, 8080 etc
+
+## Classic Load Balancer / Gateway Load Balancer
+
+-   The **Classic Load Balancer** that routes traffic based on either application or network level information.
+-   The **Classic Load Balancer** is ideal for simple load balancing of traffic across multiple EC2 instances.
+
+## Application Load Balancer
+
+-   **Application Load Balancer** that routes traffic based on advanced application level information (layer 7 information) that includes the content of the request.
+-   This load balancer can route different endpoints of the same domain to different instances or group of instances as it is a layer 7 Load Balancer.
+    -   eg : it can route coderchirag.tech/works and coderchirag.tech/contact to different instances.
+
+![application_elb](./images/aws/application_elb.png)
+
+### Overview
+
+-   An **Application Load Balancer** functions at the application layer, the seventh layer of the Open Systems Interconnection (OSI) model.
+-   After the load balancer receives a request, it evaluates the listener rules in priority order to determine which rule to apply, and then selects a target from the target group for the rule action.
+-   We can configure listener rules to route requests to different target groups based on the content of the application traffic.
+-   Routing is performed independently for each target group, even when a target is registered with multiple target groups.
+-   We can configure the routing algorithm used at the target group level. The default routing algorithm is round robin; alternatively, we can specify the least outstanding requests routing algorithm.
+    <br>
+
+-   We can add and remove targets from our load balancer as our needs change, without disrupting the overall flow of requests to our application.
+-   Elastic Load Balancing scales our load balancer as traffic to our application changes over time.
+-   Elastic Load Balancing can scale to the vast majority of workloads automatically.
+    <br>
+
+-   We can configure health checks, which are used to monitor the health of the registered targets so that the load balancer can send requests only to the healthy targets.
+
+## Network Load Balancer
+
+-   A **Network Load Balancer** functions at the 4th layer of the OSI model.
+-   It can handle millions of requests per second.
+-   Static IP
+-   Use Network Load Balancers for TCP, UDP, and TLS traffic where extreme performance is required.
+
+![network_elb](./images/aws/network_elb.png)
+
+## Gateway Load Balancers
+
+-   Use Gateway Load Balancers to deploy, scale, and manage virtual appliances, such as firewalls.
+
+![gateway_elb](./images/aws/gateway_elb.png)
