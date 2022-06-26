@@ -38,6 +38,9 @@
   - [Network Load Balancer](#network-load-balancer)
   - [Gateway Load Balancers](#gateway-load-balancers)
   - [ELB Hands-on](#elb-hands-on)
+- [Amazon CloudWatch](#amazon-cloudwatch)
+  - [Usage of Metrics provided by CloudWatch](#usage-of-metrics-provided-by-cloudwatch)
+  - [CloudWatch Hands-On](#cloudwatch-hands-on)
 
 ---
 
@@ -878,5 +881,50 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
 -   After the Load Balancer is active, copy the DNS name of the load balancer and try it by copying it to browser, and our website would load up. With this we have succesfully set up a Load Balancer :sunglasses:
     <br>
 
--   **Note** - Don't forget to cleanup everything, load balancer, target group, AMI, and instances.
-    g
+-   **Note**
+    -   Don't forget to cleanup everything, load balancer, target group, AMI, and instances.
+    -   Do not delete AMI and Instance Template, they wouldn't charge and we would use them in future.
+
+# Amazon CloudWatch
+
+-   **CloudWatch -** Monitor performance of AWS environment - standard infrastructure metrics.
+-   **Metrics -** AWS cloud watch allows us to record metrics for services such as EBS, EC2, ELB, Route53 Health Checks, RDS, Amazon S3, cloudfront etc etc...
+-   **Events -** AWS events delivers a near real-time stream of system events that describe changes in Amazon Web Services (AWS) resources.
+-   **Logs -** We can use Amazon CloudWatch Logs to monitor, store, and access our log files from Amazon Elastic Compute Cloud (Amazon EC2) instances, AWS CloudTrail, Route53, and other sources.
+
+## Usage of Metrics provided by CloudWatch
+
+-   Metrics provide **Alarm** which monitors CloudWatch metrics for Instances.
+-   **Simple Notification Service (Amazon SNS)** can also be set up on top of these alarms, which is a web service that coordinates and manages the delivery or sending of messages to subscribin endpoints or clients.
+    <br>
+
+![cloudwatch_sns](./images/aws/cloudWatch_sns.jpg)
+
+## CloudWatch Hands-On
+
+-   Firstly, create a `web01` instance from the instance template `web00` we previously created using our AMI we built previously.
+-   Check by testing the public IP if website is up and running.
+-   SSH to the instance and install `stress`
+
+    ```
+    $ sudo amazon-linux-extras install epel -y
+    $ sudo yum install stress -y
+    $ echo "sleep 60 && stress -c 4 -t 60 && sleeep 60 && stress -c 4 -t 30 && sleep 30 && stress -c 4 -t 200 && sleep 30 && stress -c 4 -t 500" > stress.sh
+    $ sudo chmod +x stress.sh
+    $ nohup ./stress.sh &
+    ```
+
+<br>
+
+-   Search for **CloudWatch** from the Search Panel, go to **Alarms** > **All Alarms** and click on **Create Alarm**
+    -   Select Metric > EC2 > Per-instance Metrics > `web01` (CPUUtilization) > Select Metric
+    -   **Period :** 5 minutes
+    -   **Threshold type :** Static
+    -   **Whenever CPUUtilization is...** Greater/Equal
+    -   **than...** 60
+    -   Click on next
+    -   **Alarm state trigger :** In Alarm
+    -   Select an SNS topic if previously created, else create new topic
+    -   Click on **Next**, **Alarm name :** Warning | high CPU web01 healthy, click on **Next** > **Create Alarm**.
+        <br>
+-   Now check your email after 5 minutes with the constant use of `stress` command.
