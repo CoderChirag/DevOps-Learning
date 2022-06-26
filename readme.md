@@ -878,5 +878,5 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
 -   After the Load Balancer is active, copy the DNS name of the load balancer and try it by copying it to browser, and our website would load up. With this we have succesfully set up a Load Balancer :sunglasses:
     <br>
 
--   **Note**
-    -   Don't forget to cleanup everything, load balancer, target group, AMI, and instances.
+-   **Note** - Don't forget to cleanup everything, load balancer, target group, AMI, and instances.
+    g
