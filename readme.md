@@ -928,3 +928,7 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
     -   Click on **Next**, **Alarm name :** Warning | high CPU web01 healthy, click on **Next** > **Create Alarm**.
         <br>
 -   Now check your email after 5 minutes with the constant use of `stress` command.
+    <br>
+
+-   **Note**
+    -   Don't forget to terminate the VM after use.
