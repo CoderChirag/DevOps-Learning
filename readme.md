@@ -37,6 +37,7 @@
     - [Overview](#overview)
   - [Network Load Balancer](#network-load-balancer)
   - [Gateway Load Balancers](#gateway-load-balancers)
+  - [ELB Hands-on](#elb-hands-on)
 
 ---
 
@@ -725,3 +726,157 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
 -   Use Gateway Load Balancers to deploy, scale, and manage virtual appliances, such as firewalls.
 
 ![gateway_elb](./images/aws/gateway_elb.png)
+
+## ELB Hands-on
+
+-   Create a VM instance `web01` with Amazon Linux, t2.micro, and 8 gb of storage. Configure security groups to accept traffic from ssh, http and https. In the user data section enter this script to host a template website :
+
+    ```#!/bin/bash
+
+    # Variable Declaration
+    #PACKAGE="httpd wget unzip"
+    #SVC="httpd"
+    URL='https://www.tooplate.com/zip-templates/2098_health.zip'
+    ART_NAME='2098_health'
+    TEMPDIR="/tmp/webfiles"
+
+    yum --help &> /dev/null
+
+    if [ $? -eq 0 ]
+    then
+    # Set Variables for CentOS
+    PACKAGE="httpd wget unzip"
+    SVC="httpd"
+
+    echo "Running Setup on CentOS"
+    # Installing Dependencies
+    echo "########################################"
+    echo "Installing packages."
+    echo "########################################"
+    sudo yum install $PACKAGE -y > /dev/null
+    echo
+
+    # Start & Enable Service
+    echo "########################################"
+    echo "Start & Enable HTTPD Service"
+    echo "########################################"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+    echo
+
+    # Creating Temp Directory
+    echo "########################################"
+    echo "Starting Artifact Deployment"
+    echo "########################################"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    wget $URL > /dev/null
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Bounce Service
+    echo "########################################"
+    echo "Restarting HTTPD service"
+    echo "########################################"
+    systemctl restart $SVC
+    echo
+
+    # Clean Up
+    echo "########################################"
+    echo "Removing Temporary Files"
+    echo "########################################"
+    rm -rf $TEMPDIR
+    echo
+
+    sudo systemctl status $SVC
+    ls /var/www/html/
+
+    else
+        # Set Variables for Ubuntu
+    PACKAGE="apache2 wget unzip"
+    SVC="apache2"
+
+    echo "Running Setup on CentOS"
+    # Installing Dependencies
+    echo "########################################"
+    echo "Installing packages."
+    echo "########################################"
+    sudo apt update
+    sudo apt install $PACKAGE -y > /dev/null
+    echo
+
+    # Start & Enable Service
+    echo "########################################"
+    echo "Start & Enable HTTPD Service"
+    echo "########################################"
+    sudo systemctl start $SVC
+    sudo systemctl enable $SVC
+    echo
+
+    # Creating Temp Directory
+    echo "########################################"
+    echo "Starting Artifact Deployment"
+    echo "########################################"
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    echo
+
+    wget $URL > /dev/null
+    unzip $ART_NAME.zip > /dev/null
+    sudo cp -r $ART_NAME/* /var/www/html/
+    echo
+
+    # Bounce Service
+    echo "########################################"
+    echo "Restarting HTTPD service"
+    echo "########################################"
+    systemctl restart $SVC
+    echo
+
+    # Clean Up
+    echo "########################################"
+    echo "Removing Temporary Files"
+    echo "########################################"
+    rm -rf $TEMPDIR
+    echo
+
+    sudo systemctl status $SVC
+    ls /var/www/html/
+    fi
+
+    ```
+
+-   Once the instance is ready and in running state, wait for 2-3 mins and then visit the Public IP to check if the website is up and running.
+-   Select the instance, go to **Actions** > **Image and template** > **Create Image**, and then by providing appropriate data create an AMI so that we can directly boot from it and can have identical instances running the same website.
+-   Go to **Launch Templates** > **Create Launch Template** and then create a launch template. Make sure to select our own built AMI.
+-   Now open the dropdown menu of **Launch Instance** from the instances section and select **Launch Instance from Instance Template**, and then create a new instance `web02` with that instance template.
+-   Now go to **Load Balancing** > **Target Groups** > **Create Target Group**.
+    -   Select **Target group type :** `Instances`
+    -   Give it a name : `health-tg`
+    -   Set **Protocol :** `HTTP` and **Port :** `80`
+    -   **Health check protocol :** `HTTP`, **Health check path :** `/`
+    -   **Advanced health check settings** > **Port :** `Traffic port`
+    -   Click on **Next**
+-   Select both instances `web01` and `web02` and click on **Include as pending below**, and then click on **Create target group**.
+-   Now go to **Load Balancers** > **Create Load Balancer** >> Select **Application Load Balancer**
+
+    -   **Load balancer name :** `health-elb`
+    -   **Scheme :** `Internet-facing`
+    -   Select all zones in the Network mapping section to ensure the high availability of the Load Balancer.
+    -   **Security Group :** Create new security group
+        -   **Security group name :** `health-elb-sg`
+        -   **Inbound rules** `TCP 80` in any IPv4 and any IPv6.
+        -   Click on **Create Security group**
+    -   Select the newly created security group and remove the default one.
+    -   **Listener :** Protocol : `HTTP`, Port : `80`, Default action : forward to`health-tg`
+    -   Click on **Create Load Balancer**.
+        <br>
+
+-   After the Load Balancer is active, copy the DNS name of the load balancer and try it by copying it to browser, and our website would load up. With this we have succesfully set up a Load Balancer :sunglasses:
+    <br>
+
+-   **Note**
+    -   Don't forget to cleanup everything, load balancer, target group, AMI, and instances.
