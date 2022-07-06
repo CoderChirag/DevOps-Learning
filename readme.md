@@ -48,6 +48,11 @@
     - [2. Modernize application development](#2-modernize-application-development)
     - [3. Enhance content management systems](#3-enhance-content-management-systems)
     - [4. Accelerate data science](#4-accelerate-data-science)
+- [Autoscaling Group](#autoscaling-group)
+  - [Introduction](#introduction-1)
+  - [Autoscaling Group Hands On](#autoscaling-group-hands-on)
+    - [Prerequisites](#prerequisites)
+    - [Setting up Autoscaling Group](#setting-up-autoscaling-group)
 
 ---
 
@@ -972,3 +977,48 @@ Easy to use and scale, Amazon EFS offers the performance and consistency needed 
 
 -   Major difference between **EBS** and **EFS** is that we can mount **EBS** only on 1 instance at one time but **EFS** can be mounted to any number of instances simultaneously.
 -   So, **EFS** can be easily used as a shared storage for all our servers from a cluster.
+
+# Autoscaling Group
+
+## Introduction
+
+-   **Autoscaling** is a service that automatically monitors and adjusts ccompute resources to maintain performance for applications hosted in the AWS.
+-   Based on the alarms which monitor **CloudWatch** metrics for instances.
+-   Uses a **launch configuration/Template**. Launch configuration/Template is an instance configuration template that an Auto Scaling group uses to launch EC2 instances.
+-   To adjust the capacity based on the alarm, it uses **Scaling policy**. Scaling policy is used to increase and decrease the number of running instances in the group dynamically to meet changing conditions.
+    ![autoscaling-intro](./images/aws/autoscaling-intro-1.jpg)
+    <br>
+    ![autoscaling-intro](./images/aws/autoscaling-intro-2.jpg)
+
+## Autoscaling Group Hands On
+
+### Prerequisites
+
+-   A Launch Template (check Load Balancer section above to create it).
+-   A Load Balancer (check Load Balancer section above to create it).
+
+### Setting up Autoscaling Group
+
+-   Go to **Auto Scaling** > **Auto Scaling Groups** from the Right Navigation Menu.
+-   Select **Create Auto Scaling Groups**.
+-   Give a name `healthy-ASG`
+-   Select the Launch Template
+-   Click Next
+-   Select all the zones and click on Next
+-   Select **Attach to an existing load balancer**
+-   Select **chose from your load balancer target groups** and the select the target group of the Load Balancer.
+-   Tick on the **ELB** to enable Load Balancer health check.
+-   Click on Next
+-   Now enter **Desired Capacity : `2`**, **Minimum Capacity : `1`**, **Maximum Capacity : `8`**
+-   Select **Target tracking scaling policy**, **Metric Type : `Average CPU utilization`**, **Target value : 50**
+-   Click on Next.
+-   Click on **Add Notification** and select the existing **SNS Topic** and click on Next.
+-   Click on **Add Tag** and give **Key : `Name`**, **Value : `webserver`** and then click on Next.
+-   Click on **Create Auto Scaling group**
+    <br>
+
+-   So with that we have created an **Auto Scaling Group** :sunglasses:.
+
+**Imp**
+
+-   Don't forget to delete **Auto Scaling Group** and **Load Balancer** after use.
