@@ -41,6 +41,13 @@
 - [Amazon CloudWatch](#amazon-cloudwatch)
   - [Usage of Metrics provided by CloudWatch](#usage-of-metrics-provided-by-cloudwatch)
   - [CloudWatch Hands-On](#cloudwatch-hands-on)
+- [Amazon Elastic File System (EFS)](#amazon-elastic-file-system-efs)
+  - [How it works](#how-it-works)
+  - [Use Cases](#use-cases)
+    - [1. Simplify DevOps](#1-simplify-devops)
+    - [2. Modernize application development](#2-modernize-application-development)
+    - [3. Enhance content management systems](#3-enhance-content-management-systems)
+    - [4. Accelerate data science](#4-accelerate-data-science)
 
 ---
 
@@ -932,3 +939,36 @@ The downloading and installation of AWS CLI is covered in the [prereqs](https://
 
 -   **Note**
     -   Don't forget to terminate the VM after use.
+
+# Amazon Elastic File System (EFS)
+
+-   A Simple, serverless, set-and-forget, elastic file system.
+
+## How it works
+
+-   Amazon Elastic File System (Amazon EFS) automatically grows and shrinks as we add and remove files with no need for management or provisioning.
+    ![efs_working](./images/aws/efs_working.png)
+
+## Use Cases
+
+### 1. Simplify DevOps
+
+Share code and other files in a secure, organized way to increase DevOps agility and respond faster to customer feedback.
+
+### 2. Modernize application development
+
+Persist and share data from our AWS containers and serverless applications with zero
+management required.
+
+### 3. Enhance content management systems
+
+Simplify persistent storage for modern content management system (CMS) workloads. Get our products and services to market faster, more reliably, and securely at a lower cost.
+
+### 4. Accelerate data science
+
+Easy to use and scale, Amazon EFS offers the performance and consistency needed for machine learning (ML) and big data analytics workloads.
+
+**Imp**
+
+-   Major difference between **EBS** and **EFS** is that we can mount **EBS** only on 1 instance at one time but **EFS** can be mounted to any number of instances simultaneously.
+-   So, **EFS** can be easily used as a shared storage for all our servers from a cluster.
