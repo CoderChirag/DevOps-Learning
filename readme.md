@@ -53,6 +53,18 @@
   - [Autoscaling Group Hands On](#autoscaling-group-hands-on)
     - [Prerequisites](#prerequisites)
     - [Setting up Autoscaling Group](#setting-up-autoscaling-group)
+- [Amazon Simple Storage Service (S3)](#amazon-simple-storage-service-s3)
+  - [S3 Basics](#s3-basics)
+  - [Creation of S3](#creation-of-s3)
+  - [S3 Storage Classes](#s3-storage-classes)
+    - [1. S3 Standard](#1-s3-standard)
+    - [2. S3 IA - Infrequent Access](#2-s3-ia---infrequent-access)
+    - [3. S3 One Zone-IA](#3-s3-one-zone-ia)
+    - [4. S3 Intelligent Tiering](#4-s3-intelligent-tiering)
+    - [5. S3 Glacier](#5-s3-glacier)
+    - [S3 Glacier Deep Archive](#s3-glacier-deep-archive)
+  - [Lifecycle Policies](#lifecycle-policies)
+  - [S3 Charges](#s3-charges)
 
 ---
 
@@ -1022,3 +1034,65 @@ Easy to use and scale, Amazon EFS offers the performance and consistency needed 
 **Imp**
 
 -   Don't forget to delete **Auto Scaling Group** and **Load Balancer** after use.
+
+# Amazon Simple Storage Service (S3)
+
+-   **Amazon Simple Storage Service (Amazon S3)** is storage for the internet. We can use Amazon S3 to store and retrieve any amount of data at any time, from anywhere on the web.
+
+## S3 Basics
+
+-   It is Object-Based Storage
+-   Data is replicated across multiple facilities
+-   Unlimited Storage
+-   Amazon S3 stores data as **objects** within **buckets**
+-   **Bucket name has to be unique**
+    <br>
+
+-   A **Bucket** is a logical unit of storage in Amazon Web Services (AWS).
+-   **Object Storage** is a computer data storage architecture that manages data as Objects.
+
+## Creation of S3
+
+![S3](./images/aws/S3-1.jpg)
+
+## S3 Storage Classes
+
+### 1. S3 Standard
+
+-   General-purpose storage of frequently accessed data.
+-   Fast access & object replication in multi AZ.
+
+### 2. S3 IA - Infrequent Access
+
+-   Long-lived, but less frequently accessed data.
+-   Slow access, object replication in multi AZ.
+
+### 3. S3 One Zone-IA
+
+-   For data that is accessed less frequently, but requires rapid access when needed.
+-   Slow access, no object replication.
+
+### 4. S3 Intelligent Tiering
+
+-   Automatically moves data to most cosst effective tier.
+
+### 5. S3 Glacier
+
+-   Low Cost Storage class for data Archiving
+
+### S3 Glacier Deep Archive
+
+-   Lowest cost storage, retrieval time of 12 Hrs
+
+## Lifecycle Policies
+
+![s3](./images/aws/S3-2.jpg)
+
+## S3 Charges
+
+-   S3 Charges are based on the following things :
+    -   Storage
+    -   Requests
+    -   Tiers
+    -   Data Transfer
+    -   Region Replication
