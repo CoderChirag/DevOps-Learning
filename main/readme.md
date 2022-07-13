@@ -44,7 +44,8 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Introduction](#introduction-1)
 - [9. Nginx Web Server](#9-nginx-web-server)
   - [Introduction](#introduction-2)
-- [10. Dockers and Containers](#10-dockers-and-containers)
+- [10. VProfile Project Local](#10-vprofile-project-local)
+- [11. Dockers and Containers](#11-dockers-and-containers)
 - [11. Cloud Computing and AWS](#11-cloud-computing-and-aws)
   - [Introduction to Cloud Computing](#introduction-to-cloud-computing)
     - [What is Cloud Computing ?](#what-is-cloud-computing-)
@@ -58,6 +59,7 @@ I will try to provide complete notes and practical projects in complete detailed
     - [Infrastructure as a Service (IaaS)](#infrastructure-as-a-service-iaas)
     - [Platform as a Service (PaaS)](#platform-as-a-service-paas)
     - [Software as a Service (SaaS)](#software-as-a-service-saas)
+- [12. AWS Cloud for Project Set Up | Lift & Shift](#12-aws-cloud-for-project-set-up--lift--shift)
 
 ---
 
@@ -300,7 +302,12 @@ For more details about apache and its implementation, go to [apache2 branch](htt
 
 For more details about nginx and its implementation, go to [nginx branch](https://github.com/CoderChirag/DevOps-Learning/tree/nginx)
 
-# 10. Dockers and Containers
+# 10. VProfile Project Local
+
+-   Now that we have covered so many topic, it's time to test our skills by deploying a real project in our local environment using vagrant.
+-   For this go to the [vprofile-project-local](https://github.com/CoderChirag/DevOps-Learning/tree/vprofile-project-local) branch.
+
+# 11. Dockers and Containers
 
 For the detailed study about Containers and Dockers, refer to the [docker branch](https://github.com/CoderChirag/DevOps-Learning/tree/docker).
 
@@ -395,3 +402,8 @@ PaaS removes the need for us to manage underlying infrastructure (usually hardwa
 SaaS provides us with a complete product that is run and managed by the service provider. In most cases, people referring to SaaS are referring to end-user applications (such as web-based email). With a SaaS offering, we don’t have to think about how the service is maintained or how the underlying infrastructure is managed. We only need to think about how we will use that particular software.
 
 For the detailed learning of **AWS** refer to the [AWS Branch](https://github.com/CoderChirag/DevOps-Learning/tree/aws)
+
+# 12. AWS Cloud for Project Set Up | Lift & Shift
+
+-   Now that we have worked with AWS a lot, it's time to host a real project on AWS.
+-   For this go to [vprofile-project-aws](https://github.com/CoderChirag/DevOps-Learning/tree/vprofile-project-aws) branch.
