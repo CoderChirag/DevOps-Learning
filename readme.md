@@ -65,6 +65,10 @@
     - [S3 Glacier Deep Archive](#s3-glacier-deep-archive)
   - [Lifecycle Policies](#lifecycle-policies)
   - [S3 Charges](#s3-charges)
+- [Amazon Relational Database (RDS)](#amazon-relational-database-rds)
+  - [DB Administration Requirements](#db-administration-requirements)
+  - [RDS](#rds)
+  - [Getting Started with RDS](#getting-started-with-rds)
 
 ---
 
@@ -1096,3 +1100,61 @@ Easy to use and scale, Amazon EFS offers the performance and consistency needed 
     -   Tiers
     -   Data Transfer
     -   Region Replication
+
+# Amazon Relational Database (RDS)
+
+## DB Administration Requirements
+
+-   Installs
+-   Patching
+-   Monitoring
+-   Performance Tuning
+-   Backups
+-   Scaling
+-   Security
+-   Hardware Upgrades
+-   Storage Management
+
+## RDS
+
+-   **Amazon Relational Database** Service is a distributed reational database service.
+-   High Availability Multi-AZ Deployments.
+-   Effortless Scaling.
+-   Read Replicas for performance
+
+## Getting Started with RDS
+
+-   Navigate to AWS Console and search RDS and navigate to the Dashboard of RDS service.
+-   Click on **Create database**
+
+    -   Select **Standard create**
+    -   Select **MySQL**
+    -   Select **Dev/Test**
+    -   Give a name : `vprofile-mysql-rds`
+    -   Give **Master username** as `admin` and check the option **Auto generate a password**
+    -   Select **Burstable classes (include t classes)** in **DB instance class** and `db.t3micro`.
+    -   Select **Create new** in **VPC security group** and give it a name `vprofile-rds-sg`
+    -   In **Additional Information** give **initial database name** `accounts`.
+    -   Select all the options present in the **Log exports**.
+    -   Finally click on **Create Database**
+    -   We will be navigated to databses page, and there would be a info dialog box about auto generated password, open it and save the password at any safe place for the later use.
+    -   Also save the Endpoint of database present in the Connectivity and Security tab of the details of the database.
+
+-   Now, as we have not enabled public access on the created RDS, so we can only access it from within the same VPC, so create an EC2 instance with `Ubuntu18` (you can use any AMI, but then you have to follow the commands according to your selected OS for connecting to database.)
+    **Note :** Make sure to create the instance in the same region (or same VPC) as of RDS.
+-   Now go to RDS databases page, select this database and configure the security group to accept the Inbound Traffic to `TCP:3306` on the EC2 instance we just created.
+-   SSH to the EC2 instance using your git bash
+
+        ```
+        $ ssh -i Downloads/mysql-client.pem ubuntu@<IP_ADDRESS>
+
+        $ sudo -i
+        $ apt update
+        $ apt install mysql-client -y
+        $ mysql -h <RDS Endpoint> -u admin -p<password>
+        mysql> show databases
+        ```
+
+    <br>
+
+-   **NOTE :** After exploring RDS, make sure to delete RDS and EC2 instance.
