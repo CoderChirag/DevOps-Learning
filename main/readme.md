@@ -46,7 +46,7 @@ I will try to provide complete notes and practical projects in complete detailed
   - [Introduction](#introduction-2)
 - [10. VProfile Project Local](#10-vprofile-project-local)
 - [11. Dockers and Containers](#11-dockers-and-containers)
-- [11. Cloud Computing and AWS](#11-cloud-computing-and-aws)
+- [12. Cloud Computing and AWS](#12-cloud-computing-and-aws)
   - [Introduction to Cloud Computing](#introduction-to-cloud-computing)
     - [What is Cloud Computing ?](#what-is-cloud-computing-)
     - [Who is using Cloud Computing ?](#who-is-using-cloud-computing-)
@@ -59,7 +59,7 @@ I will try to provide complete notes and practical projects in complete detailed
     - [Infrastructure as a Service (IaaS)](#infrastructure-as-a-service-iaas)
     - [Platform as a Service (PaaS)](#platform-as-a-service-paas)
     - [Software as a Service (SaaS)](#software-as-a-service-saas)
-- [12. AWS Cloud for Project Set Up | Lift & Shift](#12-aws-cloud-for-project-set-up--lift--shift)
+- [13. AWS Cloud for Project Set Up | Lift & Shift](#13-aws-cloud-for-project-set-up--lift--shift)
 
 ---
 
@@ -311,7 +311,7 @@ For more details about nginx and its implementation, go to [nginx branch](https:
 
 For the detailed study about Containers and Dockers, refer to the [docker branch](https://github.com/CoderChirag/DevOps-Learning/tree/docker).
 
-# 11. Cloud Computing and AWS
+# 12. Cloud Computing and AWS
 
 ## Introduction to Cloud Computing
 
@@ -403,7 +403,7 @@ SaaS provides us with a complete product that is run and managed by the service 
 
 For the detailed learning of **AWS** refer to the [AWS Branch](https://github.com/CoderChirag/DevOps-Learning/tree/aws)
 
-# 12. AWS Cloud for Project Set Up | Lift & Shift
+# 13. AWS Cloud for Project Set Up | Lift & Shift
 
 -   Now that we have worked with AWS a lot, it's time to host a real project on AWS.
 -   For this go to [vprofile-project-aws](https://github.com/CoderChirag/DevOps-Learning/tree/vprofile-project-aws) branch.
