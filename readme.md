@@ -1,6 +1,6 @@
-# Learning DevOps
+# AWS Cloud for Project Set Up | Lift & Shift
 
-This is going to be my journey to learn Devops from very basics to advanced level. I will try to share each and every step of it so it can also benefit others.
+## Contents
 
 I am making this repo so that you don't have to go and search at different different places and you can find every topic here only.
 
