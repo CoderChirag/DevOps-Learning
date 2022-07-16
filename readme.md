@@ -23,6 +23,7 @@
     - [Building the Artifact](#building-the-artifact)
     - [Deploying the Artifact](#deploying-the-artifact)
   - [Load Balancer & DNS](#load-balancer--dns)
+  - [Autoscaling Group](#autoscaling-group)
 
 ## About The Project
 
@@ -379,4 +380,31 @@
     -   **Listener** `HTTP:80 forward to vprofile-app-TG`
     -   **Default SSL/TLS Certificate :** `From ACM *.<your_domain>`
 -   Now copy the `DNS name` of the created Load Balancer to the **Value** field of `CNAME` record and `vprofile` on the field of **Host** of your domain provider.
--   Now, visit the domain (eg, `vprofile.coderchirag.tech`)
+-   Now, visit the domain (eg, `vprofile.coderchirag.tech`). With this we have hosted our website successfully on AWS :sunglasses:
+-   The password and username for login are `admin_vp` and `admin_vp`.
+
+## Autoscaling Group
+
+-   Firstly create an AMI from the `vprofile-app01` named `vprofile-app-image`
+-   Create a **Launch Configuration** from the Auto Scaling > Launch Configuration section of the side navigation bar, with following config :
+    -   **Name :** `vprofile-app-LC`
+    -   **AMI :** `vprofile-app-image`
+    -   **Instance type :** `t2.micro`
+    -   **IAM instance profile :** `vprofile-artifact-storage-role`
+    -   **Enable EC2 instance detailed monitoring with CloudWatch :** checked
+    -   **Security group :** `vprofile-app-sg`
+    -   **Key pair :** `vprofile-prod-key`
+-   Now create an **Autoscaling Group** with following config :
+    -   **Name :** `vprofile-app-ASG`
+    -   **Launch Configuration :** `vprofile-app-LC`
+    -   **Availability Zones and subnets :** Select All
+    -   **Load Balancing :** Attach to an existing Load Balancer
+    -   **Existing Load Balancer target groups :** `vprofile-app-TG`
+    -   **Health Checks :** `ELB` should be checked
+    -   **Desired Capacity :** `1`, **Minimum Capacity :** `1`, **Maximum Capacity :** `4`
+    -   **Scaling Policies :** `Target tracking scaling policy`
+        -   **Scaling policy name :** `Target Tracking Policy`
+        -   **Metric type :** `Average CPU utilization`
+        -   **Target value :** `50`
+    -   **Add Notifiaction :** Choose any SNS Topic
+    -   **Tags :** `Name : vprofile-app`, `Project : vprofile`
