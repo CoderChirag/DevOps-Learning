@@ -13,6 +13,7 @@
     - [ACM](#acm)
     - [Security Groups](#security-groups)
     - [Key Pairs](#key-pairs)
+  - [EC2 Instances](#ec2-instances)
 
 ## About The Project
 
@@ -85,3 +86,5 @@
 ### Key Pairs
 
 -   Create a key pair named `vprofile-prod-key` which we will use later to connect to our instances.
+
+## EC2 Instances
