@@ -19,6 +19,9 @@
     - [RabbitMQ Instance](#rabbitmq-instance)
     - [Route 53](#route-53)
     - [Tomcat Instance](#tomcat-instance)
+  - [Build and Deploy Artifact](#build-and-deploy-artifact)
+    - [Building the Artifact](#building-the-artifact)
+    - [Deploying the Artifact](#deploying-the-artifact)
 
 ## About The Project
 
@@ -231,4 +234,125 @@
 
       $ sudo -i
       $ curl http://169.254.169.254/latest/user-data    #This will show the provided user data script
+
+      # systemctl status tomcat8        #Confirm that the service is running
+    ```
+
+## Build and Deploy Artifact
+
+### Building the Artifact
+
+-   We would build the Artifact on our local computer and would then deploy it on S3.
+-   Firstly we have to install `jdk8`, `maven`, and `awscli` in our pc. For the installation of the tools, refer to the [prereqs branch](https://github.com/CoderChirag/DevOps-Learning/tree/prereqs)
+-   Go to `./src/main/resources/application.properties` file of this repo and replace `db01` to `db01.vprofile.in`, `mc01` to `mc01.vprofile.in`, and `rmq01` to `rmq01.vprofile.in` and save the file.
+
+    ```
+    $ cat ./src/main/resources/application.properties
+    #JDBC Configutation for Database Connection
+    jdbc.driverClassName=com.mysql.jdbc.Driver
+    jdbc.url=jdbc:mysql://db01.vprofile.in:3306/accounts?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+    jdbc.username=admin
+    jdbc.password=admin123
+
+    #Memcached Configuration For Active and StandBy Host
+    #For Active Host
+    memcached.active.host=mc01.vprofile.in
+    memcached.active.port=11211
+    #For StandBy Host
+    memcached.standBy.host=127.0.0.2
+    memcached.standBy.port=11211
+
+    #RabbitMq Configuration
+    rabbitmq.address=rmq01.vprofile.in
+    rabbitmq.port=5672
+    rabbitmq.username=test
+    rabbitmq.password=test
+
+    #Elasticesearch Configuration
+    elasticsearch.host =192.168.1.85
+    elasticsearch.port =9300
+    elasticsearch.cluster=vprofile
+    elasticsearch.node=vprofilenode
+    ```
+
+-   Now run `$ mvn install` in the root directory, where `pom.xml` file is present, to build the artifact.
+-   So now out `target` folder would be created and inside that `vprofile-v2.war` artifact would be created.
+    ```
+    $ ls target/
+      classes/            generated-test-sources/  maven-archiver/  site/              test-classes/  vprofile-v2.war
+      generated-sources/  jacoco.exec              maven-status/    surefire-reports/  vprofile-v2/
+    ```
+
+### Deploying the Artifact
+
+-   Firstly, create a new IAM user `vprofile-s3-admin` with **Programatic Access** having the policy `AmazonS3FullAccess`.
+-   Configure awscli :
+    ```
+    $ aws configure
+    AWS Access Key ID [****************BBZC]: <your_access_key_id>
+    AWS Secret Access Key [****************FPiI]: <your_secret_access_key>
+    Default region name [us-east-1]: us-east-1
+    Default output format [json]: json
+    ```
+-   Now deploy the artifact to S3 using `awscli` on the git bash of local pc :
+    ```
+    $ aws s3 mb s3://vprofile-artifact-storage<some_unique_code>    #unique code is just to make the bucket name unique
+    make_bucket: vprofile-artifact-storage<some_unique_code>
+    $ cd target
+    $ aws s3 cp vprofile-v2.war s3://vprofile-artifact-storage/vprofile-v2.war
+    upload: .\vprofile-v2.war to s3://vprofile-artifact-storage<some_unique_code>/vprofile-v2.war
+    $ aws s3 ls s3://vprofile-artifact-storage
+    2022-07-16 21:54:13   48451567 vprofile-v2.war
+    ```
+-   Now create and IAM role of **type** AWS service, **use case** EC2, **permissions** AmazonS3FullAccess, **name** `vprofile-artifact-storage-role`
+-   Go to Instances > Select `vprofile-app01` > Actions > Security > Modify IAM Role and select the role `vprofile-artifact-storage-role` and save.
+-   Now SSH to the `vprofile-app01` instance
+
+    ```
+    $ ssh -i vprofile-prod-key.pem ubuntu@<public_ip_address>
+    $ sudo -i
+    $ systemctl status tomcat8      #Confirm that the service is running
+    ● tomcat8.service - LSB: Start Tomcat.
+    Loaded: loaded (/etc/init.d/tomcat8; generated)
+    Active: active (running) since Sat 2022-07-16 13:51:11 UTC; 3h 2min ago
+        Docs: man:systemd-sysv-generator(8)
+        Tasks: 30 (limit: 1134)
+    CGroup: /system.slice/tomcat8.service
+            └─17007 /usr/lib/jvm/java-8-openjdk-amd64/bin/java -Djava.util.logging.config.file=/var/lib/tomcat8/conf/logging.properties -Jul 16 13:51:06 ip-172-31-94-195 systemd[1]: Starting LSB: Start Tomcat....
+    Jul 16 13:51:06 ip-172-31-94-195 tomcat8[16953]:  * Starting Tomcat servlet engine tomcat8
+    Jul 16 13:51:06 ip-172-31-94-195 su[16979]: Successful su for tomcat8 by root
+    Jul 16 13:51:06 ip-172-31-94-195 su[16979]: + ??? root:tomcat8
+    Jul 16 13:51:06 ip-172-31-94-195 su[16979]: pam_unix(su:session): session opened for user tomcat8 by (uid=0)
+    Jul 16 13:51:06 ip-172-31-94-195 su[16979]: pam_unix(su:session): session closed for user tomcat8
+    Jul 16 13:51:11 ip-172-31-94-195 tomcat8[16953]:    ...done.
+    Jul 16 13:51:11 ip-172-31-94-195 systemd[1]: Started LSB: Start Tomcat..
+
+    $ cd /var/lib/tomcat8/webapps
+    $ systemctl stop tomcat8
+    $ rm -rf ROOT
+
+    $ apt install awscli        #As we have added the IAM role, we don't need to configure awscli
+    $ aws s3 ls s3://vprofile-artifact-storage<some_unique_code>
+    $ aws s3 cp s3://vprofile-artifact0storage<some_unique_code>/vprofile-v2.war /tmp/vprofile-v2.war
+    $ cp vprofile-v2.war /var/lib/tomcat8/webapps/ROOT.war
+    $ systemctl start tomcat8
+
+    # To validate the netowrk connectivity
+    $ apt install telnet
+    $ telnet db01.vprofile.in 3306
+    Trying 172.31.95.207...
+    Connected to db01.vprofile.in.
+    Escape character is '^]'.
+    R
+    5.5.68-MariaDB(&&,Gd?☻□§Ms}<QbvNb!zfmysql_native_passwordConnection closed by foreign host.
+    $ telnet mc01.vprofile.in 11211
+    Trying 172.31.95.178...
+    Connected to mc01.vprofile.in.
+    Escape character is '^]'.
+    Connection closed by foreign host.
+    $ telnet rmq01.vprofile.in 5762
+    Trying 172.31.82.217...
+    Connected to rmq01.vprofile.in.
+    Escape character is '^]'.
+    Connection closed by foreign host.
     ```
