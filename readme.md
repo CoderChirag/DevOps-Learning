@@ -22,6 +22,7 @@
   - [Build and Deploy Artifact](#build-and-deploy-artifact)
     - [Building the Artifact](#building-the-artifact)
     - [Deploying the Artifact](#deploying-the-artifact)
+  - [Load Balancer & DNS](#load-balancer--dns)
 
 ## About The Project
 
@@ -356,3 +357,26 @@
     Escape character is '^]'.
     Connection closed by foreign host.
     ```
+
+## Load Balancer & DNS
+
+-   Firstly create a **Target Group** with following configuration :
+    -   **Target Type :** `Instances`
+    -   **Name :** `vprofile-app-TG`
+    -   **Protocol :** `HTTP`, **PORT :** `8080`
+    -   **Health Check Path :** `/login`
+    -   **Advance Health Check Settings :**
+        -   **Port :** `Override : 8080`
+        -   **Healthy threshold :** `3`
+    -   **Target :** `vprofile-app01`
+-   Now create an **Application Load Balancer** with the following configuration :
+    -   **Name :** `vprofile-prod-elb`
+    -   **Scheme :** `Internet facing`
+    -   **IP address type :** `IPv4`
+    -   **Network mappings :** All zones selected
+    -   **Security Groups :** `vprofile-ELB-sg`
+    -   **Listener** `HTTPS:443 forward to vprofile-app-TG`
+    -   **Listener** `HTTP:80 forward to vprofile-app-TG`
+    -   **Default SSL/TLS Certificate :** `From ACM *.<your_domain>`
+-   Now copy the `DNS name` of the created Load Balancer to the **Value** field of `CNAME` record and `vprofile` on the field of **Host** of your domain provider.
+-   Now, visit the domain (eg, `vprofile.coderchirag.tech`)
