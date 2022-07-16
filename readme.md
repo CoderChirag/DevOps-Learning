@@ -9,6 +9,10 @@
   - [Objective](#objective)
   - [Architecture](#architecture)
   - [Flow of Execution](#flow-of-execution)
+  - [Security Groups and Keypairs](#security-groups-and-keypairs)
+    - [ACM](#acm)
+    - [Security Groups](#security-groups)
+    - [Key Pairs](#key-pairs)
 
 ## About The Project
 
@@ -47,10 +51,37 @@
 -   Create Key Pairs
 -   Create Security Groups
 -   Launch Instances with user data [BASH SCRIPTS]
--   Update IP to name mapping in route 53
+-   Update IP to name mapping in Route 53
 -   Build Application from source code
 -   Upload to S3 bucket
 -   Download artifact to Tomcat EC2 Instance
 -   Setup ELB with HTTPS [Cert from Amazon Certificate Manager]
 -   Map ELB Endpoint to website name in our DNS provider.
 -   Verify
+
+**Note**
+
+-   Here we will talk about just what to do for hosting this multi-tier web application.
+-   But for how to do part, you have to visit the [aws branch](https://github.com/CoderChirag/DevOps-Learning/tree/aws). There we have covered everything in detail.
+-   So make sure you have read that branch thoroughly before coming to this.
+
+## Security Groups and Keypairs
+
+### ACM
+
+-   Before begining, make sure that you have generated an Certificate from Amazon Certificate Manager (ACM). If not, refer to [aws branch](https://github.com/CoderChirag/DevOps-Learning/tree/aws#contents) in the **AWS Account Setup** > **Setting Up a SSL Certificate for our domain** section for learning how to create it.
+
+### Security Groups
+
+-   Create a **Security Group for our Load Balancers**, named `vprofile-ELB-sg` having inboud rules for `HTTP (port:80)` and `HTTPS (port:443)` from `anywhere (0.0.0.0/0 and ::/0)`.
+-   Create a **Security Group for tomcat instances**, named `vprofile-app-sg` having inbound rules : `Custom TCP` with `port:8080` with the source as security group of our ELB, i.e, `vprofile-ELB-sg`.
+-   Create a **Security Group for backend services (Memcached, RabbitMQ, and MySQL)**, named `vprofile-backend-sg` having inbound rules :
+    -   **Type** `MYSQL/Aurora`, **Protocol** `TCP`, **Port range** `3306`, **Source** `custom (vprofile-app-sg)`.
+    -   **Type** `Custom TCP`, **Protocol** `TCP`, **Port range** `11211`, **Source** `custom (vprofile-app-sg)`.
+    -   **Type** `Custom TCP`, **Protocol** `TCP`, **Port range** `5672`, **Source** `custom (vprofile-app-sg)`.
+-   Now go to edit inbound rules of `vprofile-backend-sg` and add 1 more inbound rule :
+    -   **Type** `All Traffic`, **Protocol** `All`, **Port range** `All`, **Source** `custom (vprofile-backend-sg)`. This is to allow all traffic from the same security group, to allow internal traffic to flow on all ports.
+
+### Key Pairs
+
+-   Create a key pair named `vprofile-prod-key` which we will use later to connect to our instances.
