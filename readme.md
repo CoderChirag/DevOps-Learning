@@ -14,6 +14,11 @@
     - [Security Groups](#security-groups)
     - [Key Pairs](#key-pairs)
   - [EC2 Instances](#ec2-instances)
+    - [MySql Instance](#mysql-instance)
+    - [MemCache Instance](#memcache-instance)
+    - [RabbitMQ Instance](#rabbitmq-instance)
+    - [Route 53](#route-53)
+    - [Tomcat Instance](#tomcat-instance)
 
 ## About The Project
 
@@ -88,3 +93,142 @@
 -   Create a key pair named `vprofile-prod-key` which we will use later to connect to our instances.
 
 ## EC2 Instances
+
+### MySql Instance
+
+-   Create an instance for MySql with following config :
+    -   **Name :** `vprofile-db01`
+    -   **AMI :** `CentOs 7`
+    -   **Instance Type :** `t2.mirco`
+    -   **Key Pair :** `vprofile-prod-key`
+    -   **Security Group :** `vprofile-backend-sg`
+    -   **EBS Volume :** `10GB`
+    -   **Termination Protection :** `enable`
+    -   **User Data :** Copy from the script `/userdata/mysql.sh` from the code files given above.
+-   To confirm that instance is set up properly, add an inbound rule in the `vprofile-backend-sg` security group of type `SSH` on `My IP`.
+-   Now, go to the folder where your key is present and open git bash and connect to the Instance using the public IP Address :
+
+    ```
+      $ ssh -i vprofile-prod-key.pem centos@<public-ip>
+
+      $ sudo -i
+      $ curl http://169.254.169.254/latest/user-data    #This will show the provided user data script
+
+      $ systemctl status mariadb      #Confirm that the service is running
+
+      #Log in to database and verify everything
+      Welcome to the MariaDB monitor.  Commands end with ; or \g.
+      Your MariaDB connection id is 4
+      Server version: 5.5.68-MariaDB MariaDB Server
+
+      Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+      Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+      MariaDB [(none)]> show databases;
+      +--------------------+
+      | Database           |
+      +--------------------+
+      | information_schema |
+      | accounts           |
+      | mysql              |
+      | performance_schema |
+      | test               |
+      +--------------------+
+      5 rows in set (0.00 sec)
+
+      MariaDB [(none)]> use accounts;
+      Reading table information for completion of table and column names
+      You can turn off this feature to get a quicker startup with -A
+
+      Database changed
+      MariaDB [accounts]> show tables;
+      +--------------------+
+      | Tables_in_accounts |
+      +--------------------+
+      | role               |
+      | user               |
+      | user_role          |
+      +--------------------+
+      3 rows in set (0.00 sec)
+
+      MariaDB [accounts]> exit
+      Bye
+    ```
+
+### MemCache Instance
+
+-   Create an instance for MySql with following config :
+    -   **Name :** `vprofile-mc01`
+    -   **AMI :** `CentOs 7`
+    -   **Instance Type :** `t2.mirco`
+    -   **Key Pair :** `vprofile-prod-key`
+    -   **Security Group :** `vprofile-backend-sg`
+    -   **EBS Volume :** `10GB`
+    -   **Termination Protection :** `enable`
+    -   **User Data :** Copy from the script `/userdata/memcache.sh` from the code files given above.
+-   To confirm that instance is set up properly, go to the folder where your key is present and open git bash and connect to the Instance using the public IP Address :
+
+    ```
+      $ ssh -i vprofile-prod-key.pem centos@<public-ip>
+
+      $ sudo -i
+      $ curl http://169.254.169.254/latest/user-data    #This will show the provided user data script
+
+      $ systemctl status memcached     #Confirm that the service is running
+    ```
+
+### RabbitMQ Instance
+
+-   Create an instance for MySql with following config :
+    -   **Name :** `vprofile-rmq01`
+    -   **AMI :** `CentOs 7`
+    -   **Instance Type :** `t2.mirco`
+    -   **Key Pair :** `vprofile-prod-key`
+    -   **Security Group :** `vprofile-backend-sg`
+    -   **EBS Volume :** `10GB`
+    -   **Termination Protection :** `enable`
+    -   **User Data :** Copy from the script `/userdata/rabbitmq.sh` from the code files given above.
+-   To confirm that instance is set up properly, go to the folder where your key is present and open git bash and connect to the Instance using the public IP Address :
+
+    ```
+      $ ssh -i vprofile-prod-key.pem centos@<public-ip>
+
+      $ sudo -i
+      $ curl http://169.254.169.254/latest/user-data    #This will show the provided user data script
+
+      $ systemctl status rabbitmq-server     #Confirm that the service is running
+    ```
+
+### Route 53
+
+-   Now create a **hosted zone** using Route 53 with following configurations :
+    -   **Domain name :** `vprofile.in`
+    -   **Description :** `Hosted one for vprofile backend servers`
+    -   **Type :** `Private hosted zone`
+    -   **Region :** `US East (N.Virginia)[us-east-1]` and select the default VPC.
+-   Now **Create Records** giving the configs :
+    -   **Record Name** `db01`, **Value :** Internal IP address of `vprofile-db01`, **Routing Policy :** `Simple routing`
+    -   **Record Name** `mc01`, **Value :** Internal IP address of `vprofile-mc01`, **Routing Policy :** `Simple routing`
+    -   **Record Name** `rmq01`, **Value :** Internal IP address of `vprofile-rmq01`, **Routing Policy :** `Simple routing`
+
+### Tomcat Instance
+
+-   Create an instance for MySql with following config :
+    -   **Name :** `vprofile-app01`
+    -   **AMI :** `Ubuntu 18`
+    -   **Instance Type :** `t2.mirco`
+    -   **Key Pair :** `vprofile-prod-key`
+    -   **Security Group :** `vprofile-app-sg`
+    -   **EBS Volume :** `8GB`
+    -   **Termination Protection :** `enable`
+    -   **User Data :** Copy from the script `/userdata/tomcat_ubuntu.sh` from the code files given above.
+-   To confirm that instance is set up properly, add an inbound rule in the `vprofile-app-sg` security group of type `SSH` on `My IP`.
+-   Now, go to the folder where your key is present and open git bash and connect to the Instance using the public IP Address :
+
+    ```
+      $ ssh -i vprofile-prod-key.pem ubuntu@<public-ip>
+
+      $ sudo -i
+      $ curl http://169.254.169.254/latest/user-data    #This will show the provided user data script
+    ```
