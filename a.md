@@ -148,3 +148,133 @@
     SELINUXTYPE=targeted
     ```
 -   The system reads this file at boot time and configures SELinux as shown. Kernel arguments (selinux=0|1 and enforcing=0|1) override this configuration.
+
+### Controlling SELinux File Contexts
+
+#### Initial SELinux Context
+
+-   On systems running SELinux, all processes and files are labeled.
+-   The label represents the security relevant information, known as the **SELinux context**.
+    <br>
+
+-   New files typically inherit their SELinux context from the parent directory, thus ensuring that they have the proper context.
+    <br>
+
+-   But this inheritance procedure can be undermined in two different ways.
+-   First, if we create a file in a different location from the ultimate intended location and then move the file, the file still has the SELinux context of the directory where it was created, not the destination directory.
+-   Second, if we copy a file preserving the SELinux context, as with the `cp -a` command, the SELinux context reflects the location of the original file.
+    <br>
+
+-   The following example demonstrates inheritance and its pitfalls.
+-   Consider these two files created in `/tmp`, one moved to `/var/www/html` and the second one copied to the same directory.
+-   Note the SELinux contexts on the files. The file that was moved to the `/var/www/html` directory retains the file context for the `/tmp` directory. The file that was copied to the `/var/www/html` directory inherited SELinux context from the `/var/www/html` directory.
+    <br>
+
+-   The `ls -Z` command displays the SELinux context of a file. Note the label of the file.
+    ```
+    $ ls -Z /var/www/html/index.html
+    -rw-r--r--. root root unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/index.html
+    ```
+-   And the `ls -Zd` command displays the SELinux context of a directory :
+    ```
+    $ ls -Zd /var/www/html
+    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /var/www/html/
+    ```
+-   Note that the `/var/www/html/index.html` has the same label as the parent directory `/var/www/html/`. Now, create files outside of the `/var/www/html` directory and note their file context :
+    ```
+    $ touch /tmp/file1 /tmp/file2
+    $ ls -Z /tmp/file*
+    unconfined_u:object_r:user_tmp_t:s0 /tmp/file1
+    unconfined_u:object_r:user_tmp_t:s0 /tmp/file2
+    ```
+-   Move one of these files to the `/var/www/html` directory, copy another, and note the label of each :
+    ```
+    $ mv /tmp/file1 var/www/html/
+    $ cp /tmp/file2 var/www/html/
+    $ ls -Z /var/www/html/file
+    unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
+    unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+    ```
+-   The moved file maintains its original label while the copied file inherits the label from the `/var/www/html` directory. `unconfined_u:` is the user, `object_r:` denotes the role, and `s0` is the level. A sensitivity level of 0 is the lowest possible sensitivity level.
+
+#### Changing the SELinux context of a file
+
+-   Commands to change the SELinux context on files include `semanage fcontext`, `restorecon`, and `chcon`.
+    <br>
+
+-   The preferred method to set the SELinux context for a file is to declare the default labeling for a file using the `semanage fcontext` command and then applying that context to the file using the `restorecon` command.
+-   This ensures that the labeling will be as desired even after a complete relabeling of the file system.
+    <br>
+
+-   The `chcon` command changes SELinux contexts.
+-   `chcon` sets the security context on the file, stored in the file system. It is useful for testing and experimenting. However, it does not save context changes in the SELinux context database.
+-   When a `restorecon` command runs, changes made by the `chcon` command also do not survive. Also, if the entire file system is relabeled, the SELinux context for files changed using `chcon` are reverted.
+    <br>
+
+-   The following screen shows a directory being created. The directory has a type value of `default_t`.
+    ```
+    $ mkdir /virtual
+    $ ls -Zd /virtual
+    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual
+    ```
+-   The `chcon` command changes the file context of the `/virtual` directory : the type value changes to `httpd_sys_content_t`.
+    ```
+    $ chcon -t httpd_sys_content_t /virtual
+    $ ls -Zd /virtual
+    drwxr-xr-x. root root unconfined_u:object_r:httpd_sys_content_t:s0 /virtual
+    ```
+-   The `restorecon` command runs and the type value returns to the value of `default_t`. Note the `Relabeled` message.
+    ```
+    $ restorecon -v /virtual
+    Relabeled /virtual from unconfined_u:object_r:httpd_sys_content_t:s0 to unconfined_u:object_r:default_t:s0
+    $ ls -Zd /virtual
+    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual
+    ```
+
+#### Defining SELinux Default File Context Rules
+
+-   The `semanage fcontext` command displays and modifies the rules that `restorecon` uses to set default file contexts.
+-   It uses extended regular expressions to specify the path and file names.
+-   The most common extended regular expression used in `fcontext` rules is `(/.*)?`, which means “optionally, match a / followed by any number of characters”. It matches the directory listed before the expression and everything in that directory recursively.
+
+##### Basic File Context Operations
+
+-   The following table is a reference for `semanage fcontext` options to add, remove or list SELinux file contexts.
+
+| option           | description                                  |
+| ---------------- | -------------------------------------------- |
+| `-a`, `--add`    | Add a record of the specified object type    |
+| `-d`, `--delete` | Delete a record of the specified object type |
+| `-l`, `--list`   | List records of the specified object type    |
+
+-   To ensure that we have the tools to manage SELinux contexts, install the `policycoreutils` package and the `policycoreutils-python` package if needed. These contain the `restorecon` command and `semanage` command, respectively.
+    <br>
+
+-   To ensure that all files in a directory have the correct file context run the `semanage fcontext -l` followed by the `restorecon` command.
+-   In the following example, note the file context of each file before and after the `semanage` and `restorecon` commands run.
+    ```
+    $ ls -Z /var/www/html/file*
+    unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1  unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+    $ semanage fcontext -l
+    ...output omitted...
+    /var/www(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
+    ...output omitted...
+    $ restorecon -Rv /var/www/
+    Relabeled /var/www/html/file1 from unconfined_u:object_r:user_tmp_t:s0 to unconfined_u:object_r:httpd_sys_content_t:s0
+    [root@host ~]# ls -Z /var/www/html/file*
+    unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file1  unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
+    ```
+-   The following example shows how to use `semanage` to add a context for a new directory.
+    ```
+    $  mkdir /virtual
+    $ touch /virtual/index.html
+    $ ls -Zd /virtual
+    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual/
+
+    $ semanage fcontext -a -t httpd_sys_content_t '/virtual/(/.*/)?'
+    $ restorecon -RFvv /virtual;
+    $ ls -Zd /virtual/
+    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /virtual/
+    $ ls -Z /virtual/
+    -rw-r--r--. root root system_u:object_r:httpd_sys_content_t:s0 index.html
+    ```
