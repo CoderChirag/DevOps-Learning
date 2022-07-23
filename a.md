@@ -325,9 +325,135 @@
     ```
 
 -   To list booleans in which the current state differs from the default state, run `$ semanage boolean -l -C`.
+
     ```
     $ sudo semanage boolean -l -c
     SELinux boolean                State  Default Description
 
     cron_can_relabel               (off   ,   on)  Allow cron to can relabel
+    ```
+
+### Investigating and Resolving SELinux Issues
+
+#### Troubleshooting SELinux Issues
+
+-   It is important to understand what actions we must take when SELinux prevents access to files on a server that we know should be accessible. Use the following steps as a guide to troubleshooting these issues:
+
+    1. Before thinking of making any adjustments, consider that SELinux may be doing its job correctly by prohibiting the attempted access. If a web server tries to access files in `/home`, this could signal a compromise of the service if web content is not published by users. If access should have been granted, then additional steps need to be taken to solve the problem.
+
+    2. The most common SELinux issue is an incorrect file context. This can occur when a file is created in a location with one file context and moved into a place where a different context is expected. In most cases, running `restorecon` will correct the issue. Correcting issues in this way has a very narrow impact on the security of the rest of the system.
+
+    3. Another remedy for overly restrictive access could be the adjustment of a Boolean. For example, the `ftpd_anon_write` boolean controls whether anonymous FTP users can upload files. We must turn this boolean on to permit anonymous FTP users to upload files to a server. Adjusting booleans requires more care because they can have a broad impact on system security.
+
+    4. It is possible that the SELinux policy has a bug that prevents a legitimate access. Since SELinux has matured, this is a rare occurrence. When it is clear that a policy bug has been identified, contact Red Hat support to report the bug so it can be resolved.
+
+#### Monitoring SELinux Violations
+
+-   Install the **setroubleshoot-server package** to send SELinux messages to `/var/log/messages`.
+-   **setroubleshoot-server** listens for audit messages in `/var/log/audit/audit.log` and sends a short summary to `/var/log/messages`.
+-   This summary includes unique identifiers (UUID) for SELinux violations that can be used to gather further information.
+-   The `sealert -l UUID` command is used to produce a report for a specific incident.
+-   Use `sealert -a /var/log/audit/audit.log` to produce reports for all incidents in that file.
+    <br>
+
+-   Consider the following sample sequence of commands on a standard Apache web server :
+    ```
+    $ touch /root/file3
+    $ mv /root/file3 var/www/html
+    $ systemctl start httpd
+    $ curl http://localhost/file3
+    <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+    <html><head>
+    <title>403 Forbidden</title>
+    </head><body>
+    <h1>Forbidden</h1>
+    <p>You don't have permission to access /file3
+    on this server.</p>
+    </body></html>
+    ```
+-   We expect the web server to deliver the contents of file3 but instead it returns a permission denied error. Inspecting both `/var/log/audit/audit.log` and `/var/log/messages` reveals extra information about this error.
+    ```
+    $ tail /var/log/audit/audit.log
+    ...output omitted...
+    type=AVC msg=audit(1392944135.482:429): avc:  denied  { getattr } for
+    pid=1609 comm="httpd" path="/var/www/html/file3" dev="vda1" ino=8980981
+    scontext=system_u:system_r:httpd_t:s0
+    tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file
+    ...output omitted...
+    $ tail /var/log/messages
+    ...output omitted...
+    Feb 20 19:55:42 host setroubleshoot: SELinux is preventing /usr/sbin/httpd
+    from getattr access on the file . For complete SELinux messages. run
+    sealert -l 613ca624-248d-48a2-a7d9-d28f5bbe2763
+    ```
+-   Both log files indicate that an SELinux denial is the culprit.
+-   The `sealert` command that is part of the output in `/var/log/messages` provides extra information, including a possible fix.
+
+    ```
+    $ sealert -l 613ca624-248d-48a2-a7d9-d28f5bbe2763
+    SELinux is preventing /usr/sbin/httpd from getattr access on the file .
+
+    *****  Plugin catchall (100. confidence) suggests   **************************
+
+    If you believe that httpd should be allowed getattr access on the
+    file by default.
+    Then you should report this as a bug.
+    You can generate a local policy module to allow this access.
+    Do
+    allow this access for now by executing:
+    # grep httpd /var/log/audit/audit.log | audit2allow -M mypol
+    # semodule -i mypol.pp
+
+
+    Additional Information:
+    Source Context                system_u:system_r:httpd_t:s0
+    Target Context                unconfined_u:object_r:admin_home_t:s0
+    Target Objects                 [ file ]
+    Source                        httpd
+    Source Path                   /usr/sbin/httpd
+    Port                          <Unknown>
+    Host                          servera
+    Source RPM Packages           httpd-2.4.6-14.el7.x86_64
+    Target RPM Packages
+    Policy RPM                    selinux-policy-3.12.1-124.el7.noarch
+    Selinux Enabled               True
+    Policy Type                   targeted
+    Enforcing Mode                Enforcing
+    Host Name                     servera
+    Platform                      Linux servera 3.10.0-84.el7.x86_64 #1
+                                SMP Tue Feb 4 16:28:19 EST 2014 x86_64 x86_64
+    Alert Count                   2
+    First Seen                    2014-02-20 19:55:35 EST
+    Last Seen                     2014-02-20 19:55:35 EST
+    Local ID                      613ca624-248d-48a2-a7d9-d28f5bbe2763
+
+    Raw Audit Messages
+    type=AVC msg=audit(1392944135.482:429): avc:  denied  { getattr } for
+    pid=1609 comm="httpd" path="/var/www/html/file3" dev="vda1" ino=8980981
+    scontext=system_u:system_r:httpd_t:s0
+    tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file
+
+    type=SYSCALL msg=audit(1392944135.482:429): arch=x86_64 syscall=lstat
+    success=no exit=EACCES a0=7f9fed0edea8 a1=7fff7bffc770 a2=7fff7bffc770
+    a3=0 items=0 ppid=1608 pid=1609 auid=4294967295 uid=48 gid=48 euid=48
+    suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295
+    comm=httpd exe=/usr/sbin/httpd subj=system_u:system_r:httpd_t:s0 key=(null)
+
+    Hash: httpd,httpd_t,admin_home_t,file,getattr
+    ```
+
+-   **Note**
+
+    -   The Raw Audit Messages section reveals the target file that is the problem, `/var/www/html/file3`. Also, the target context, `tcontext`, does not look like it belongs with a web server.
+    -   Use the `$ restorecon /var/www/html/file3` command to fix the file context.
+    -   If there are other files that need to be adjusted, `restorecon` can recursively reset the context : `$restorecon -R /var/www/`.
+
+-   The Raw Audit Messages section of the `sealert` command contains information from `/var/log/audit.log`. To search the `/var/log/audit.log` file use the `ausearch` command. The `-m` searches on the message type. The `-ts` option searches based on time.
+    ```
+    $ ausearch -m AVC -ts recent
+    ----
+    time->Tue Apr  9 13:13:07 2019
+    type=PROCTITLE msg=audit(1554808387.778:4002): proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
+    type=SYSCALL msg=audit(1554808387.778:4002): arch=c000003e syscall=49 success=no exit=-13 a0=3 a1=55620b8c9280 a2=10 a3=7ffed967661c items=0 ppid=1 pid=9340 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" subj=system_u:system_r:httpd_t:s0 key=(null)
+    type=AVC msg=audit(1554808387.778:4002): avc:  denied  { name_bind } for  pid=9340 comm="httpd" src=82 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:reserved_port_t:s0 tclass=tcp_socket permissive=0
     ```
