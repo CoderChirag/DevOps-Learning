@@ -265,6 +265,7 @@
     unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file1  unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
     ```
 -   The following example shows how to use `semanage` to add a context for a new directory.
+
     ```
     $  mkdir /virtual
     $ touch /virtual/index.html
@@ -277,4 +278,56 @@
     drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /virtual/
     $ ls -Z /virtual/
     -rw-r--r--. root root system_u:object_r:httpd_sys_content_t:s0 index.html
+    ```
+
+### Adjusting SELinux Policy with Booleans
+
+#### SELinux booleans
+
+-   SELinux booleans are switches that change the behavior of the SELinux policy.
+-   SELinux booleans are rules that can be enabled or disabled.
+-   They can be used by security administrators to tune the policy to make selective adjustments.
+    <br>
+
+-   The SELinux man pages, provided with the selinux-policy-doc package, describe the purpose of the available booleans.
+-   The `man -k '_selinux'` command lists these man pages.
+
+-   Commands useful for managing SELinux booleans include `getsebool`, which lists booleans and their state, and `setsebool` which modifies booleans.
+-   `setsebool -P` modifies the SELinux policy to make the modification persistent.
+-   And `semanage boolean -l` reports on whether or not a boolean is persistent, along with a short description of the boolean.
+    <br>
+
+-   Non-privileged users can run the `getsebool` command, but we must be a superuser to run `semanage boolean -l` and `setsebool -P`.
+
+    ```
+    $ getsebool -a
+    abrt_anon_write --> off
+    abrt_handle_event --> off
+    abrt_upload_watch_anon_write --> on
+    antivirus_can_scan_system --> off
+    antivirus_use_jit --> off
+    ...output omitted...
+    $ getsebool httpd_enable_homedirs
+    httpd_enable_homedirs --> off
+
+    $ setsebool httpd_enable_homedirs on
+    Could not change active booleans. Please try as root: Permission denied
+    $ sudo setsebool httpd_enable_homedirs on
+    $ sudo semanage boolean -l | grep httpd_enable_homedirs
+    httpd_enable_homedirs          (on   ,  off)  Allow httpd to enable homedirs
+    $ getsebool httpd_enable_homedirs
+    httpd_enable_homedirs --> on
+
+    # The -P option writes all pending values to the policy, making them persistent across reboots.
+    $ setsebool -P httpd_enable_homedirs on
+    $ sudo semanage boolean -l | grep httpd_enable_homedirs
+    httpd_enable_homedirs          (on   ,   on)  Allow httpd to enable homedirs
+    ```
+
+-   To list booleans in which the current state differs from the default state, run `$ semanage boolean -l -C`.
+    ```
+    $ sudo semanage boolean -l -c
+    SELinux boolean                State  Default Description
+
+    cron_can_relabel               (off   ,   on)  Allow cron to can relabel
     ```
