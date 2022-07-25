@@ -351,3 +351,179 @@
     -   Administrators should verify that the entry is valid by unmounting the new file system and using `mount /mountpoint`, which reads `/etc/fstab`, to remount the file system.
     -   If the `mount` command returns an error, correct it before rebooting the machine.<br>
         As an alternative, we can use the `findmnt --verify` command to control the `/etc/fstab` file.
+
+### Managing Swap Space
+
+#### Introducing Swap Space Concepts
+
+-   A swap space is an area of a disk under the control of the Linux kernel memory management subsystem.
+-   The kernel uses swap space to supplement the system RAM by holding inactive pages of memory.
+-   The combined system RAM plus swap space is called **virtual memory**.
+    <br>
+
+-   When the memory usage on a system exceeds a defined limit, the kernel searches through RAM looking for idle memory pages assigned to processes.
+-   The kernel writes the idle pages to the swap area and reassigns the RAM pages to other processes.
+-   If a program requires access to a page on disk, the kernel locates another idle page of memory, writes it to disk, then recalls the needed page from the swap area.
+    <br>
+
+-   Because swap areas reside on disk, swap is slow when compared with RAM.
+-   While it is used to augment system RAM, we should not consider swap space as a sustainable solution for insufficient RAM for our workload.
+
+##### Sizing the Swap Space
+
+-   Administrators should size the swap space based on the memory workload on the system.
+-   Application vendors sometimes provide recommendations on that subject. The following table provides some guidance based on the total amount of physical memory.
+
+| RAM                      | Swap Space     | Swap Space If Allowing for Hibernation |
+| ------------------------ | -------------- | -------------------------------------- |
+| 2 GiB or less            | Twice the RAM  | Three times the RAM                    |
+| Between 2 GiB and 8 GiB  | Same as RAM    | Twice the RAM                          |
+| Between 8 GiB and 64 GiB | At least 4 GiB | 1.5 times the RAM                      |
+| More than 64 GiB         | At least 4 GiB | Hibernation is not recommended         |
+
+-   The laptop and desktop hibernation function uses the swap space to save the RAM contents before powering off the system.
+-   When we turn the system back on, the kernel restores the RAM contents from the swap space and does not need a complete boot.
+-   For those systems, the swap space needs to be greater than the amount of RAM.
+
+#### Creating a Swap Space
+
+-   To create a swap space, we need to perform the following :
+
+    -   Create a partition with a file system type of `linux-swap`.
+
+    -   Place a swap signature on the device.
+
+##### Creating a Swap Partition
+
+-   Use `parted` to create a partition of the desired size and set its file system type to `linux-swap`.
+-   In the past, tools looked at the partition file system type to determine if the device should be activated; however, that is no longer the case.
+-   Even though utilities no longer use the partition file system type, setting that type allows administrators to quickly determine the partition's purpose.
+    <br>
+
+-   The following example creates a 256 MB partition.
+
+    ```
+    $ parted /dev/vdb
+    GNU Parted 3.2
+    Using /dev/vdb
+    Welcome to GNU Parted! Type 'help' to view a list of commands.
+    (parted) print
+    Model: Virtio Block Device (virtblk)
+    Disk /dev/vdb: 5369MB
+    Sector size (logical/physical): 512B/512B
+    Partition Table: gpt
+    Disk Flags:
+
+    Number  Start   End     Size    File system  Name  Flags
+    1      1049kB  1001MB  1000MB               data
+
+    (parted) mkpart
+    Partition name?  []? swap1
+    File system type?  [ext2]? linux-swap
+    Start? 1001MB
+    End? 1257MB
+    (parted) print
+    Model: Virtio Block Device (virtblk)
+    Disk /dev/vdb: 5369MB
+    Sector size (logical/physical): 512B/512B
+    Partition Table: gpt
+    Disk Flags:
+
+    Number  Start   End     Size    File system     Name   Flags
+    1      1049kB  1001MB  1000MB                  data
+    2      1001MB  1257MB  256MB   linux-swap(v1)  swap1
+
+    (parted) quit
+    Information: You may need to update /etc/fstab.
+    ```
+
+-   After creating the partition, run the `$ udevadm settle` command. This command waits for the system to detect the new partition and to create the associated device file in `/dev`. It only returns when it is done.
+
+##### Formatting the Device
+
+-   The `mkswap` command applies a swap signature to the device.
+-   Unlike other formatting utilities, `mkswap` writes a single block of data at the beginning of the device, leaving the rest of the device unformatted so the kernel can use it for storing memory pages.
+    ```
+    $ mkswap /dev/vdb2
+    Setting up swapspace version 1, size = 244 MiB (255848448 bytes)
+    no label, UUID=39e2667a-9458-42fe-9665-c5c854605881
+    ```
+
+#### Activating a Swap Space
+
+-   We can use the `swapon` command to activate a formatted swap space.
+    <br>
+
+-   Use `swapon` with the device as a parameter, or use `$ swapon -a` to activate all the swap spaces listed in the `/etc/fstab` file.
+-   Use the `$ swapon --show` and `$ free` commands to inspect the available swap spaces.
+
+    ```
+    $ free
+                  total        used        free      shared  buff/cache   available
+    Mem:        1873036      134688     1536436       16748      201912     1576044
+    Swap:             0           0           0
+
+    $ swapon /dev/vdb2
+    $ free
+                  total        used        free      shared  buff/cache   available
+    Mem:        1873036      135044     1536040       16748      201952     1575680
+    Swap:        249852           0      249852
+    ```
+
+-   We can deactivate a swap space using the `swapoff` command.
+-   If the swap space has pages written to it, `swapoff` tries to move those pages to other active swap spaces or back into memory.
+-   If it cannot write data to other places, the `swapoff` command fails with an error, and the swap space stays active.
+
+##### Activating Swap Space Persistently
+
+-   To activate a swap space at every boot, place an entry in the `/etc/fstab` file.
+-   The example below shows a typical line in `/etc/fstab` based on the swap space created above. <br> `UUID=39e2667a-9458-42fe-9665-c5c854605881 swap swap defaults 0 0`
+-   The example uses the UUID as the **first field**.
+-   When we format the device, the `mkswap` command displays that UUID.
+-   If we lost the output of mkswap, use the `$ lsblk --fs` command.
+-   As an alternative, we can also use the device name in the first field.
+    <br>
+
+-   The **second field** is typically reserved for the mount point.
+-   However, for swap devices, which are not accessible through the directory structure, this field takes the placeholder value `swap`.
+-   The `fstab(5)` man page uses a placeholder value of none, however using a value of swap allows for more informative error messages in the event that something goes wrong.
+    <br>
+
+-   The **third field** is the file system type. The file system type for swap space is swap.
+    <br>
+
+-   The **fourth field** is for options.
+-   The example uses the `defaults` option.
+-   The `defaults` option includes the mount option `auto`, which means activate the swap space automatically at system boot.
+    <br>
+
+-   The **final two fields** are the dump flag and `fsck` order.
+-   Swap spaces require neither backing up nor file-system checking and so these fields should be set to zero.
+    <br>
+
+-   When we add or remove an entry in the `/etc/fstab` file, run the `$ systemctl daemon-reload` command, or reboot the server, for systemd to register the new configuration.
+
+##### Setting the Swap Space Priority
+
+-   By default, the system uses swap spaces in series, meaning that the kernel uses the first activated swap space until it is full, then it starts using the second swap space.
+-   However, we can define a priority for each swap space to force that order.
+    <br>
+
+-   To set the priority, use the `pri` option in `/etc/fstab`.
+-   The kernel uses the swap space with the **highest priority first**.
+-   The default priority is `-2`.
+    <br>
+
+-   The following example shows three swap spaces defined in `/etc/fstab`.
+-   The kernel uses the last entry first, with `pri=10`.
+-   When that space is full, it uses the second entry, with `pri=4`.
+-   Finally, it uses the first entry, which has a default priority of `-2`.
+    ```
+    UUID=af30cbb0-3866-466a-825a-58889a49ef33   swap   swap   defaults  0 0
+    UUID=39e2667a-9458-42fe-9665-c5c854605881   swap   swap   pri=4     0 0
+    UUID=fbd7fa60-b781-44a8-961b-37ac3ef572bf   swap   swap   pri=10    0 0
+    ```
+-   Use `$ swapon --show` to display the swap space priorities.
+    <br>
+
+-   When swap spaces have the same priority, the kernel writes to them in a round-robin fashion.
