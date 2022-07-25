@@ -1,459 +1,353 @@
-## Managing SELinux Security
+## Managing Basic Storage
 
-### Changing the SELinux Enforcement Mode
+### Adding Partitions, File Systems, and Persistent Mounts
 
-#### How SELinux Protects Resources
+#### Partitioning a Disk
 
--   SELinux is an important security feature of Linux.
--   Access to files and other resources is controlled at a very granular level.
--   Processes are only permitted to access the resources specified by their policy, or SELinux boolean settings.
+-   Disk partitioning allows system administrators to divide a hard drive into multiple logical storage units, referred to as partitions. By separating a disk into partitions, system administrators can use different partitions to perform different functions.
     <br>
 
--   File permissions control which users or groups of users can access which specific files.
--   However, a user given read or write access to any specific file can use that file in any way that user chooses, even if that use is not how the file should be used.
+-   For example, disk partitioning is necessary or beneficial in these situations :
+
+    -   Limit available space to applications or users.
+
+    -   Separate operating system and program files from user files.
+
+    -   Create a separate area for memory swapping.
+
+    -   Limit disk space use to improve the performance of diagnostic tools and backup imaging.
+
+##### MBR Partitioning Scheme
+
+-   Since 1982, the **Master Boot Record (MBR) partitioning scheme** has dictated how disks are partitioned on systems running BIOS firmware.
+-   This scheme supports a **maximum of four primary partitions**.
+-   On Linux systems, with the use of extended and logical partitions, administrators can create a **maximum of 15 partitions**.
+-   Because partition size data is stored as **32-bit** values, disks partitioned with the MBR scheme have a **maximum disk and partition size of 2 TiB**.
+    ![storage_mbr](./images/storage-mbr.svg)
+
+-   Because physical disks are getting larger, and SAN-based volumes even larger than that, the 2 TiB disk and partition size limit of the MBR partitioning scheme is no longer a theoretical limit, but rather a real-world problem that system administrators encounter more and more frequently in production environments. As a result, the legacy MBR scheme is in the process of being superseded by the new **GUID Partition Table (GPT)** for disk partitioning.
+
+##### GPT Partitioning Scheme
+
+-   For systems running **Unified Extensible Firmware Interface (UEFI) firmware**, GPT is the standard for laying out partition tables on physical hard disks.
+-   GPT is part of the UEFI standard and addresses many of the limitations that the old MBR-based scheme imposes.
     <br>
 
--   For example, with write access to a file, should a structured data file designed to be written to using only a particular program, be allowed to be opened and modified by other editors that could result in corruption?
+-   A GPT provides a **maximum of 128 partitions**.
+-   Unlike an MBR, which uses 32 bits for storing logical block addresses and size information, a GPT allocates **64 bits** for logical block addresses. This allows a GPT to accommodate partitions and disks of up to **eight zebibytes (ZiB)** or **eight billion tebibytes**.
     <br>
 
--   File permissions cannot stop such undesired access. They were never designed to control how a file is used, but only who is allowed to read, write, or run a file.
+-   In addition to addressing the limitations of the MBR partitioning scheme, a GPT also offers some additional features and benefits.
+-   A GPT uses a **globally unique identifier (GUID)** to identify each disk and partition.
+-   In contrast to an MBR, which has a single point of failure, a GPT offers redundancy of its partition table information.
+-   The primary GPT resides at the head of the disk, while a backup copy, the secondary GPT, is housed at the end of the disk.
+-   A GPT uses a checksum to detect errors and corruptions in the GPT header and partition table.
+    ![storage_gpt](./images/storage-gpt.svg)
+
+#### Managing Partitions with Parted
+
+-   Partition editors are programs which allow administrators to make changes to a disk's partitions, such as creating partitions, deleting partitions, and changing partition types.
+-   To perform these operations, administrators can use the **Parted partition editor** for both the MBR and the GPT partitioning scheme.
     <br>
 
--   SELinux consists of sets of policies, defined by the application developers, that declare exactly what actions and accesses are proper and allowed for each binary executable, configuration file, and data file used by an application.
--   This is known as a **targeted policy** because one policy is written to cover the activities of a single application.
--   Policies declare predefined labels that are placed on individual programs, files, and network ports.
+-   The `parted` command takes the device name of the whole disk as the first argument and one or more subcommands.
+-   The following example uses the `print` subcommand to display the partition table on the `/dev/vda` disk.
 
-#### Why use Security Enhanced Linux?
+    ```
+    $ parted /dev/vda print
+    Model: Virtio Block Device (virtblk)
+    Disk /dev/vda: 53.7GB
+    Sector size (logical/physical): 512B/512B
+    Partition Table: msdos
+    Disk Flags:
 
--   Not all security issues can be predicted in advance.
--   SELinux enforces a set of access rules preventing a weakness in one application from affecting other applications or the underlying system.
--   SELinux provides an extra layer of security; it also adds a layer of complexity which can be off-putting to people new to this subsystem.
--   Learning to work with SELinux may take time but the enforcement policy means that a weakness in one part of the system does not spread to other parts.
--   If SELinux works poorly with a particular subsystem, we can turn off enforcement for that specific service until we find a solution to the underlying problem.
+    Number  Start   End     Size    Type     File system  Flags
+    1      1049kB  10.7GB  10.7GB  primary  xfs          boot
+    2      10.7GB  53.7GB  42.9GB  primary  xfs
+    ```
+
+-   If we do not provide a subcommand, parted opens an interactive session for issuing commands.
+
+    ```
+    $ parted /dev/vda
+    GNU Parted 3.2
+    Using /dev/vda
+    Welcome to GNU Parted! Type 'help' to view a list of commands.
+    (parted) print
+    Model: Virtio Block Device (virtblk)
+    Disk /dev/vda: 53.7GB
+    Sector size (logical/physical): 512B/512B
+    Partition Table: msdos
+    Disk Flags:
+
+    Number  Start   End     Size    Type     File system  Flags
+    1      1049kB  10.7GB  10.7GB  primary  xfs          boot
+    2      10.7GB  53.7GB  42.9GB  primary  xfs
+
+    (parted) quit
+    ```
+
+-   By default, parted displays all the sizes in powers of 10 (KB, MB, GB). You can change that default with the `unit` subcommand which accepts the following parameters :
+
+    -   `s` for sector
+
+    -   `B` for byte
+
+    -   `MiB`, `GiB`, or `TiB` (powers of 2)
+
+    -   `MB`, `GB`, or `TB` (powers of 10)
+
+        ```
+        $ parted /dev/vda unit s print
+        Model: Virtio Block Device (virtblk)
+        Disk /dev/vda: 104857600s
+        Sector size (logical/physical): 512B/512B
+        Partition Table: msdos
+        Disk Flags:
+
+        Number  Start      End         Size       Type     File system  Flags
+        1      2048s      20971486s   20969439s  primary  xfs          boot
+        2      20971520s  104857535s  83886016s  primary  xfs
+        ```
+
+        As shown in the example above, we can also specify multiple subcommands (here, `unit` and `print`) on the same line.
+
+##### Writing the Partition Table on a New Disk
+
+-   To partition a new drive, we first have to write a **disk label** to it. The disk label indicates which partitioning scheme to use.
+-   **Warning**
+    -   Keep in mind that parted makes the changes immediately. A mistake with parted could lead to data loss.
+-   As the root user, use the following command to write an MBR disk label to a disk.
+    `$ parted /dev/vdb mklabel msdos`
+-   To write a GPT disk label, use the following command.
+    `$ parted /dev/vdb mklabel gpt`
+
+-   **Warning**
+    -   The `mklabel` subcommand wipes the existing partition table.
+    -   Only use `mklabel` when the intent is to reuse the disk without regard to the existing data.
+    -   If a new label changes the partition boundaries, all data in existing file systems will become inaccessible.
+
+##### Creating MBR Partitions
+
+-   Creating an MBR disk partition involves several steps :
+
+    1.  Specify the disk device to create the partition on.
+        <br>
+        As the root user, execute the `parted` command and specify the disk device name as an argument. This starts the parted command in interactive mode and displays a command prompt.
+        `$ parted /dev/vdb GNU Parted 3.2 Using /dev/vdb Welcome to GNU Parted! Type 'help' to view a list of commands. (parted)`
+    2.  Use the `mkpart` subcommand to create a new primary or extended partition.
+        ```
+        (parted) mkpart
+        Partition type?  primary/extended? primary
+        ```
+        **Note**
+        -   For situations where we need more than four partitions on an MBR-partitioned disk, create three primary partitions and one extended partition. This extended partition serves as a container within which we can create multiple logical partitions.
+    3.  Indicate the file-system type that we want to create on the partition, such as `xfs` or `ext4`. This does not create the file system on the partition; it is only an indication of the partition type. <br>
+        `File system type? [ext2]? xfs`
+        To get the list of the supported file-system types, use the following command :
+
+        ````
+        $ parted /dev/vdb help mkpart
+        mkpart PART-TYPE [FS-TYPE] START END make a partition
+
+             PART-TYPE is one of: primary, logical, extended
+             FS-TYPE is one of: btrfs, nilfs2, ext4, ext3, ext2, fat32, fat16, hfsx,
+             hfs+, hfs, jfs, swsusp, linux-swap(v1), linux-swap(v0), ntfs, reiserfs,
+             hp-ufs, sun-ufs, xfs, apfs2, apfs1, asfs, amufs5, amufs4, amufs3,
+             amufs2, amufs1, amufs0, amufs, affs7, affs6, affs5, affs4, affs3, affs2,
+             affs1, affs0, linux-swap, linux-swap(new), linux-swap(old)
+             START and END are disk locations, such as 4GB or 10%.  Negative values
+             count from the end of the disk.  For example, -1s specifies exactly the
+             last sector.
+
+             'mkpart' makes a partition without creating a new file system on the
+             partition.  FS-TYPE may
+             ```
+
+        ````
+
+    4.  Specify the sector on the disk that the new partition starts on. <br>
+        `Start? 2048s`
+        Notice the `s` suffix to provide the value in sectors. We can also use the `MiB`, `GiB`, `TiB`, `MB`, `GB`, or `TB` suffixes.
+        If we do not provide a suffix, `MB` is the default. `parted` may round the value we provide to satisfy disk constraints.
+    5.  Specify the disk sector where the new partition should end. <br>
+        `End? 1000MB`
+        With `parted`, we cannot directly provide the size of our partition, but we can quickly compute it with the following formula : <br>
+        `Size = End - Start`
+        As soon as we provide the end position, `parted` updates the partition table on the disk with the new partition details.
+    6.  Exit `parted`
+        ```
+        (parted) quit
+        Information: You may need to update /etc/fstab.
+        ```
+    7.  Run the `udevadm settle` command. This command waits for the system to detect the new partition and to create the associated device file under the `/dev` directory. It only returns when it is done.<br>
+        `$ udevadm settle`
+        <br>
+
+-   As an alternative to the interactive mode, we can also create the partition as follows : <br>
+    `$ parted /dev/vdb mkpart primary xfs 2048s 1000MB`
+
+##### Creating GPT Partitions
+
+-   The GPT scheme also uses the `parted` command to create new partitions:
+
+    1. Specify the disk device to create the partition on.<br>  
+       As the root user, execute the `parted` command with the disk device as the only argument to start parted in interactive mode with a command prompt.
+       `$ parted /dev/vdb GNU Parted 3.2 Using /dev/vdb Welcome to GNU Parted! Type 'help' to view a list of commands. (parted)`
+    2. Use the `mkpart` subcommand to start creating the new partition.<br>
+       With the GPT scheme, each partition is given a name.
+       `(parted) mkpart Partition name? []? usersdata`
+    3. Indicate the file system type that we want to create on the partition, such as `xfs` or `ext4`. This does not create the file system on the partition; it is only an indication of the partition type.<br> `Fle system type? [ext2]? xfs`
+    4. Specify the sector on the disk that the new partition starts on. <br> `Start? 2048s`
+    5. Specify the disk sector where the new partition should end. <br> `End? 1000MB`<br> As soon as we provide the end position, parted updates the partition table on the disk with the new partition details.
+    6. Exit `parted`
+        ```
+        (parted) quit
+        Information: You may need to update /etc/fstab.
+        ```
+    7. Run the `udevadm settle` command. This command waits for the system to detect the new partition and to create the associated device file under the `/dev` directory. It only returns when it is done. <br> `$ udevadm settle`
+
+-   As an alternative to the interactive mode, we can also create the partition as follows : <br> `$ parted /dev/vdb mkpart usersdata xfs 2048s 1000MB`
+
+##### Deleting Partitions
+
+-   The following steps apply for both the MBR and GPT partitioning schemes.
+
+    1. Specify the disk that contains the partition to be removed.<br>
+       As the root user, execute the `parted` command with the disk device as the only argument to start parted in interactive mode with a command prompt.
+       `$ parted /dev/vdb GNU Parted 3.2 Using /dev/vdb Welcome to GNU Parted! Type 'help' to view a list of commands. (parted)`
+    2. Identify the partition number of the partition to delete.
+
+        ```
+        (parted) print
+        Model: Virtio Block Device (virtblk)
+        Disk /dev/vdb: 5369MB
+        Sector size (logical/physical): 512B/512B
+        Partition Table: gpt
+        Disk Flags:
+
+        Number  Start   End     Size   File system  Name       Flags
+        1      1049kB  1000MB  999MB  xfs          usersdata
+        ```
+
+    3. Delete the partition.<br> `(parted) rm 1`<br> The `rm` subcommand immediately deletes the partition from the partition table on the disk.
+    4. Exit `parted`.
+        ```
+        (parted) quit
+        Information: You may need to update /etc/fstab.
+        ```
+
+#### Creating File Systems
+
+-   After the creation of a block device, the next step is to add a file system to it.
+-   Red Hat Enterprise Linux supports many different file system types, but two common ones are `XFS` and `ext4`.
+-   Anaconda, the installer for Red Hat Enterprise Linux, uses `XFS` by default.
     <br>
 
--   SELinux has three modes:
+-   As root, use the `mkfs.xfs` command to apply an `XFS` file system to a block device. For `ext4`, use `mkfs.ext4`.
+    ```
+    $  mkfs.xfs /dev/vdb1
+    meta-data=/dev/vdb1              isize=512    agcount=4, agsize=60992 blks
+             =                       sectsz=512   attr=2, projid32bit=1
+             =                       crc=1        finobt=1, sparse=1, rmapbt=0
+             =                       reflink=1
+    data     =                       bsize=4096   blocks=243968, imaxpct=25
+             =                       sunit=0      swidth=0 blks
+    naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+    log      =internal log           bsize=4096   blocks=1566, version=2
+             =                       sectsz=512   sunit=0 blks, lazy-count=1
+    realtime =none                   extsz=4096   blocks=0, rtextents=0
+    ```
 
-    -   **Enforcing :** SELinux is enforcing access control rules. Computers generally run in this mode.
-    -   **Permissive :** SELinux is active but instead of enforcing access control rules, it records warnings of rules that have been violated. This mode is used primarily for testing and troubleshooting.
-    -   **Disabled :** SELinux is turned off entirely: no SELinux violations are denied, nor even recorded. Discouraged!
+#### Mounting File Systems
 
-#### Basic SELinux security concepts
+-   After we have added the file system, the last step is to mount the file system to a directory in the directory structure.
+-   When we mount a file system onto the directory hierarchy, user-space utilities can access or write files on the device.
 
--   Security Enhanced Linux (SELinux) is an additional layer of system security.
--   The primary goal of SELinux is to protect user data from system services that have been compromised.
--   Most Linux administrators are familiar with the standard `user/group/other` permission security model. This is a user and group based model known as **discretionary access control**.
--   SELinux provides an additional layer of security that is object-based and controlled by more sophisticated rules, known as **mandatory access control**.
+##### Manually Mounting File Systems
+
+-   Administrators use the `mount` command to manually attach the device onto a directory location, or mount point.
+-   The `mount` command expects the device, the mount point, and optionally file system options as arguments.
+-   The file-system options customize the behavior of the file system.
+    `$ mount /dev/vdb1 /mnt`
     <br>
 
--   To allow remote anonymous access to a web server, firewall ports must be opened.
--   However, this gives malicious people an opportunity to compromise the system through a vulnerability. If they succeed in compromising the web server process they gain its permissions. Specifically, the permissions of the apache user and the apache group.
--   That user and group has read access to the document root, `/var/www/html`. It also has access to `/tmp`, and `/var/tmp`, and any other files and directories that are world writable.
+-   We also use the `mount` command to view currently mounted file systems, the mount points, and the options.
+    ```
+    $ mount | grep vdb1
+    /dev/vdb1 on /mnt type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+    ```
+
+#### Persistently Mounting File Systems
+
+-   Manually mounting a file system is a good way to verify that a formatted device is accessible and working as expected.
+-   However, when the server reboots, the system does not automatically mount the file system onto the directory tree again; the data is intact on the file system, but users cannot access it.
     <br>
 
--   SELinux is a set of security rules that determine which process can access which files, directories, and ports.
--   Every file, process, directory, and port has a special security label called an SELinux context.
--   A context is a name used by the SELinux policy to determine whether a process can access a file, directory, or port.
--   By default, the policy does not allow any interaction unless an explicit rule grants access. If there is no allow rule, no access is allowed.
+-   To make sure that the system automatically mounts the file system at system boot, add an entry to the `/etc/fstab` file. This configuration file lists the file systems to mount at system boot.
     <br>
 
--   SELinux labels have several contexts: `user`, `role`, `type`, and `sensitivity`.
--   The targeted policy, which is the default policy enabled in Red Hat Enterprise Linux, bases its rules on the third context: the **type context**.
--   Type context names usually end with `_t`.
-    ![SELinux_context](./images/selinux_context.png)
+-   `/etc/fstab` is a white-space-delimited file with six fields per line.
+
+    ```
+    $ cat /etc/fstab
+
+    #
+    # /etc/fstab
+    # Created by anaconda on Wed Feb 13 16:39:59 2019
+    #
+    # Accessible filesystems, by reference, are maintained under '/dev/disk/'.
+    # See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info.
+    #
+    # After editing this file, run 'systemctl daemon-reload' to update systemd
+    # units generated from this file.
+    #
+    UUID=a8063676-44dd-409a-b584-68be2c9f5570   /        xfs   defaults   0 0
+    UUID=7a20315d-ed8b-4e75-a5b6-24ff9e1f9838   /dbdata  xfs   defaults   0 0
+    ```
+
+-   When we add or remove an entry in the `/etc/fstab` file, run the `systemctl daemon-reload` command, or reboot the server, for `systemd` to register the new configuration. <br> `$ systemctl daemon-reload`
+-   The first field specifies the device. This example uses the UUID to specify the device. File systems create and store the UUID in their super block at creation time. Alternatively, we could use the device file, such as `/dev/vdb1`.
     <br>
-
--   The type context for a **web server** is `httpd_t`.
--   The type context for **files and directories** normally found in `/var/www/html` is `httpd_sys_content_t`.
--   The contexts for **files and directories** normally found in `/tmp` and `/var/tmp` is `tmp_t`.
--   The type context for **web server ports** is `http_port_t`.
-    <br>
-
--   **Apache** has a type context of `httpd_t`.
--   There is a policy rule that permits Apache access to files and directories with the `httpd_sys_content_t` type context.
--   By default files found in `/var/www/html` and other web server directories have the `httpd_sys_content_t` type context.
--   There is no allow rule in the policy for files normally found in `/tmp` and `/var/tmp`, so access is not permitted.
--   With SELinux enabled, a malicious user who had compromised the web server process could not access the `/tmp` directory.
-    <br>
-
--   The **MariaDB server** has a type context of `mysqld_t`.
--   By default, files found in `/data/mysql` have the `mysqld_db_t` type context.
--   This type context allows MariaDB access to those files but disables access by other services, such as the Apache web service.
-
-![SELinux access](./images/access.svg)
-
--   Many commands that deal with files use the `-Z` option to display or set SELinux contexts.
--   For instance, `ps`, `ls`, `cp`, and `mkdir` all use the `-Z` option to display or set SELinux contexts.
-    ```
-    $ px axZ
-    LABEL                             PID TTY      STAT   TIME COMMAND
-    system_u:system_r:init_t:s0         1 ?        Ss     0:09 /usr/lib/systemd/...
-    system_u:system_r:kernel_t:s0       2 ?        S      0:00 [kthreadd]
-    system_u:system_r:kernel_t:s0       3 ?        S      0:00 [ksoftirqd/0]
-    ...output omitted...
-    $ systemctl start httpd
-    $ ps -ZC httpd
-    LABEL                             PID TTY          TIME CMD
-    system_u:system_r:httpd_t:s0     1608 ?        00:00:05 httpd
-    system_u:system_r:httpd_t:s0     1609 ?        00:00:00 httpd
-    ...output omitted...
-    $ ls -Z /home
-    drwx------. root    root    system_u:object_r:lost_found_t:s0 lost+found
-    drwx------. student student unconfined_u:object_r:user_home_dir_t:s0 student
-    drwx------. visitor visitor unconfined_u:object_r:user_home_dir_t:s0 visitor
-    $ ls -Z /var/www
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_script_exec_t:s0 cgi-bin
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 error
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 html
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 icons
-    ```
-
-#### Changing the current SELinux mode
-
--   The SELinux subsystem provides tools to display and change modes.
--   To determine the current SELinux mode, run the `getenforce` command.
--   To set SELinux to a different mode, use the `setenforce` command :
-    ```
-    $ getenforce
-    Enforcing
-    $ setenforce
-    usage:  setenforce [ Enforcing | Permissive | 1 | 0 ]
-    $ setenforce 0
-    $ getenforce
-    Permissive
-    $ setenforce Enforcing
-    $ getenforce
-    Enforcing
-    ```
--   Alternatively, we can set the SELinux mode at boot time by passing a parameter to the kernel : the kernel argument of `enforcing=0` boots the system into **permissive mode**; a value of `enforcing=1` sets **enforcing mode**.
--   We can also **disable SELinux completely** by passing on the kernel parameter `selinux=0`.
--   A value of `selinux=1` **enables SELinux**.
-
-#### Setting the default SELinux mode
-
--   We can also configure SELinux persistently using the `/etc/selinux/config` file.
--   In the example below (the default configuration), the configuration file sets SELinux to `enforcing`. The comments also show the other valid values : `permissive` and `disabled`.
-    ```
-    # This file controls the state of SELinux on the system.
-    # SELINUX= can take one of these three values:
-    #     enforcing - SELinux security policy is enforced.
-    #     permissive - SELinux prints warnings instead of enforcing.
-    #     disabled - No SELinux policy is loaded.
-    SELINUX=enforcing
-    # SELINUXTYPE= can take one of these two values:
-    #     targeted - Targeted processes are protected,
-    #     minimum - Modification of targeted policy. Only selected processes
-    #               are protected.
-    #     mls - Multi Level Security protection.
-    SELINUXTYPE=targeted
-    ```
--   The system reads this file at boot time and configures SELinux as shown. Kernel arguments (selinux=0|1 and enforcing=0|1) override this configuration.
-
-### Controlling SELinux File Contexts
-
-#### Initial SELinux Context
-
--   On systems running SELinux, all processes and files are labeled.
--   The label represents the security relevant information, known as the **SELinux context**.
-    <br>
-
--   New files typically inherit their SELinux context from the parent directory, thus ensuring that they have the proper context.
-    <br>
-
--   But this inheritance procedure can be undermined in two different ways.
--   First, if we create a file in a different location from the ultimate intended location and then move the file, the file still has the SELinux context of the directory where it was created, not the destination directory.
--   Second, if we copy a file preserving the SELinux context, as with the `cp -a` command, the SELinux context reflects the location of the original file.
-    <br>
-
--   The following example demonstrates inheritance and its pitfalls.
--   Consider these two files created in `/tmp`, one moved to `/var/www/html` and the second one copied to the same directory.
--   Note the SELinux contexts on the files. The file that was moved to the `/var/www/html` directory retains the file context for the `/tmp` directory. The file that was copied to the `/var/www/html` directory inherited SELinux context from the `/var/www/html` directory.
-    <br>
-
--   The `ls -Z` command displays the SELinux context of a file. Note the label of the file.
-    ```
-    $ ls -Z /var/www/html/index.html
-    -rw-r--r--. root root unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/index.html
-    ```
--   And the `ls -Zd` command displays the SELinux context of a directory :
-    ```
-    $ ls -Zd /var/www/html
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /var/www/html/
-    ```
--   Note that the `/var/www/html/index.html` has the same label as the parent directory `/var/www/html/`. Now, create files outside of the `/var/www/html` directory and note their file context :
-    ```
-    $ touch /tmp/file1 /tmp/file2
-    $ ls -Z /tmp/file*
-    unconfined_u:object_r:user_tmp_t:s0 /tmp/file1
-    unconfined_u:object_r:user_tmp_t:s0 /tmp/file2
-    ```
--   Move one of these files to the `/var/www/html` directory, copy another, and note the label of each :
-    ```
-    $ mv /tmp/file1 var/www/html/
-    $ cp /tmp/file2 var/www/html/
-    $ ls -Z /var/www/html/file
-    unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1
-    unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
-    ```
--   The moved file maintains its original label while the copied file inherits the label from the `/var/www/html` directory. `unconfined_u:` is the user, `object_r:` denotes the role, and `s0` is the level. A sensitivity level of 0 is the lowest possible sensitivity level.
-
-#### Changing the SELinux context of a file
-
--   Commands to change the SELinux context on files include `semanage fcontext`, `restorecon`, and `chcon`.
-    <br>
-
--   The preferred method to set the SELinux context for a file is to declare the default labeling for a file using the `semanage fcontext` command and then applying that context to the file using the `restorecon` command.
--   This ensures that the labeling will be as desired even after a complete relabeling of the file system.
-    <br>
-
--   The `chcon` command changes SELinux contexts.
--   `chcon` sets the security context on the file, stored in the file system. It is useful for testing and experimenting. However, it does not save context changes in the SELinux context database.
--   When a `restorecon` command runs, changes made by the `chcon` command also do not survive. Also, if the entire file system is relabeled, the SELinux context for files changed using `chcon` are reverted.
-    <br>
-
--   The following screen shows a directory being created. The directory has a type value of `default_t`.
-    ```
-    $ mkdir /virtual
-    $ ls -Zd /virtual
-    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual
-    ```
--   The `chcon` command changes the file context of the `/virtual` directory : the type value changes to `httpd_sys_content_t`.
-    ```
-    $ chcon -t httpd_sys_content_t /virtual
-    $ ls -Zd /virtual
-    drwxr-xr-x. root root unconfined_u:object_r:httpd_sys_content_t:s0 /virtual
-    ```
--   The `restorecon` command runs and the type value returns to the value of `default_t`. Note the `Relabeled` message.
-    ```
-    $ restorecon -v /virtual
-    Relabeled /virtual from unconfined_u:object_r:httpd_sys_content_t:s0 to unconfined_u:object_r:default_t:s0
-    $ ls -Zd /virtual
-    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual
-    ```
-
-#### Defining SELinux Default File Context Rules
-
--   The `semanage fcontext` command displays and modifies the rules that `restorecon` uses to set default file contexts.
--   It uses extended regular expressions to specify the path and file names.
--   The most common extended regular expression used in `fcontext` rules is `(/.*)?`, which means “optionally, match a / followed by any number of characters”. It matches the directory listed before the expression and everything in that directory recursively.
-
-##### Basic File Context Operations
-
--   The following table is a reference for `semanage fcontext` options to add, remove or list SELinux file contexts.
-
-| option           | description                                  |
-| ---------------- | -------------------------------------------- |
-| `-a`, `--add`    | Add a record of the specified object type    |
-| `-d`, `--delete` | Delete a record of the specified object type |
-| `-l`, `--list`   | List records of the specified object type    |
-
--   To ensure that we have the tools to manage SELinux contexts, install the `policycoreutils` package and the `policycoreutils-python` package if needed. These contain the `restorecon` command and `semanage` command, respectively.
-    <br>
-
--   To ensure that all files in a directory have the correct file context run the `semanage fcontext -l` followed by the `restorecon` command.
--   In the following example, note the file context of each file before and after the `semanage` and `restorecon` commands run.
-    ```
-    $ ls -Z /var/www/html/file*
-    unconfined_u:object_r:user_tmp_t:s0 /var/www/html/file1  unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
-    $ semanage fcontext -l
-    ...output omitted...
-    /var/www(/.*)?       all files    system_u:object_r:httpd_sys_content_t:s0
-    ...output omitted...
-    $ restorecon -Rv /var/www/
-    Relabeled /var/www/html/file1 from unconfined_u:object_r:user_tmp_t:s0 to unconfined_u:object_r:httpd_sys_content_t:s0
-    [root@host ~]# ls -Z /var/www/html/file*
-    unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file1  unconfined_u:object_r:httpd_sys_content_t:s0 /var/www/html/file2
-    ```
--   The following example shows how to use `semanage` to add a context for a new directory.
-
-    ```
-    $  mkdir /virtual
-    $ touch /virtual/index.html
-    $ ls -Zd /virtual
-    drwxr-xr-x. root root unconfined_u:object_r:default_t:s0 /virtual/
-
-    $ semanage fcontext -a -t httpd_sys_content_t '/virtual/(/.*/)?'
-    $ restorecon -RFvv /virtual;
-    $ ls -Zd /virtual/
-    drwxr-xr-x. root root system_u:object_r:httpd_sys_content_t:s0 /virtual/
-    $ ls -Z /virtual/
-    -rw-r--r--. root root system_u:object_r:httpd_sys_content_t:s0 index.html
-    ```
-
-### Adjusting SELinux Policy with Booleans
-
-#### SELinux booleans
-
--   SELinux booleans are switches that change the behavior of the SELinux policy.
--   SELinux booleans are rules that can be enabled or disabled.
--   They can be used by security administrators to tune the policy to make selective adjustments.
-    <br>
-
--   The SELinux man pages, provided with the selinux-policy-doc package, describe the purpose of the available booleans.
--   The `man -k '_selinux'` command lists these man pages.
-
--   Commands useful for managing SELinux booleans include `getsebool`, which lists booleans and their state, and `setsebool` which modifies booleans.
--   `setsebool -P` modifies the SELinux policy to make the modification persistent.
--   And `semanage boolean -l` reports on whether or not a boolean is persistent, along with a short description of the boolean.
-    <br>
-
--   Non-privileged users can run the `getsebool` command, but we must be a superuser to run `semanage boolean -l` and `setsebool -P`.
-
-    ```
-    $ getsebool -a
-    abrt_anon_write --> off
-    abrt_handle_event --> off
-    abrt_upload_watch_anon_write --> on
-    antivirus_can_scan_system --> off
-    antivirus_use_jit --> off
-    ...output omitted...
-    $ getsebool httpd_enable_homedirs
-    httpd_enable_homedirs --> off
-
-    $ setsebool httpd_enable_homedirs on
-    Could not change active booleans. Please try as root: Permission denied
-    $ sudo setsebool httpd_enable_homedirs on
-    $ sudo semanage boolean -l | grep httpd_enable_homedirs
-    httpd_enable_homedirs          (on   ,  off)  Allow httpd to enable homedirs
-    $ getsebool httpd_enable_homedirs
-    httpd_enable_homedirs --> on
-
-    # The -P option writes all pending values to the policy, making them persistent across reboots.
-    $ setsebool -P httpd_enable_homedirs on
-    $ sudo semanage boolean -l | grep httpd_enable_homedirs
-    httpd_enable_homedirs          (on   ,   on)  Allow httpd to enable homedirs
-    ```
-
--   To list booleans in which the current state differs from the default state, run `$ semanage boolean -l -C`.
-
-    ```
-    $ sudo semanage boolean -l -c
-    SELinux boolean                State  Default Description
-
-    cron_can_relabel               (off   ,   on)  Allow cron to can relabel
-    ```
-
-### Investigating and Resolving SELinux Issues
-
-#### Troubleshooting SELinux Issues
-
--   It is important to understand what actions we must take when SELinux prevents access to files on a server that we know should be accessible. Use the following steps as a guide to troubleshooting these issues:
-
-    1. Before thinking of making any adjustments, consider that SELinux may be doing its job correctly by prohibiting the attempted access. If a web server tries to access files in `/home`, this could signal a compromise of the service if web content is not published by users. If access should have been granted, then additional steps need to be taken to solve the problem.
-
-    2. The most common SELinux issue is an incorrect file context. This can occur when a file is created in a location with one file context and moved into a place where a different context is expected. In most cases, running `restorecon` will correct the issue. Correcting issues in this way has a very narrow impact on the security of the rest of the system.
-
-    3. Another remedy for overly restrictive access could be the adjustment of a Boolean. For example, the `ftpd_anon_write` boolean controls whether anonymous FTP users can upload files. We must turn this boolean on to permit anonymous FTP users to upload files to a server. Adjusting booleans requires more care because they can have a broad impact on system security.
-
-    4. It is possible that the SELinux policy has a bug that prevents a legitimate access. Since SELinux has matured, this is a rare occurrence. When it is clear that a policy bug has been identified, contact Red Hat support to report the bug so it can be resolved.
-
-#### Monitoring SELinux Violations
-
--   Install the **setroubleshoot-server package** to send SELinux messages to `/var/log/messages`.
--   **setroubleshoot-server** listens for audit messages in `/var/log/audit/audit.log` and sends a short summary to `/var/log/messages`.
--   This summary includes unique identifiers (UUID) for SELinux violations that can be used to gather further information.
--   The `sealert -l UUID` command is used to produce a report for a specific incident.
--   Use `sealert -a /var/log/audit/audit.log` to produce reports for all incidents in that file.
-    <br>
-
--   Consider the following sample sequence of commands on a standard Apache web server :
-    ```
-    $ touch /root/file3
-    $ mv /root/file3 var/www/html
-    $ systemctl start httpd
-    $ curl http://localhost/file3
-    <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-    <html><head>
-    <title>403 Forbidden</title>
-    </head><body>
-    <h1>Forbidden</h1>
-    <p>You don't have permission to access /file3
-    on this server.</p>
-    </body></html>
-    ```
--   We expect the web server to deliver the contents of file3 but instead it returns a permission denied error. Inspecting both `/var/log/audit/audit.log` and `/var/log/messages` reveals extra information about this error.
-    ```
-    $ tail /var/log/audit/audit.log
-    ...output omitted...
-    type=AVC msg=audit(1392944135.482:429): avc:  denied  { getattr } for
-    pid=1609 comm="httpd" path="/var/www/html/file3" dev="vda1" ino=8980981
-    scontext=system_u:system_r:httpd_t:s0
-    tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file
-    ...output omitted...
-    $ tail /var/log/messages
-    ...output omitted...
-    Feb 20 19:55:42 host setroubleshoot: SELinux is preventing /usr/sbin/httpd
-    from getattr access on the file . For complete SELinux messages. run
-    sealert -l 613ca624-248d-48a2-a7d9-d28f5bbe2763
-    ```
--   Both log files indicate that an SELinux denial is the culprit.
--   The `sealert` command that is part of the output in `/var/log/messages` provides extra information, including a possible fix.
-
-    ```
-    $ sealert -l 613ca624-248d-48a2-a7d9-d28f5bbe2763
-    SELinux is preventing /usr/sbin/httpd from getattr access on the file .
-
-    *****  Plugin catchall (100. confidence) suggests   **************************
-
-    If you believe that httpd should be allowed getattr access on the
-    file by default.
-    Then you should report this as a bug.
-    You can generate a local policy module to allow this access.
-    Do
-    allow this access for now by executing:
-    # grep httpd /var/log/audit/audit.log | audit2allow -M mypol
-    # semodule -i mypol.pp
-
-
-    Additional Information:
-    Source Context                system_u:system_r:httpd_t:s0
-    Target Context                unconfined_u:object_r:admin_home_t:s0
-    Target Objects                 [ file ]
-    Source                        httpd
-    Source Path                   /usr/sbin/httpd
-    Port                          <Unknown>
-    Host                          servera
-    Source RPM Packages           httpd-2.4.6-14.el7.x86_64
-    Target RPM Packages
-    Policy RPM                    selinux-policy-3.12.1-124.el7.noarch
-    Selinux Enabled               True
-    Policy Type                   targeted
-    Enforcing Mode                Enforcing
-    Host Name                     servera
-    Platform                      Linux servera 3.10.0-84.el7.x86_64 #1
-                                SMP Tue Feb 4 16:28:19 EST 2014 x86_64 x86_64
-    Alert Count                   2
-    First Seen                    2014-02-20 19:55:35 EST
-    Last Seen                     2014-02-20 19:55:35 EST
-    Local ID                      613ca624-248d-48a2-a7d9-d28f5bbe2763
-
-    Raw Audit Messages
-    type=AVC msg=audit(1392944135.482:429): avc:  denied  { getattr } for
-    pid=1609 comm="httpd" path="/var/www/html/file3" dev="vda1" ino=8980981
-    scontext=system_u:system_r:httpd_t:s0
-    tcontext=unconfined_u:object_r:admin_home_t:s0 tclass=file
-
-    type=SYSCALL msg=audit(1392944135.482:429): arch=x86_64 syscall=lstat
-    success=no exit=EACCES a0=7f9fed0edea8 a1=7fff7bffc770 a2=7fff7bffc770
-    a3=0 items=0 ppid=1608 pid=1609 auid=4294967295 uid=48 gid=48 euid=48
-    suid=48 fsuid=48 egid=48 sgid=48 fsgid=48 tty=(none) ses=4294967295
-    comm=httpd exe=/usr/sbin/httpd subj=system_u:system_r:httpd_t:s0 key=(null)
-
-    Hash: httpd,httpd_t,admin_home_t,file,getattr
-    ```
 
 -   **Note**
+    -   Using the UUID is preferable because block device identifiers can change in certain scenarios, such as a cloud provider changing the underlying storage layer of a virtual machine, or the disks being detected in a different order with each system boot. The block device file name may change, but the UUID remains constant in the file system's super block.
+        <br>
+        Use the `lsblk --fs` command to scan the block devices connected to a machine and retrieve the file system UUIDs.
+        ```
+        $ lsblk --fs
+        NAME   FSTYPE LABEL UUID                                 MOUNTPOINT
+        sr0
+        vda
+        └─vda1 xfs          a8063676-44dd-409a-b584-68be2c9f5570 /
+        vdb
+        └─vdb1 xfs          7a20315d-ed8b-4e75-a5b6-24ff9e1f9838 /dbdata
+        ```
+-   The **second field** is the directory mount point, from which the block device will be accessible in the directory structure.
+-   The mount point must exist; if not, create it with the `mkdir` command.
+    <br>
 
-    -   The Raw Audit Messages section reveals the target file that is the problem, `/var/www/html/file3`. Also, the target context, `tcontext`, does not look like it belongs with a web server.
-    -   Use the `$ restorecon /var/www/html/file3` command to fix the file context.
-    -   If there are other files that need to be adjusted, `restorecon` can recursively reset the context : `$restorecon -R /var/www/`.
+-   The **third field** contains the file-system type, such as `xfs` or `ext4`.
+    <br>
 
--   The Raw Audit Messages section of the `sealert` command contains information from `/var/log/audit.log`. To search the `/var/log/audit.log` file use the `ausearch` command. The `-m` searches on the message type. The `-ts` option searches based on time.
-    ```
-    $ ausearch -m AVC -ts recent
-    ----
-    time->Tue Apr  9 13:13:07 2019
-    type=PROCTITLE msg=audit(1554808387.778:4002): proctitle=2F7573722F7362696E2F6874747064002D44464F524547524F554E44
-    type=SYSCALL msg=audit(1554808387.778:4002): arch=c000003e syscall=49 success=no exit=-13 a0=3 a1=55620b8c9280 a2=10 a3=7ffed967661c items=0 ppid=1 pid=9340 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="httpd" exe="/usr/sbin/httpd" subj=system_u:system_r:httpd_t:s0 key=(null)
-    type=AVC msg=audit(1554808387.778:4002): avc:  denied  { name_bind } for  pid=9340 comm="httpd" src=82 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:reserved_port_t:s0 tclass=tcp_socket permissive=0
-    ```
+-   The **fourth field** is the comma-separated list of options to apply to the device.
+-   `defaults` is a set of commonly used options.
+-   The `mount(8)` man page documents the other available options.
+    <br>
+
+-   The **fifth field** is used by the dump command to back up the device.
+-   Other backup applications do not usually use this field.
+    <br>
+
+-   The **last field**, the **fsck order field**, determines if the `fsck` command should be run at system boot to verify that the file systems are clean.
+-   The value in this field indicates the order in which `fsck` should run.
+-   For `XFS` file systems, set this field to `0` because `XFS` does not use `fsck` to check its file-system status.
+-   For `ext4` file systems, set it to `1` for the root file system and `2` for the other `ext4` file systems.
+-   This way, `fsck` processes the root file system first and then checks file systems on separate disks concurrently, and file systems on the same disk in sequence.
+    <br>
+
+-   **Note**
+    -   Having an incorrect entry in `/etc/fstab` may render the machine non-bootable.
+    -   Administrators should verify that the entry is valid by unmounting the new file system and using `mount /mountpoint`, which reads `/etc/fstab`, to remount the file system.
+    -   If the `mount` command returns an error, correct it before rebooting the machine.<br>
+        As an alternative, we can use the `findmnt --verify` command to control the `/etc/fstab` file.
