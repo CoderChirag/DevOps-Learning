@@ -50,7 +50,7 @@
     -   In practice, these examples would need to use the correct devices for the disk and disk partitions that are being used by the system.
     -   Use the `lsblk`, `blkid`, or `cat /proc/partitions` commands to identify the devices on our system.
 
-#### Creating a Logical Volume
+##### Creating a Logical Volume
 
 -   To create a logical volume, perform the following steps :
 
@@ -173,9 +173,9 @@
 -   This command deletes the PV metadata from the partition (or disk).
 -   The partition is now free for reallocation or reformatting.<br> `$ pvremove /dev/vdb1 /dev/vdb2`
 
-### Reviewing LVM Status Information
+#### Reviewing LVM Status Information
 
-#### Physical Volumes
+##### Physical Volumes
 
 -   Use `pvdisplay` to display information about physical volumes.
 -   To list information about all physical volumes, use the command without arguments.
@@ -282,3 +282,184 @@
     -   `LV Size` shows the **total size** of the LV. Use file-system tools to determine the free space and used space for storage of data.
 
     -   `Current LE` shows the **number of logical extents** used by this LV. An LE usually maps to a physical extent in the VG, and therefore the physical volume.
+
+### Extending Logical Volumes
+
+#### Extending and Reducing a Volume Group
+
+-   We can add more disk space to a volume group by adding additional physical volumes.
+-   This is called **extending the volume group**.
+-   Then, we can assign the new physical extents from the additional physical volumes to logical volumes.
+    <br>
+
+-   We can remove unused physical volumes from a volume group.
+-   This is called **reducing the volume group**.
+-   First, use the `pvmove` command to move data from extents on one physical volume to extents on other physical volumes in the volume group.
+-   In this way, a new disk can be added to an existing volume group, data can be moved from an older or slower disk to a new disk, and the old disk removed from the volume group.
+-   We can perform these actions while the logical volumes in the volume group are in use.
+    <br>
+
+-   **Important**
+    -   The following examples use the device `vdb` and its partitions to illustrate LVM commands.
+    -   In practice, use the appropriate devices for the disk and disk partitions on your own system.
+
+##### Extending a Volume Group
+
+To extend a volume group, perform the following steps :
+
+###### Prepare the physical device and create the physical volume
+
+    ```
+    $ parted -s /dev/vdb mkpart primary 1027MiB 1539MiB
+    $ parted -s /dev/vdb set 3 lvm on
+    $ pvcreate /dev/vdb3
+    ```
+    A PV only needs to be created if there are no PVs free to extend the VG.
+
+###### Extend the volume group
+
+-   Use `vgextend` to add the new physical volume to the volume group. Use the VG name and PV device name as arguments to `vgextend`. <br> `$ vgextend vg01 /dev/vdb3`
+    This extends the `vg01` VG by the size of the `/dev/vdb3` PV.
+
+###### Verify that the new space is available
+
+-   Use `vgdisplay` to confirm the additional physical extents are available. Inspect the `Free PE / Size` in the output. It should not be zero.
+    ```
+    $ vgdisplay vg01
+     --- Volume group ---
+    VG Name               vg01
+    ...output omitted...
+    Free  PE / Size       178 / 712.00 MiB
+    ...output omitted...
+    ```
+
+##### Reducing a Volume Group
+
+To reduce a volume group, perform the following steps :
+
+###### Move the physical extents
+
+-   Use `pvmove PV_DEVICE_NAME` to relocate any physical extents from the physical volume we want to remove to other physical volumes in the volume group.
+-   The other physical volumes must have a sufficient number of free extents to accommodate this move.
+-   This is only possible if there are enough free extents in the VG and if all of those come from other PVs.
+
+    ```
+    $ pvmove /dev/vdb3
+    ```
+
+    This command moves the PEs from `/dev/vdb3` to other PVs with free PEs in the same VG.
+
+-   **Warning**
+    -   Before using `pvmove`, back up data stored on all logical volumes in the volume group.
+    -   An unexpected power loss during the operation may leave the volume group in an inconsistent state.
+    -   This could cause loss of data on logical volumes in the volume group.
+
+##### Reduce the volume group
+
+-   Use `vgreduce VG_NAME PV_DEVICE_NAME` to remove a physical volume from a volume group.<br> `$ vgreduce vg01 /dev/vdb3`
+    This removes the `/dev/vdb3` PV from the `vg01` VG and it can now be added to another VG.
+    Alternatively, `pvremove` can be used to permanently stop using the device as a PV.
+
+#### Extending a Logical Volume and XFS File System
+
+-   One benefit of logical volumes is the ability to increase their size without experiencing downtime.
+-   Free physical extents in a volume group can be added to a logical volume to extend its capacity, which can then be used to extend the file system it contains.
+
+##### Extending a Logical Volume
+
+-   To extend a logical volume, perform the following steps :
+
+###### Verify that the volume group has space available.
+
+-   Use `vgdisplay` to verify that there are sufficient physical extents available.
+    ```
+    vgdisplay vg01
+      --- Volume group ---
+    VG Name               vg01
+    ...output omitted...
+    Free  PE / Size       178 / 712.00 MiB
+    ...output omitted...
+    ```
+    Inspect the `Free PE / Size` in the output.
+    Confirm that the volume group has sufficient free space for the LV extension.
+    If insufficient space is available, then extend the volume group appropriately.
+
+###### Extend the Logical Volume
+
+-   Use `lvextend LV_DEVICE_NAME` to extend the logical volume to a new size.<br> `$ lvextend -L +300M /dev/vg01/lv01`
+    This increases the size of the logical volume `lv01` by 300 MiB.
+    Notice the plus sign (`+`) in front of the size, which means add this value to the existing size; otherwise, the value defines the final size of the LV.
+    <br>
+
+-   As with `lvcreate`, different methods exist to specify the size: the `-l` option expects the number of physical extents as the argument. The `-L` option expects sizes in bytes, mebibytes, gibibytes, and similar.
+    <br>
+
+-   The following list provides some examples of extending LVs.
+
+| Command                | Results                                                       |
+| ---------------------- | ------------------------------------------------------------- |
+| `vextend -l 128`       | Resize the logical volume to exactly 128 extents in size.     |
+| `lvextend -l +128`     | Add 128 extents to the current size of the logical volume.    |
+| `lvextend -L 128M`     | Resize the logical volume to exactly 128 MiB.                 |
+| `lvextend -L +128M`    | Add 128 MiB to the current size of the logical volume.        |
+| `lvextend -l +50%FREE` | Add 50 percent of the current free space in the VG to the LV. |
+
+##### Extend the File System
+
+-   Use `xfs_growfs mountpoint` to expand the file system to occupy the extended LV.
+-   The target file system must be mounted when we use the `xfs_growfs` command.
+-   We can continue to use the file system while it is being resized.<br> `$ xfs_growfs /mnt/data`
+    <br>
+
+-   **Note**
+    -   A common mistake is to run `lvextend` but to forget to run `xfs_growfs`.
+    -   An alternative to running the two steps consecutively is to include the `-r` option with the `lvextend` command. This resizes the file system after the LV is extended, using `fsadm(8)`. It works with a number of different file systems.
+
+##### Verify the new size of the mounted file system
+
+`$ df -h /mnt/data`
+
+#### Extending a Logical Volume and EXT4 File System
+
+-   The steps for extending an ext4-based logical volume are essentially the same as for an XFS-based LV, except for the step that resizes the file system.
+
+##### Extend the file system
+
+-   Use `resize2fs /dev/vgname/lvname` to expand the file system to occupy the new extended LV.
+-   The file system can be mounted and in use while the extension command is running.
+-   We can include the `-p` option to monitor the progress of the resize operation.<br> `$ resize2fs /dev/vg01/lv01`
+    <br>
+
+-   **Note**
+    -   The primary difference between `xfs_growfs` and `resize2fs` is the argument passed to identify the file system.
+    -   `xfs_growfs` takes the mount point and `resize2fs` takes the logical volume name.
+
+#### Extend a logical volume and swap space
+
+-   Logical volumes formatted as swap space can be extended as well, however the process is different than the one for extending a file system, such as `ext4` or `XFS`.
+-   Logical volumes formatted with a file system can be extended dynamically with no downtime.
+-   Logical volumes formatted with swap space must be taken offline in order to extend them.
+
+##### Verify that volume group has space available
+
+-   Use `vgdisplay vgname` to verify that a sufficient number of free physical extents are available.
+
+##### Deactivate the swap space
+
+-   Use `swapoff -v /dev/vgname/lvname` to deactivate the swap space on the logical volume.
+    <br>
+
+-   **Warning**
+    -   Our system must have enough free memory or swap space to accept anything that needs to page in when the swap space on the logical volume is deactivated.
+
+##### Extend the logical volume
+
+-   `lvextend -l +extents /dev/vgname/lvname` extends the logical volume `/dev/vgname/lvname` by the extents value.
+
+##### Format the logical volume as swap space
+
+-   `mkswap /dev/vgname/lvname` formats the entire logical volume as swap space.
+
+##### Activate the swap space
+
+-   Use `swapon -va /dev/vgname/lvname` to activate the swap space on the logical volume.
