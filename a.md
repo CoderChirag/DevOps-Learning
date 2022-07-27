@@ -280,3 +280,32 @@
 
 -   During startup, `systemd` spawns a number of jobs. If some of these jobs cannot complete, they block other jobs from running.
 -   To inspect the current job list, administrators can use the `systemctl list-jobs` command. Any jobs listed as running must complete before the jobs listed as waiting can continue.
+
+### Repairing File System Issues at Boot
+
+#### Diagnosing and Fixing File System Issues
+
+-   Errors in `/etc/fstab` and corrupt file systems can stop a system from booting.
+-   In most cases, `systemd` drops to an emergency repair shell that requires the `root` password.
+    <br>
+
+-   The following table lists some common errors and their results.
+    | Problem | Result
+    | --- | ---
+    | Corrupt file system | `systemd` attempts to repair the file system. If the problem is too severe for an automatic fix, the system drops the user to an emergency shell.
+    | Nonexistent device or UUID referenced in `/etc/fstab` | `systemd` waits for a set amount of time, waiting for the device to become available. If the device does not become available, the system drops the user to an emergency shell after the timeout.
+    | Nonexistent mount point in `/etc/fstab` | The system drops the user to an emergency shell.
+    | Incorrect mount option specified in `/etc/fstab` | The system drops the user to an emergency shell.
+
+-   In all cases, administrators can also use the emergency target to diagnose and fix the issue, because no file systems are mounted before the emergency shell is displayed.
+    <br>
+
+-   **Note**
+
+    -   When using the emergency shell to address file-system issues, do not forget to run `systemctl daemon-reload` after editing `/etc/fstab`.
+    -   Without this reload, `systemd` may continue using the old version.
+        <br>
+
+-   The `nofail` option in an entry in the `/etc/fstab` file permits the system to boot even if the mount of that file system is not successful.
+-   Do not use this option under normal circumstances.
+-   With `nofail`, an application can start with its storage missing, with possibly severe consequences.
