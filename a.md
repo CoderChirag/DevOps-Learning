@@ -165,3 +165,118 @@
     -   Move the cursor to the line that starts with linux. This is the kernel command line.
     -   Append `systemd.unit=target.target`. For example, `systemd.unit=emergency.target`.
     -   Press `Ctrl+x` to boot with these changes.
+
+### Resetting Root Password
+
+#### Resetting the Root Password from the Boot Loader
+
+-   One task that every system administrator should be able to accomplish is resetting a lost root password.
+-   If the administrator is still logged in, either as an unprivileged user but with full sudo access, or as root, this task is trivial.
+-   When the administrator is not logged in, this task becomes slightly more involved.
+    <br>
+
+-   Several methods exist to set a new root password.
+-   A system administrator could, for example, boot the system using a Live CD, mount the root file system from there, and edit `/etc/shadow`.
+-   In this section, we explore a method that does not require the use of external media.
+    <br>
+
+-   **Note**
+
+    -   On Red Hat Enterprise Linux 6 and earlier, administrators can boot the system into runlevel 1 to get a root prompt.
+    -   The closest analogs to runlevel 1 on a Red Hat Enterprise Linux 8 machine are the `rescue` and `emergency` targets, both of which require the root password to log in.
+        <br>
+
+-   On Red Hat Enterprise Linux 8, it is possible to have the scripts that run from the `initramfs` pause at certain points, provide a root shell, and then continue when that shell exits.
+-   This is mostly meant for debugging, but we can also use this method to reset a lost root password.
+    <br>
+
+-   To access that `root` shell, follow these steps :
+
+    1. Reboot the system.
+    2. Interrupt the boot loader countdown by pressing any key, except Enter.
+    3. Move the cursor to the kernel entry to boot.
+    4. Press `e` to edit the selected entry.
+    5. Move the cursor to the kernel command line (the line that starts with linux).
+    6. Append `rd.break`. With that option, the system breaks just before the system hands control from the `initramfs` to the actual system.
+    7. Press `Ctrl+x` to boot with the changes.
+       <br>
+
+-   At this point, the system presents a root shell, with the actual root file system on the disk mounted read-only on `/sysroot`.
+-   Because troubleshooting often requires modification to the root file system, we need to change the root file system to read/write.
+-   The following step shows how the `remount,rw` option to the `mount` command remounts the file system with the new option (`rw`) set.
+    <br>
+
+-   **Note**
+
+    -   Prebuilt images may place multiple `console=` arguments to the kernel to support a wide array of implementation scenarios. Those `console=` arguments indicate the devices to use for console output.
+    -   The caveat with `rd.break` is that even though the system sends the kernel messages to all the consoles, the prompt ultimately uses whichever console is given last.
+    -   If we do not get our prompt, we may want to temporarily reorder the `console=` arguments when we edit the kernel command line from the boot loader.
+        <br>
+
+-   **Important**
+
+    -   The system has not yet enabled SELinux, so any file we create does not have an SELinux context.
+    -   Some tools, such as the `passwd` command, first create a temporary file, then move it in place of the file they are intended to edit, effectively creating a new file without an SELinux context.
+    -   For this reason, when we use the `passwd` command with `rd.break`, the `/etc/shadow` file does not get an SELinux context.
+        <br>
+
+-   To reset the root password from this point, use the following procedure :
+
+    1. Remount `/sysroot` as read/write.<br> `switch_root:/# mount -o remount,rw /sysroot`
+    2. Switch into a `chroot` jail, where `/sysroot` is treated as the root of the file-system tree. <br> `switch_root:/# chroot /sysroot`
+    3. Set a new root password. <br> `switch_root:/# passwd root`
+    4. Make sure that all unlabeled files, including `/etc/shadow` at this point, get relabeled during boot. `switch_root:/# touch ./autorelabel`
+    5. Type `exit` twice. The first command exits the `chroot` jail, and the second command exits the `initramfs` debug shell.
+       <br>
+
+-   At this point, the system continues booting, performs a full SELinux relabel, and then reboots again.
+
+#### Inspecting Logs
+
+-   Looking at the logs of previously failed boots can be useful.
+-   If the system journals are persistent across reboots, we can use the `journalctl` tool to inspect those logs.
+    <br>
+
+-   Remember that by default, the system journals are kept in the `/run/log/journal` directory, which means the journals are cleared when the system reboots.
+-   To store journals in the `/var/log/journal` directory, which persists across reboots, set the `Storage` parameter to `persistent` in `/etc/systemd/journald.conf`.
+    ```
+    $ vim /etc/systemd/journald.conf
+    ...output omitted...
+    [Journal]
+    Storage=persistent
+    ...output omitted...
+    $ systemctl restart systemd-journald.service
+    ```
+-   To inspect the logs of a previous boot, use the `-b` option of `journalctl`.
+-   Without any arguments, the `-b` option only displays messages since the last boot.
+-   With a negative number as an argument, it displays the logs of previous boots.
+    `$ journalctl -b -1 -p err`
+    This command shows all messages rated as an error or worse from the previous boot.
+
+#### Repairing Systemd Boot Issues
+
+-   To troubleshoot service startup issues at boot time, Red Hat Enterprise Linux 8 makes the following tools available.
+
+##### Enabling the Early Debug Shell
+
+-   By enabling the `debug-shell` service with `$ systemctl enable debug-shell`.service, the system spawns a `root` shell on `TTY9` (Ctrl+Alt+F9) early during the boot sequence.
+-   This shell is automatically logged in as `root`, so that administrators can debug the system while the operating system is still booting.
+    <br>
+
+-   **Warning**
+    -   Do not forget to disable the `debug-shell.service` service when we are done debugging, because it leaves an unauthenticated root shell open to anyone with local console access.
+
+##### Using the Emergency and Rescue Targets
+
+-   By appending either `systemd.unit=rescue.target` or `systemd.unit=emergency.target` to the kernel command line from the boot loader, the system spawns into a rescue or emergency shell instead of starting normally. Both of these shells require the root password.
+    <br>
+
+-   The **emergency target** keeps the root file system mounted read-only, while the **rescue target** waits for `sysinit.target` to complete, so that more of the system is initialized, such as the logging service or the file systems. The root user at this point can not make changes to `/etc/fstab` until the drive is remounted in a read write state `mount -o remount,rw /`
+    <br>
+
+-   Administrators can use these shells to fix any issues that prevent the system from booting normally; for example, a dependency loop between services, or an incorrect entry in `/etc/fstab`. Exiting from these shells continues with the regular boot process.
+
+##### Identifying Stuck Jobs
+
+-   During startup, `systemd` spawns a number of jobs. If some of these jobs cannot complete, they block other jobs from running.
+-   To inspect the current job list, administrators can use the `systemctl list-jobs` command. Any jobs listed as running must complete before the jobs listed as waiting can continue.
