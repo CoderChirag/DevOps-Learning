@@ -2,446 +2,462 @@
 
 ---
 
-- [Contents](#contents)
-- [Basics of Linux](#basics-of-linux)
-  - [Introduction](#introduction)
-    - [Open Source](#open-source)
-    - [Linux History](#linux-history)
-    - [Linux principles](#linux-principles)
-    - [Why Linux?](#why-linux)
-    - [Linux Architecture](#linux-architecture)
-    - [Popular Linux distros](#popular-linux-distros)
-    - [Some Important Directories](#some-important-directories)
-  - [Basic File Directory and Related Commands](#basic-file-directory-and-related-commands)
-  - [Date Command](#date-command)
-    - [Syntax](#syntax)
-    - [options with Examples :](#options-with-examples-)
-    - [Format Specifiers](#format-specifiers)
-  - [Matching File Names with Shell Expansions](#matching-file-names-with-shell-expansions)
-    - [Command-line Expansions](#command-line-expansions)
-      - [Pattern Matching](#pattern-matching)
-      - [Tilde Expansion](#tilde-expansion)
-      - [Brace Expansion](#brace-expansion)
-      - [Variable Expansion](#variable-expansion)
-      - [Command Substitution](#command-substitution)
-  - [Getting Help in Linux](#getting-help-in-linux)
-    - [Man Command](#man-command)
-      - [Introduction](#introduction-1)
-      - [Navigate and Search Man Pages](#navigate-and-search-man-pages)
-      - [Reading Man pages](#reading-man-pages)
-      - [Searching for man pages by keyword](#searching-for-man-pages-by-keyword)
-  - [Vim Editor](#vim-editor)
-    - [Command Mode](#command-mode)
-  - [File Types](#file-types)
-    - [Symbolic links](#symbolic-links)
-      - [Soft link](#soft-link)
-      - [Hard link](#hard-link)
-      - [Creating symbolic links](#creating-symbolic-links)
-  - [Filters](#filters)
-    - [grep](#grep)
-    - [less](#less)
-    - [more](#more)
-    - [head](#head)
-    - [tail](#tail)
-    - [cut](#cut)
-    - [awk](#awk)
-      - [Built-In Variables in Awk](#built-in-variables-in-awk)
-    - [sed](#sed)
-  - [Redirections](#redirections)
-  - [Pipelines](#pipelines)
-    - [tee](#tee)
-  - [Users and Groups](#users-and-groups)
-    - [Users](#users)
-      - [Some Important Points](#some-important-points)
-      - [Types of User](#types-of-user)
-      - [id Command](#id-command)
-      - [`/etc/passwd` file](#etcpasswd-file)
-    - [Groups](#groups)
-      - [`/etc/group` file](#etcgroup-file)
-      - [Primary Groups and Supplementary Groups](#primary-groups-and-supplementary-groups)
-    - [Switching users](#switching-users)
-    - [Running Commands with Sudo](#running-commands-with-sudo)
-      - [Getting an Interactive Root Shell with Sudo](#getting-an-interactive-root-shell-with-sudo)
-      - [Configuring Sudo](#configuring-sudo)
-    - [Managing Local User Accounts](#managing-local-user-accounts)
-      - [Creating & Modifying Users](#creating--modifying-users)
-      - [Deleting Users](#deleting-users)
-      - [Setting Passwords](#setting-passwords)
-    - [Managing Local Groups](#managing-local-groups)
-      - [Creating and Modifying groups](#creating-and-modifying-groups)
-      - [Deleting Groups](#deleting-groups)
-    - [Managing User Passwords](#managing-user-passwords)
-      - [Shadow Passwords and Password Policy](#shadow-passwords-and-password-policy)
-      - [Format of an Encrypted Password](#format-of-an-encrypted-password)
-      - [Configuring Password Aging](#configuring-password-aging)
-    - [Additional commands](#additional-commands)
-  - [File Permissions](#file-permissions)
-    - [Changing Permissions](#changing-permissions)
-      - [Symbolic Method](#symbolic-method)
-      - [Numeric Method](#numeric-method)
-    - [Changing ownership](#changing-ownership)
-    - [Special Permissions](#special-permissions)
-      - [setuid permission](#setuid-permission)
-      - [setgid permission](#setgid-permission)
-      - [sticky permission](#sticky-permission)
-    - [Default File Permissions - umask](#default-file-permissions---umask)
-  - [Sudo](#sudo)
-  - [Processes](#processes)
-    - [Definition of a Process](#definition-of-a-process)
-    - [Process States](#process-states)
-    - [Listing Processes](#listing-processes)
-      - [ps Command](#ps-command)
-      - [top Command](#top-command)
-    - [Controlling Jobs](#controlling-jobs)
-      - [Describing Jobs and Sessions](#describing-jobs-and-sessions)
-      - [Running Jobs in the Background](#running-jobs-in-the-background)
-    - [Killing Processes](#killing-processes)
-    - [Real-time Process Monitoring](#real-time-process-monitoring)
-  - [Controling Services and Daemons](#controling-services-and-daemons)
-    - [Introduction to `systemd`](#introduction-to-systemd)
-    - [Describing Service Units](#describing-service-units)
-    - [Listing Service Units](#listing-service-units)
-    - [Viewing Service States](#viewing-service-states)
-    - [Verifying the Status of a Service](#verifying-the-status-of-a-service)
-    - [Controlling System Services](#controlling-system-services)
-  - [Configuring and Securing SSH](#configuring-and-securing-ssh)
-    - [OpenSSH](#openssh)
-    - [Identifying Remote Users](#identifying-remote-users)
-    - [SSH host keys](#ssh-host-keys)
-      - [SSH Known Hosts Key Management](#ssh-known-hosts-key-management)
-    - [Configuring SSH Key-based Authentication](#configuring-ssh-key-based-authentication)
-      - [Generating SSH Keys](#generating-ssh-keys)
-      - [Sharing the Public Key](#sharing-the-public-key)
-      - [Using ssh-agent for Non-interactive Authentication](#using-ssh-agent-for-non-interactive-authentication)
-    - [Customizing OpenSSH Service Configuration](#customizing-openssh-service-configuration)
-      - [Configuring the OpenSSH Server](#configuring-the-openssh-server)
-      - [Prohibit the Superuser From Logging in Using SSH](#prohibit-the-superuser-from-logging-in-using-ssh)
-      - [Prohibiting Password-Based Authentication for SSH](#prohibiting-password-based-authentication-for-ssh)
-  - [Analyzing and Storing Logs](#analyzing-and-storing-logs)
-    - [Describing System Log Architecture](#describing-system-log-architecture)
-      - [System Logging](#system-logging)
-    - [Reviewing Syslog Files](#reviewing-syslog-files)
-      - [Logging Events to the System](#logging-events-to-the-system)
-      - [Sample Rules of Rsyslog](#sample-rules-of-rsyslog)
-      - [Log File Rotation](#log-file-rotation)
-      - [Analyzing a Syslog Entry](#analyzing-a-syslog-entry)
-      - [Monitoring Logs](#monitoring-logs)
-      - [Sending Syslog Messages Manually](#sending-syslog-messages-manually)
-    - [Reviewing System Journal Entries](#reviewing-system-journal-entries)
-      - [Finding Events](#finding-events)
-    - [Preserving the System Journal](#preserving-the-system-journal)
-    - [Maintaining Accurate Time](#maintaining-accurate-time)
-      - [Setting Local Clocks and Time Zones](#setting-local-clocks-and-time-zones)
-      - [Configuring and Monnitoring Chronyd](#configuring-and-monnitoring-chronyd)
-  - [Managing Networking](#managing-networking)
-    - [Describing Networking Concepts](#describing-networking-concepts)
-      - [TCP/IP Network Model](#tcpip-network-model)
-      - [Describing Network Interface Names](#describing-network-interface-names)
-      - [IPv4 Networking](#ipv4-networking)
-        - [IPv4 Addresses](#ipv4-addresses)
-        - [Ipv4 Routing](#ipv4-routing)
-        - [IPv4 Address and Route Configuration](#ipv4-address-and-route-configuration)
-      - [IPv6 Networking](#ipv6-networking)
-        - [IPv6 Addresses](#ipv6-addresses)
-        - [IPv6 Subnetting](#ipv6-subnetting)
-        - [Link-local IPv6 Addresses](#link-local-ipv6-addresses)
-        - [Multicast IPv6 Addresses](#multicast-ipv6-addresses)
-        - [IPv6 Address Configuration](#ipv6-address-configuration)
-      - [Hosts Names and IP Addresses](#hosts-names-and-ip-addresses)
-    - [Validating Network Configuration](#validating-network-configuration)
-      - [Gathering Network Interface Information](#gathering-network-interface-information)
-        - [Identifying Network Interfaces](#identifying-network-interfaces)
-        - [Displaying IP Addresses](#displaying-ip-addresses)
-        - [Displaying Performance Statistics](#displaying-performance-statistics)
-      - [Checking Connectivity Between Hosts](#checking-connectivity-between-hosts)
-      - [Troubleshooting Routing](#troubleshooting-routing)
-        - [Displaying Routing Table](#displaying-routing-table)
-        - [Tracing Routes taken by Traffic](#tracing-routes-taken-by-traffic)
-      - [Troubleshooting ports and services](#troubleshooting-ports-and-services)
-        - [ss Command - Alternative to netstat](#ss-command---alternative-to-netstat)
-        - [nmap](#nmap)
-        - [dig](#dig)
-    - [Configuring Networking from the Command Line](#configuring-networking-from-the-command-line)
-      - [Describing Network Manager Concepts](#describing-network-manager-concepts)
-      - [Viewing Network Information](#viewing-network-information)
-      - [Adding a network connection](#adding-a-network-connection)
-      - [Controlling network connections](#controlling-network-connections)
-      - [Modifying Network Connection Settings](#modifying-network-connection-settings)
-      - [Deleting a network connection](#deleting-a-network-connection)
-      - [Summary of Commands](#summary-of-commands)
-    - [Editing Network Configuration Files](#editing-network-configuration-files)
-      - [Describing Connection Configuration Files](#describing-connection-configuration-files)
-      - [Modifying network configuration](#modifying-network-configuration)
-    - [Configuring Host Names and Name Resolution](#configuring-host-names-and-name-resolution)
-      - [Changing system host name](#changing-system-host-name)
-      - [Configuring name resolution](#configuring-name-resolution)
-      - [Testing DNS Name Resolution](#testing-dns-name-resolution)
-  - [Archiving and Transferring Files](#archiving-and-transferring-files)
-    - [Managing Compresses tar Archives](#managing-compresses-tar-archives)
-      - [The tar command](#the-tar-command)
-      - [Selected tar Options](#selected-tar-options)
-      - [Archiving Files and Directories](#archiving-files-and-directories)
-      - [Listing Contents of an Archive](#listing-contents-of-an-archive)
-      - [Extracting Files from an Archive](#extracting-files-from-an-archive)
-      - [Creating a Compressed Archive](#creating-a-compressed-archive)
-      - [Extracting a Compressed Archive](#extracting-a-compressed-archive)
-    - [Transferring Files Between Systems Securely](#transferring-files-between-systems-securely)
-      - [Transferring Files Using Secure Copy](#transferring-files-using-secure-copy)
-      - [Transferring Files Using the Secure File Transfer Program](#transferring-files-using-the-secure-file-transfer-program)
-    - [Synchronizing Files Betwwen Systems Securely](#synchronizing-files-betwwen-systems-securely)
-      - [Synchronizing Files and Directories with rsync](#synchronizing-files-and-directories-with-rsync)
-  - [Package Management](#package-management)
-    - [Registering Systems for Red Hat Support - For RHEL (topic for RHCSA exam)](#registering-systems-for-red-hat-support---for-rhel-topic-for-rhcsa-exam)
-      - [Red Hat Subscription Management](#red-hat-subscription-management)
-      - [Register from the Command Line](#register-from-the-command-line)
-      - [Entitlement Certificates](#entitlement-certificates)
-    - [Explaining and Investigating RPM Software Packages](#explaining-and-investigating-rpm-software-packages)
-      - [Software packages and RPM](#software-packages-and-rpm)
-        - [Updating Software with RPM Packages](#updating-software-with-rpm-packages)
-      - [Examining RPM Packages](#examining-rpm-packages)
-      - [Installing RPM Packages](#installing-rpm-packages)
-    - [Installing and Updating Software Packages with Yum](#installing-and-updating-software-packages-with-yum)
-    - [Enabling Yum Software Repositories](#enabling-yum-software-repositories)
-      - [Enabling Red Hat software repositories](#enabling-red-hat-software-repositories)
-      - [Creating Yum Repositories](#creating-yum-repositories)
-      - [RPM Configuration Packages for Local Repositories](#rpm-configuration-packages-for-local-repositories)
-    - [Managing Package Module Streams](#managing-package-module-streams)
-      - [Introduction to Application Stream](#introduction-to-application-stream)
-        - [BaseOS](#baseos)
-        - [Application Stream](#application-stream)
-      - [Modules](#modules)
-        - [Module Streams](#module-streams)
-        - [Module Profiles](#module-profiles)
-      - [Managing modules using Yum](#managing-modules-using-yum)
-        - [Listing Modules](#listing-modules)
-        - [Enabling Module Streams and Installing Modules](#enabling-module-streams-and-installing-modules)
-      - [Removing Modules and Disabling Module Streams](#removing-modules-and-disabling-module-streams)
-        - [Switching Module Streams](#switching-module-streams)
-  - [Accessing Linux File Systems](#accessing-linux-file-systems)
-    - [Identifying File Systems and Devices](#identifying-file-systems-and-devices)
-      - [Storage Management Concepts](#storage-management-concepts)
-        - [Files Systems and Mount Points](#files-systems-and-mount-points)
-        - [File Systems, Storage, and Block Devices](#file-systems-storage-and-block-devices)
-        - [Disk Partitions](#disk-partitions)
-        - [Logical Volumes](#logical-volumes)
-      - [Examining File Systems](#examining-file-systems)
-    - [Mounting and Unmounting File Systems](#mounting-and-unmounting-file-systems)
-      - [Mounting File Systems Manually](#mounting-file-systems-manually)
-        - [Identifying the Block Device](#identifying-the-block-device)
-        - [Mounting by Block Device Name](#mounting-by-block-device-name)
-        - [Mounting by File-system UUID](#mounting-by-file-system-uuid)
-      - [Automatic Mounting of Removable Storage Devices](#automatic-mounting-of-removable-storage-devices)
-      - [Unmounting File Systems](#unmounting-file-systems)
-    - [Locating Files on the System](#locating-files-on-the-system)
-      - [Searching for Files](#searching-for-files)
-      - [Locating Files by Name](#locating-files-by-name)
-      - [Searching for Files in Real Time](#searching-for-files-in-real-time)
-        - [Searching Files Based on Ownership or Permission](#searching-files-based-on-ownership-or-permission)
-      - [Searching Files Based on Size](#searching-files-based-on-size)
-      - [Searching Files Based on Modification Time](#searching-files-based-on-modification-time)
-      - [Searching Files Based on File Type](#searching-files-based-on-file-type)
-  - [Analyzing Servers and Getting Support in Red Hat Linux](#analyzing-servers-and-getting-support-in-red-hat-linux)
-    - [Analyzing and Managing Remote Servers](#analyzing-and-managing-remote-servers)
-      - [Describing the Web Console](#describing-the-web-console)
-      - [Enabling the Web Console](#enabling-the-web-console)
-      - [Logging into the Web Console](#logging-into-the-web-console)
-      - [Changing Passwords](#changing-passwords)
-      - [Troubleshooting with the Web Console](#troubleshooting-with-the-web-console)
-        - [Monitoring System Statistics in Real Time](#monitoring-system-statistics-in-real-time)
-        - [Inspecting and Filtering Syslog Events](#inspecting-and-filtering-syslog-events)
-        - [Running Commands from a Terminal Session](#running-commands-from-a-terminal-session)
-        - [Creating Diagnostic Reports](#creating-diagnostic-reports)
-      - [Managing System Services with the Web Console](#managing-system-services-with-the-web-console)
-        - [System Power Options](#system-power-options)
-        - [Controlling Running System Services](#controlling-running-system-services)
-        - [Configuring Network Interfaces and the Firewall](#configuring-network-interfaces-and-the-firewall)
-        - [Administering User Accounts](#administering-user-accounts)
-  - [Ubuntu Commands](#ubuntu-commands)
-  - [Scheduling Future Tasks](#scheduling-future-tasks)
-    - [Scheduling a Deferred User Job](#scheduling-a-deferred-user-job)
-      - [Describing Deferred Users Tasks](#describing-deferred-users-tasks)
-        - [Scheduling Deferred User Tasks](#scheduling-deferred-user-tasks)
-      - [Inspecting and Managing Deferred User Jobs](#inspecting-and-managing-deferred-user-jobs)
-        - [Removing Jobs](#removing-jobs)
-    - [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs)
-      - [Describing Recurring User Jobs](#describing-recurring-user-jobs)
-      - [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs-1)
-      - [Describing User Job Format](#describing-user-job-format)
-        - [Example Recurring User Jobs](#example-recurring-user-jobs)
-    - [Scheduling RecurringSystem Jobs](#scheduling-recurringsystem-jobs)
-      - [Describing Recurring System Jobs](#describing-recurring-system-jobs)
-      - [Introducing Systemd Timer](#introducing-systemd-timer)
-        - [Sample Timer Unit](#sample-timer-unit)
-    - [Managing Temporary Files](#managing-temporary-files)
-      - [Cleaning Temporary Files with a Systemd Timer](#cleaning-temporary-files-with-a-systemd-timer)
-      - [Cleaning Temporary Files Manually](#cleaning-temporary-files-manually)
-      - [Configuration File Precedence](#configuration-file-precedence)
-  - [Tuning System Performance](#tuning-system-performance)
-    - [Adjusting Tuning profiles](#adjusting-tuning-profiles)
-      - [Tuning Systems](#tuning-systems)
-        - [Configuring Static Tuning](#configuring-static-tuning)
-        - [Configuring Dynamic Tuning](#configuring-dynamic-tuning)
-      - [Installing and Enablined `tuned`](#installing-and-enablined-tuned)
-      - [Selecting a Tuning Profile](#selecting-a-tuning-profile)
-      - [Managing profiles from the command line](#managing-profiles-from-the-command-line)
-    - [Influencing Process Scheduling](#influencing-process-scheduling)
-      - [Linux Process Scheduling and Multitasking](#linux-process-scheduling-and-multitasking)
-      - [Relative Priorities](#relative-priorities)
-      - [Setting Nice Levels and Permissions](#setting-nice-levels-and-permissions)
-      - [Reporting Nice Levels](#reporting-nice-levels)
-        - [Displaying Nice Levels with Top](#displaying-nice-levels-with-top)
-        - [Displaying Nice Levels from the Command Line](#displaying-nice-levels-from-the-command-line)
-      - [Starting Processes with Different Nice Levels](#starting-processes-with-different-nice-levels)
-      - [Changing the Nice Level of an Existing Process](#changing-the-nice-level-of-an-existing-process)
-  - [Controlling Access to Files with ACLs](#controlling-access-to-files-with-acls)
-    - [Interpreting File ACLs](#interpreting-file-acls)
-      - [Acess Control List Concepts](#acess-control-list-concepts)
-        - [File System ACL Support](#file-system-acl-support)
-      - [Viewing and Interpreting ACL Information](#viewing-and-interpreting-acl-information)
-        - [View File ACLs](#view-file-acls)
-        - [View directory ACLs](#view-directory-acls)
-        - [The ACL Mask](#the-acl-mask)
-        - [ACL Permission Precedence](#acl-permission-precedence)
-    - [Securing Files with ACLs](#securing-files-with-acls)
-      - [Changing ACL File Permissions](#changing-acl-file-permissions)
-        - [Adding or Modifying ACLs](#adding-or-modifying-acls)
-        - [Using getfacl as input](#using-getfacl-as-input)
-        - [Setting an Explicit ACL Mask](#setting-an-explicit-acl-mask)
-        - [Recursive ACL Modifications](#recursive-acl-modifications)
-        - [Deleting ACLs](#deleting-acls)
-      - [Controlling Default ACL File Permissions](#controlling-default-acl-file-permissions)
-  - [Managing SELinux Security](#managing-selinux-security)
-    - [Changing the SELinux Enforcement Mode](#changing-the-selinux-enforcement-mode)
-      - [How SELinux Protects Resources](#how-selinux-protects-resources)
-      - [Why use Security Enhanced Linux?](#why-use-security-enhanced-linux)
-      - [Basic SELinux security concepts](#basic-selinux-security-concepts)
-      - [Changing the current SELinux mode](#changing-the-current-selinux-mode)
-      - [Setting the default SELinux mode](#setting-the-default-selinux-mode)
-    - [Controlling SELinux File Contexts](#controlling-selinux-file-contexts)
-      - [Initial SELinux Context](#initial-selinux-context)
-      - [Changing the SELinux context of a file](#changing-the-selinux-context-of-a-file)
-      - [Defining SELinux Default File Context Rules](#defining-selinux-default-file-context-rules)
-        - [Basic File Context Operations](#basic-file-context-operations)
-    - [Adjusting SELinux Policy with Booleans](#adjusting-selinux-policy-with-booleans)
-      - [SELinux booleans](#selinux-booleans)
-    - [Investigating and Resolving SELinux Issues](#investigating-and-resolving-selinux-issues)
-      - [Troubleshooting SELinux Issues](#troubleshooting-selinux-issues)
-      - [Monitoring SELinux Violations](#monitoring-selinux-violations)
-  - [Managing Basic Storage](#managing-basic-storage)
-    - [Adding Partitions, File Systems, and Persistent Mounts](#adding-partitions-file-systems-and-persistent-mounts)
-      - [Partitioning a Disk](#partitioning-a-disk)
-        - [MBR Partitioning Scheme](#mbr-partitioning-scheme)
-        - [GPT Partitioning Scheme](#gpt-partitioning-scheme)
-      - [Managing Partitions with Parted](#managing-partitions-with-parted)
-        - [Writing the Partition Table on a New Disk](#writing-the-partition-table-on-a-new-disk)
-        - [Creating MBR Partitions](#creating-mbr-partitions)
-        - [Creating GPT Partitions](#creating-gpt-partitions)
-        - [Deleting Partitions](#deleting-partitions)
-      - [Creating File Systems](#creating-file-systems)
-      - [Mounting File Systems](#mounting-file-systems)
-        - [Manually Mounting File Systems](#manually-mounting-file-systems)
-      - [Persistently Mounting File Systems](#persistently-mounting-file-systems)
-    - [Managing Swap Space](#managing-swap-space)
-      - [Introducing Swap Space Concepts](#introducing-swap-space-concepts)
-        - [Sizing the Swap Space](#sizing-the-swap-space)
-      - [Creating a Swap Space](#creating-a-swap-space)
-        - [Creating a Swap Partition](#creating-a-swap-partition)
-        - [Formatting the Device](#formatting-the-device)
-      - [Activating a Swap Space](#activating-a-swap-space)
-        - [Activating Swap Space Persistently](#activating-swap-space-persistently)
-        - [Setting the Swap Space Priority](#setting-the-swap-space-priority)
-  - [Managing Logical Volumes](#managing-logical-volumes)
-    - [Creating Logical Volumes](#creating-logical-volumes)
-      - [Logical Volume Management (LVM) Concepts](#logical-volume-management-lvm-concepts)
-        - [LVM Definitions](#lvm-definitions)
-          - [Physical devices](#physical-devices)
-          - [Physical volumes (PVs)](#physical-volumes-pvs)
-          - [Volume groups (VGs)](#volume-groups-vgs)
-          - [Logical volumes (LVs)](#logical-volumes-lvs)
-      - [Implementing LVM Storage](#implementing-lvm-storage)
-        - [Creating a Logical Volume](#creating-a-logical-volume)
-        - [Prepare the physical device.](#prepare-the-physical-device)
-        - [Create a Physical Volume](#create-a-physical-volume)
-        - [Create a Volume Group](#create-a-volume-group)
-        - [Create a Logical Volume](#create-a-logical-volume)
-        - [Add the File System](#add-the-file-system)
-      - [Removing a Logical Volume](#removing-a-logical-volume)
-        - [Prepare the file system.](#prepare-the-file-system)
-        - [Remove the Logical Volume](#remove-the-logical-volume)
-        - [Remove the Volume Group](#remove-the-volume-group)
-        - [Remove the Physical Volumes](#remove-the-physical-volumes)
-      - [Reviewing LVM Status Information](#reviewing-lvm-status-information)
-        - [Physical Volumes](#physical-volumes)
-        - [Volume Groups](#volume-groups)
-        - [Logical Volumes](#logical-volumes-1)
-    - [Extending Logical Volumes](#extending-logical-volumes)
-      - [Extending and Reducing a Volume Group](#extending-and-reducing-a-volume-group)
-        - [Extending a Volume Group](#extending-a-volume-group)
-          - [Prepare the physical device and create the physical volume](#prepare-the-physical-device-and-create-the-physical-volume)
-          - [Extend the volume group](#extend-the-volume-group)
-          - [Verify that the new space is available](#verify-that-the-new-space-is-available)
-        - [Reducing a Volume Group](#reducing-a-volume-group)
-          - [Move the physical extents](#move-the-physical-extents)
-        - [Reduce the volume group](#reduce-the-volume-group)
-      - [Extending a Logical Volume and XFS File System](#extending-a-logical-volume-and-xfs-file-system)
-        - [Extending a Logical Volume](#extending-a-logical-volume)
-          - [Verify that the volume group has space available.](#verify-that-the-volume-group-has-space-available)
-          - [Extend the Logical Volume](#extend-the-logical-volume)
-        - [Extend the File System](#extend-the-file-system)
-        - [Verify the new size of the mounted file system](#verify-the-new-size-of-the-mounted-file-system)
-      - [Extending a Logical Volume and EXT4 File System](#extending-a-logical-volume-and-ext4-file-system)
-        - [Extend the file system](#extend-the-file-system-1)
-      - [Extend a logical volume and swap space](#extend-a-logical-volume-and-swap-space)
-        - [Verify that volume group has space available](#verify-that-volume-group-has-space-available)
-        - [Deactivate the swap space](#deactivate-the-swap-space)
-        - [Extend the logical volume](#extend-the-logical-volume-1)
-        - [Format the logical volume as swap space](#format-the-logical-volume-as-swap-space)
-        - [Activate the swap space](#activate-the-swap-space)
-  - [Implementing Advanced Storage Features](#implementing-advanced-storage-features)
-    - [Managing Layered Storage with Stratis](#managing-layered-storage-with-stratis)
-      - [Describing the Architecture of Stratis](#describing-the-architecture-of-stratis)
-      - [Working with Stratis Storage](#working-with-stratis-storage)
-        - [Installing and Enabling Stratis](#installing-and-enabling-stratis)
-        - [Assembling Block Storage into Stratis Pools](#assembling-block-storage-into-stratis-pools)
-        - [Managing Stratis File Systems](#managing-stratis-file-systems)
-        - [Persistently Mounting Stratis File Systems](#persistently-mounting-stratis-file-systems)
-    - [Compressing and Deduplicating Storage with VDO](#compressing-and-deduplicating-storage-with-vdo)
-      - [Describing Virtual Data Optimizer](#describing-virtual-data-optimizer)
-      - [Implementing Virtual Data Optimizer](#implementing-virtual-data-optimizer)
-        - [Enabling VDO](#enabling-vdo)
-        - [Creating a VDO Volume](#creating-a-vdo-volume)
-        - [Analyzing a VDO Volume](#analyzing-a-vdo-volume)
-  - [Mounting Network-Attached Storage with NFS](#mounting-network-attached-storage-with-nfs)
-    - [Mounting and Unmounting NFS Shares](#mounting-and-unmounting-nfs-shares)
-      - [Mounting NFS Shares](#mounting-nfs-shares)
-      - [Unmounting NFS Shares](#unmounting-nfs-shares)
-    - [Automounting Network Attached Storage](#automounting-network-attached-storage)
-      - [Mounting NFS Shares with the Automounter](#mounting-nfs-shares-with-the-automounter)
-        - [Automounter Benefits](#automounter-benefits)
-        - [Create and Automount](#create-and-automount)
-        - [Direct Maps](#direct-maps)
-        - [Indirect Wildcard Maps](#indirect-wildcard-maps)
-  - [Server Management in Linux](#server-management-in-linux)
-    - [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
-    - [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
-    - [Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack](#setting-up-a-wordpress-website-using-lamp-linux-apache-mysql-php-stack)
-      - [Configuring VM and Installing Dependencies](#configuring-vm-and-installing-dependencies)
-      - [Installing WordPress](#installing-wordpress)
-      - [Configuring Apache for WordPress](#configuring-apache-for-wordpress)
-      - [Configuring database](#configuring-database)
-      - [Configuring Wordpress to connect to the database](#configuring-wordpress-to-connect-to-the-database)
-    - [Automating Wordpress Website Setup using IAAC](#automating-wordpress-website-setup-using-iaac)
-    - [Setting up a Nodejs Application](#setting-up-a-nodejs-application)
-      - [Using Apache2](#using-apache2)
-        - [Configuring VM](#configuring-vm)
-        - [Installing and Starting Apache server](#installing-and-starting-apache-server)
-        - [Installing Nodejs](#installing-nodejs)
-        - [Setting up MongoDb database](#setting-up-mongodb-database)
-          - [Installing MongoDB](#installing-mongodb)
-          - [Starting the MongoDB Service and Testing the Database](#starting-the-mongodb-service-and-testing-the-database)
-        - [Setting up the Node.js application](#setting-up-the-nodejs-application)
-          - [Installing PM2](#installing-pm2)
-          - [Configuring Apche Server for Node.js](#configuring-apche-server-for-nodejs)
+-   [Contents](#contents)
+-   [Basics of Linux](#basics-of-linux)
+    -   [Introduction](#introduction)
+        -   [Open Source](#open-source)
+        -   [Linux History](#linux-history)
+        -   [Linux principles](#linux-principles)
+        -   [Why Linux?](#why-linux)
+        -   [Linux Architecture](#linux-architecture)
+        -   [Popular Linux distros](#popular-linux-distros)
+        -   [Some Important Directories](#some-important-directories)
+    -   [Basic File Directory and Related Commands](#basic-file-directory-and-related-commands)
+    -   [Date Command](#date-command)
+        -   [Syntax](#syntax)
+        -   [options with Examples :](#options-with-examples-)
+        -   [Format Specifiers](#format-specifiers)
+    -   [Matching File Names with Shell Expansions](#matching-file-names-with-shell-expansions)
+        -   [Command-line Expansions](#command-line-expansions)
+            -   [Pattern Matching](#pattern-matching)
+            -   [Tilde Expansion](#tilde-expansion)
+            -   [Brace Expansion](#brace-expansion)
+            -   [Variable Expansion](#variable-expansion)
+            -   [Command Substitution](#command-substitution)
+    -   [Getting Help in Linux](#getting-help-in-linux)
+        -   [Man Command](#man-command)
+            -   [Introduction](#introduction-1)
+            -   [Navigate and Search Man Pages](#navigate-and-search-man-pages)
+            -   [Reading Man pages](#reading-man-pages)
+            -   [Searching for man pages by keyword](#searching-for-man-pages-by-keyword)
+    -   [Vim Editor](#vim-editor)
+        -   [Command Mode](#command-mode)
+    -   [File Types](#file-types)
+        -   [Symbolic links](#symbolic-links)
+            -   [Soft link](#soft-link)
+            -   [Hard link](#hard-link)
+            -   [Creating symbolic links](#creating-symbolic-links)
+    -   [Filters](#filters)
+        -   [grep](#grep)
+        -   [less](#less)
+        -   [more](#more)
+        -   [head](#head)
+        -   [tail](#tail)
+        -   [cut](#cut)
+        -   [awk](#awk)
+            -   [Built-In Variables in Awk](#built-in-variables-in-awk)
+        -   [sed](#sed)
+    -   [Redirections](#redirections)
+    -   [Pipelines](#pipelines)
+        -   [tee](#tee)
+    -   [Users and Groups](#users-and-groups)
+        -   [Users](#users)
+            -   [Some Important Points](#some-important-points)
+            -   [Types of User](#types-of-user)
+            -   [id Command](#id-command)
+            -   [`/etc/passwd` file](#etcpasswd-file)
+        -   [Groups](#groups)
+            -   [`/etc/group` file](#etcgroup-file)
+            -   [Primary Groups and Supplementary Groups](#primary-groups-and-supplementary-groups)
+        -   [Switching users](#switching-users)
+        -   [Running Commands with Sudo](#running-commands-with-sudo)
+            -   [Getting an Interactive Root Shell with Sudo](#getting-an-interactive-root-shell-with-sudo)
+            -   [Configuring Sudo](#configuring-sudo)
+        -   [Managing Local User Accounts](#managing-local-user-accounts)
+            -   [Creating & Modifying Users](#creating--modifying-users)
+            -   [Deleting Users](#deleting-users)
+            -   [Setting Passwords](#setting-passwords)
+        -   [Managing Local Groups](#managing-local-groups)
+            -   [Creating and Modifying groups](#creating-and-modifying-groups)
+            -   [Deleting Groups](#deleting-groups)
+        -   [Managing User Passwords](#managing-user-passwords)
+            -   [Shadow Passwords and Password Policy](#shadow-passwords-and-password-policy)
+            -   [Format of an Encrypted Password](#format-of-an-encrypted-password)
+            -   [Configuring Password Aging](#configuring-password-aging)
+        -   [Additional commands](#additional-commands)
+    -   [File Permissions](#file-permissions)
+        -   [Changing Permissions](#changing-permissions)
+            -   [Symbolic Method](#symbolic-method)
+            -   [Numeric Method](#numeric-method)
+        -   [Changing ownership](#changing-ownership)
+        -   [Special Permissions](#special-permissions)
+            -   [setuid permission](#setuid-permission)
+            -   [setgid permission](#setgid-permission)
+            -   [sticky permission](#sticky-permission)
+        -   [Default File Permissions - umask](#default-file-permissions---umask)
+    -   [Sudo](#sudo)
+    -   [Processes](#processes)
+        -   [Definition of a Process](#definition-of-a-process)
+        -   [Process States](#process-states)
+        -   [Listing Processes](#listing-processes)
+            -   [ps Command](#ps-command)
+            -   [top Command](#top-command)
+        -   [Controlling Jobs](#controlling-jobs)
+            -   [Describing Jobs and Sessions](#describing-jobs-and-sessions)
+            -   [Running Jobs in the Background](#running-jobs-in-the-background)
+        -   [Killing Processes](#killing-processes)
+        -   [Real-time Process Monitoring](#real-time-process-monitoring)
+    -   [Controling Services and Daemons](#controling-services-and-daemons)
+        -   [Introduction to `systemd`](#introduction-to-systemd)
+        -   [Describing Service Units](#describing-service-units)
+        -   [Listing Service Units](#listing-service-units)
+        -   [Viewing Service States](#viewing-service-states)
+        -   [Verifying the Status of a Service](#verifying-the-status-of-a-service)
+        -   [Controlling System Services](#controlling-system-services)
+    -   [Configuring and Securing SSH](#configuring-and-securing-ssh)
+        -   [OpenSSH](#openssh)
+        -   [Identifying Remote Users](#identifying-remote-users)
+        -   [SSH host keys](#ssh-host-keys)
+            -   [SSH Known Hosts Key Management](#ssh-known-hosts-key-management)
+        -   [Configuring SSH Key-based Authentication](#configuring-ssh-key-based-authentication)
+            -   [Generating SSH Keys](#generating-ssh-keys)
+            -   [Sharing the Public Key](#sharing-the-public-key)
+            -   [Using ssh-agent for Non-interactive Authentication](#using-ssh-agent-for-non-interactive-authentication)
+        -   [Customizing OpenSSH Service Configuration](#customizing-openssh-service-configuration)
+            -   [Configuring the OpenSSH Server](#configuring-the-openssh-server)
+            -   [Prohibit the Superuser From Logging in Using SSH](#prohibit-the-superuser-from-logging-in-using-ssh)
+            -   [Prohibiting Password-Based Authentication for SSH](#prohibiting-password-based-authentication-for-ssh)
+    -   [Analyzing and Storing Logs](#analyzing-and-storing-logs)
+        -   [Describing System Log Architecture](#describing-system-log-architecture)
+            -   [System Logging](#system-logging)
+        -   [Reviewing Syslog Files](#reviewing-syslog-files)
+            -   [Logging Events to the System](#logging-events-to-the-system)
+            -   [Sample Rules of Rsyslog](#sample-rules-of-rsyslog)
+            -   [Log File Rotation](#log-file-rotation)
+            -   [Analyzing a Syslog Entry](#analyzing-a-syslog-entry)
+            -   [Monitoring Logs](#monitoring-logs)
+            -   [Sending Syslog Messages Manually](#sending-syslog-messages-manually)
+        -   [Reviewing System Journal Entries](#reviewing-system-journal-entries)
+            -   [Finding Events](#finding-events)
+        -   [Preserving the System Journal](#preserving-the-system-journal)
+        -   [Maintaining Accurate Time](#maintaining-accurate-time)
+            -   [Setting Local Clocks and Time Zones](#setting-local-clocks-and-time-zones)
+            -   [Configuring and Monnitoring Chronyd](#configuring-and-monnitoring-chronyd)
+    -   [Managing Networking](#managing-networking)
+        -   [Describing Networking Concepts](#describing-networking-concepts)
+            -   [TCP/IP Network Model](#tcpip-network-model)
+            -   [Describing Network Interface Names](#describing-network-interface-names)
+            -   [IPv4 Networking](#ipv4-networking)
+                -   [IPv4 Addresses](#ipv4-addresses)
+                -   [Ipv4 Routing](#ipv4-routing)
+                -   [IPv4 Address and Route Configuration](#ipv4-address-and-route-configuration)
+            -   [IPv6 Networking](#ipv6-networking)
+                -   [IPv6 Addresses](#ipv6-addresses)
+                -   [IPv6 Subnetting](#ipv6-subnetting)
+                -   [Link-local IPv6 Addresses](#link-local-ipv6-addresses)
+                -   [Multicast IPv6 Addresses](#multicast-ipv6-addresses)
+                -   [IPv6 Address Configuration](#ipv6-address-configuration)
+            -   [Hosts Names and IP Addresses](#hosts-names-and-ip-addresses)
+        -   [Validating Network Configuration](#validating-network-configuration)
+            -   [Gathering Network Interface Information](#gathering-network-interface-information)
+                -   [Identifying Network Interfaces](#identifying-network-interfaces)
+                -   [Displaying IP Addresses](#displaying-ip-addresses)
+                -   [Displaying Performance Statistics](#displaying-performance-statistics)
+            -   [Checking Connectivity Between Hosts](#checking-connectivity-between-hosts)
+            -   [Troubleshooting Routing](#troubleshooting-routing)
+                -   [Displaying Routing Table](#displaying-routing-table)
+                -   [Tracing Routes taken by Traffic](#tracing-routes-taken-by-traffic)
+            -   [Troubleshooting ports and services](#troubleshooting-ports-and-services)
+                -   [ss Command - Alternative to netstat](#ss-command---alternative-to-netstat)
+                -   [nmap](#nmap)
+                -   [dig](#dig)
+        -   [Configuring Networking from the Command Line](#configuring-networking-from-the-command-line)
+            -   [Describing Network Manager Concepts](#describing-network-manager-concepts)
+            -   [Viewing Network Information](#viewing-network-information)
+            -   [Adding a network connection](#adding-a-network-connection)
+            -   [Controlling network connections](#controlling-network-connections)
+            -   [Modifying Network Connection Settings](#modifying-network-connection-settings)
+            -   [Deleting a network connection](#deleting-a-network-connection)
+            -   [Summary of Commands](#summary-of-commands)
+        -   [Editing Network Configuration Files](#editing-network-configuration-files)
+            -   [Describing Connection Configuration Files](#describing-connection-configuration-files)
+            -   [Modifying network configuration](#modifying-network-configuration)
+        -   [Configuring Host Names and Name Resolution](#configuring-host-names-and-name-resolution)
+            -   [Changing system host name](#changing-system-host-name)
+            -   [Configuring name resolution](#configuring-name-resolution)
+            -   [Testing DNS Name Resolution](#testing-dns-name-resolution)
+    -   [Archiving and Transferring Files](#archiving-and-transferring-files)
+        -   [Managing Compresses tar Archives](#managing-compresses-tar-archives)
+            -   [The tar command](#the-tar-command)
+            -   [Selected tar Options](#selected-tar-options)
+            -   [Archiving Files and Directories](#archiving-files-and-directories)
+            -   [Listing Contents of an Archive](#listing-contents-of-an-archive)
+            -   [Extracting Files from an Archive](#extracting-files-from-an-archive)
+            -   [Creating a Compressed Archive](#creating-a-compressed-archive)
+            -   [Extracting a Compressed Archive](#extracting-a-compressed-archive)
+        -   [Transferring Files Between Systems Securely](#transferring-files-between-systems-securely)
+            -   [Transferring Files Using Secure Copy](#transferring-files-using-secure-copy)
+            -   [Transferring Files Using the Secure File Transfer Program](#transferring-files-using-the-secure-file-transfer-program)
+        -   [Synchronizing Files Betwwen Systems Securely](#synchronizing-files-betwwen-systems-securely)
+            -   [Synchronizing Files and Directories with rsync](#synchronizing-files-and-directories-with-rsync)
+    -   [Package Management](#package-management)
+        -   [Registering Systems for Red Hat Support - For RHEL (topic for RHCSA exam)](#registering-systems-for-red-hat-support---for-rhel-topic-for-rhcsa-exam)
+            -   [Red Hat Subscription Management](#red-hat-subscription-management)
+            -   [Register from the Command Line](#register-from-the-command-line)
+            -   [Entitlement Certificates](#entitlement-certificates)
+        -   [Explaining and Investigating RPM Software Packages](#explaining-and-investigating-rpm-software-packages)
+            -   [Software packages and RPM](#software-packages-and-rpm)
+                -   [Updating Software with RPM Packages](#updating-software-with-rpm-packages)
+            -   [Examining RPM Packages](#examining-rpm-packages)
+            -   [Installing RPM Packages](#installing-rpm-packages)
+        -   [Installing and Updating Software Packages with Yum](#installing-and-updating-software-packages-with-yum)
+        -   [Enabling Yum Software Repositories](#enabling-yum-software-repositories)
+            -   [Enabling Red Hat software repositories](#enabling-red-hat-software-repositories)
+            -   [Creating Yum Repositories](#creating-yum-repositories)
+            -   [RPM Configuration Packages for Local Repositories](#rpm-configuration-packages-for-local-repositories)
+        -   [Managing Package Module Streams](#managing-package-module-streams)
+            -   [Introduction to Application Stream](#introduction-to-application-stream)
+                -   [BaseOS](#baseos)
+                -   [Application Stream](#application-stream)
+            -   [Modules](#modules)
+                -   [Module Streams](#module-streams)
+                -   [Module Profiles](#module-profiles)
+            -   [Managing modules using Yum](#managing-modules-using-yum)
+                -   [Listing Modules](#listing-modules)
+                -   [Enabling Module Streams and Installing Modules](#enabling-module-streams-and-installing-modules)
+            -   [Removing Modules and Disabling Module Streams](#removing-modules-and-disabling-module-streams)
+                -   [Switching Module Streams](#switching-module-streams)
+    -   [Accessing Linux File Systems](#accessing-linux-file-systems)
+        -   [Identifying File Systems and Devices](#identifying-file-systems-and-devices)
+            -   [Storage Management Concepts](#storage-management-concepts)
+                -   [Files Systems and Mount Points](#files-systems-and-mount-points)
+                -   [File Systems, Storage, and Block Devices](#file-systems-storage-and-block-devices)
+                -   [Disk Partitions](#disk-partitions)
+                -   [Logical Volumes](#logical-volumes)
+            -   [Examining File Systems](#examining-file-systems)
+        -   [Mounting and Unmounting File Systems](#mounting-and-unmounting-file-systems)
+            -   [Mounting File Systems Manually](#mounting-file-systems-manually)
+                -   [Identifying the Block Device](#identifying-the-block-device)
+                -   [Mounting by Block Device Name](#mounting-by-block-device-name)
+                -   [Mounting by File-system UUID](#mounting-by-file-system-uuid)
+            -   [Automatic Mounting of Removable Storage Devices](#automatic-mounting-of-removable-storage-devices)
+            -   [Unmounting File Systems](#unmounting-file-systems)
+        -   [Locating Files on the System](#locating-files-on-the-system)
+            -   [Searching for Files](#searching-for-files)
+            -   [Locating Files by Name](#locating-files-by-name)
+            -   [Searching for Files in Real Time](#searching-for-files-in-real-time)
+                -   [Searching Files Based on Ownership or Permission](#searching-files-based-on-ownership-or-permission)
+            -   [Searching Files Based on Size](#searching-files-based-on-size)
+            -   [Searching Files Based on Modification Time](#searching-files-based-on-modification-time)
+            -   [Searching Files Based on File Type](#searching-files-based-on-file-type)
+    -   [Analyzing Servers and Getting Support in Red Hat Linux](#analyzing-servers-and-getting-support-in-red-hat-linux)
+        -   [Analyzing and Managing Remote Servers](#analyzing-and-managing-remote-servers)
+            -   [Describing the Web Console](#describing-the-web-console)
+            -   [Enabling the Web Console](#enabling-the-web-console)
+            -   [Logging into the Web Console](#logging-into-the-web-console)
+            -   [Changing Passwords](#changing-passwords)
+            -   [Troubleshooting with the Web Console](#troubleshooting-with-the-web-console)
+                -   [Monitoring System Statistics in Real Time](#monitoring-system-statistics-in-real-time)
+                -   [Inspecting and Filtering Syslog Events](#inspecting-and-filtering-syslog-events)
+                -   [Running Commands from a Terminal Session](#running-commands-from-a-terminal-session)
+                -   [Creating Diagnostic Reports](#creating-diagnostic-reports)
+            -   [Managing System Services with the Web Console](#managing-system-services-with-the-web-console)
+                -   [System Power Options](#system-power-options)
+                -   [Controlling Running System Services](#controlling-running-system-services)
+                -   [Configuring Network Interfaces and the Firewall](#configuring-network-interfaces-and-the-firewall)
+                -   [Administering User Accounts](#administering-user-accounts)
+    -   [Ubuntu Commands](#ubuntu-commands)
+    -   [Scheduling Future Tasks](#scheduling-future-tasks)
+        -   [Scheduling a Deferred User Job](#scheduling-a-deferred-user-job)
+            -   [Describing Deferred Users Tasks](#describing-deferred-users-tasks)
+                -   [Scheduling Deferred User Tasks](#scheduling-deferred-user-tasks)
+            -   [Inspecting and Managing Deferred User Jobs](#inspecting-and-managing-deferred-user-jobs)
+                -   [Removing Jobs](#removing-jobs)
+        -   [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs)
+            -   [Describing Recurring User Jobs](#describing-recurring-user-jobs)
+            -   [Scheduling Recurring User Jobs](#scheduling-recurring-user-jobs-1)
+            -   [Describing User Job Format](#describing-user-job-format)
+                -   [Example Recurring User Jobs](#example-recurring-user-jobs)
+        -   [Scheduling RecurringSystem Jobs](#scheduling-recurringsystem-jobs)
+            -   [Describing Recurring System Jobs](#describing-recurring-system-jobs)
+            -   [Introducing Systemd Timer](#introducing-systemd-timer)
+                -   [Sample Timer Unit](#sample-timer-unit)
+        -   [Managing Temporary Files](#managing-temporary-files)
+            -   [Cleaning Temporary Files with a Systemd Timer](#cleaning-temporary-files-with-a-systemd-timer)
+            -   [Cleaning Temporary Files Manually](#cleaning-temporary-files-manually)
+            -   [Configuration File Precedence](#configuration-file-precedence)
+    -   [Tuning System Performance](#tuning-system-performance)
+        -   [Adjusting Tuning profiles](#adjusting-tuning-profiles)
+            -   [Tuning Systems](#tuning-systems)
+                -   [Configuring Static Tuning](#configuring-static-tuning)
+                -   [Configuring Dynamic Tuning](#configuring-dynamic-tuning)
+            -   [Installing and Enablined `tuned`](#installing-and-enablined-tuned)
+            -   [Selecting a Tuning Profile](#selecting-a-tuning-profile)
+            -   [Managing profiles from the command line](#managing-profiles-from-the-command-line)
+        -   [Influencing Process Scheduling](#influencing-process-scheduling)
+            -   [Linux Process Scheduling and Multitasking](#linux-process-scheduling-and-multitasking)
+            -   [Relative Priorities](#relative-priorities)
+            -   [Setting Nice Levels and Permissions](#setting-nice-levels-and-permissions)
+            -   [Reporting Nice Levels](#reporting-nice-levels)
+                -   [Displaying Nice Levels with Top](#displaying-nice-levels-with-top)
+                -   [Displaying Nice Levels from the Command Line](#displaying-nice-levels-from-the-command-line)
+            -   [Starting Processes with Different Nice Levels](#starting-processes-with-different-nice-levels)
+            -   [Changing the Nice Level of an Existing Process](#changing-the-nice-level-of-an-existing-process)
+    -   [Controlling Access to Files with ACLs](#controlling-access-to-files-with-acls)
+        -   [Interpreting File ACLs](#interpreting-file-acls)
+            -   [Acess Control List Concepts](#acess-control-list-concepts)
+                -   [File System ACL Support](#file-system-acl-support)
+            -   [Viewing and Interpreting ACL Information](#viewing-and-interpreting-acl-information)
+                -   [View File ACLs](#view-file-acls)
+                -   [View directory ACLs](#view-directory-acls)
+                -   [The ACL Mask](#the-acl-mask)
+                -   [ACL Permission Precedence](#acl-permission-precedence)
+        -   [Securing Files with ACLs](#securing-files-with-acls)
+            -   [Changing ACL File Permissions](#changing-acl-file-permissions)
+                -   [Adding or Modifying ACLs](#adding-or-modifying-acls)
+                -   [Using getfacl as input](#using-getfacl-as-input)
+                -   [Setting an Explicit ACL Mask](#setting-an-explicit-acl-mask)
+                -   [Recursive ACL Modifications](#recursive-acl-modifications)
+                -   [Deleting ACLs](#deleting-acls)
+            -   [Controlling Default ACL File Permissions](#controlling-default-acl-file-permissions)
+    -   [Managing SELinux Security](#managing-selinux-security)
+        -   [Changing the SELinux Enforcement Mode](#changing-the-selinux-enforcement-mode)
+            -   [How SELinux Protects Resources](#how-selinux-protects-resources)
+            -   [Why use Security Enhanced Linux?](#why-use-security-enhanced-linux)
+            -   [Basic SELinux security concepts](#basic-selinux-security-concepts)
+            -   [Changing the current SELinux mode](#changing-the-current-selinux-mode)
+            -   [Setting the default SELinux mode](#setting-the-default-selinux-mode)
+        -   [Controlling SELinux File Contexts](#controlling-selinux-file-contexts)
+            -   [Initial SELinux Context](#initial-selinux-context)
+            -   [Changing the SELinux context of a file](#changing-the-selinux-context-of-a-file)
+            -   [Defining SELinux Default File Context Rules](#defining-selinux-default-file-context-rules)
+                -   [Basic File Context Operations](#basic-file-context-operations)
+        -   [Adjusting SELinux Policy with Booleans](#adjusting-selinux-policy-with-booleans)
+            -   [SELinux booleans](#selinux-booleans)
+        -   [Investigating and Resolving SELinux Issues](#investigating-and-resolving-selinux-issues)
+            -   [Troubleshooting SELinux Issues](#troubleshooting-selinux-issues)
+            -   [Monitoring SELinux Violations](#monitoring-selinux-violations)
+    -   [Managing Basic Storage](#managing-basic-storage)
+        -   [Adding Partitions, File Systems, and Persistent Mounts](#adding-partitions-file-systems-and-persistent-mounts)
+            -   [Partitioning a Disk](#partitioning-a-disk)
+                -   [MBR Partitioning Scheme](#mbr-partitioning-scheme)
+                -   [GPT Partitioning Scheme](#gpt-partitioning-scheme)
+            -   [Managing Partitions with Parted](#managing-partitions-with-parted)
+                -   [Writing the Partition Table on a New Disk](#writing-the-partition-table-on-a-new-disk)
+                -   [Creating MBR Partitions](#creating-mbr-partitions)
+                -   [Creating GPT Partitions](#creating-gpt-partitions)
+                -   [Deleting Partitions](#deleting-partitions)
+            -   [Creating File Systems](#creating-file-systems)
+            -   [Mounting File Systems](#mounting-file-systems)
+                -   [Manually Mounting File Systems](#manually-mounting-file-systems)
+            -   [Persistently Mounting File Systems](#persistently-mounting-file-systems)
+        -   [Managing Swap Space](#managing-swap-space)
+            -   [Introducing Swap Space Concepts](#introducing-swap-space-concepts)
+                -   [Sizing the Swap Space](#sizing-the-swap-space)
+            -   [Creating a Swap Space](#creating-a-swap-space)
+                -   [Creating a Swap Partition](#creating-a-swap-partition)
+                -   [Formatting the Device](#formatting-the-device)
+            -   [Activating a Swap Space](#activating-a-swap-space)
+                -   [Activating Swap Space Persistently](#activating-swap-space-persistently)
+                -   [Setting the Swap Space Priority](#setting-the-swap-space-priority)
+    -   [Managing Logical Volumes](#managing-logical-volumes)
+        -   [Creating Logical Volumes](#creating-logical-volumes)
+            -   [Logical Volume Management (LVM) Concepts](#logical-volume-management-lvm-concepts)
+                -   [LVM Definitions](#lvm-definitions)
+                    -   [Physical devices](#physical-devices)
+                    -   [Physical volumes (PVs)](#physical-volumes-pvs)
+                    -   [Volume groups (VGs)](#volume-groups-vgs)
+                    -   [Logical volumes (LVs)](#logical-volumes-lvs)
+            -   [Implementing LVM Storage](#implementing-lvm-storage)
+                -   [Creating a Logical Volume](#creating-a-logical-volume)
+                -   [Prepare the physical device.](#prepare-the-physical-device)
+                -   [Create a Physical Volume](#create-a-physical-volume)
+                -   [Create a Volume Group](#create-a-volume-group)
+                -   [Create a Logical Volume](#create-a-logical-volume)
+                -   [Add the File System](#add-the-file-system)
+            -   [Removing a Logical Volume](#removing-a-logical-volume)
+                -   [Prepare the file system.](#prepare-the-file-system)
+                -   [Remove the Logical Volume](#remove-the-logical-volume)
+                -   [Remove the Volume Group](#remove-the-volume-group)
+                -   [Remove the Physical Volumes](#remove-the-physical-volumes)
+            -   [Reviewing LVM Status Information](#reviewing-lvm-status-information)
+                -   [Physical Volumes](#physical-volumes)
+                -   [Volume Groups](#volume-groups)
+                -   [Logical Volumes](#logical-volumes-1)
+        -   [Extending Logical Volumes](#extending-logical-volumes)
+            -   [Extending and Reducing a Volume Group](#extending-and-reducing-a-volume-group)
+                -   [Extending a Volume Group](#extending-a-volume-group)
+                    -   [Prepare the physical device and create the physical volume](#prepare-the-physical-device-and-create-the-physical-volume)
+                    -   [Extend the volume group](#extend-the-volume-group)
+                    -   [Verify that the new space is available](#verify-that-the-new-space-is-available)
+                -   [Reducing a Volume Group](#reducing-a-volume-group)
+                    -   [Move the physical extents](#move-the-physical-extents)
+                -   [Reduce the volume group](#reduce-the-volume-group)
+            -   [Extending a Logical Volume and XFS File System](#extending-a-logical-volume-and-xfs-file-system)
+                -   [Extending a Logical Volume](#extending-a-logical-volume)
+                    -   [Verify that the volume group has space available.](#verify-that-the-volume-group-has-space-available)
+                    -   [Extend the Logical Volume](#extend-the-logical-volume)
+                -   [Extend the File System](#extend-the-file-system)
+                -   [Verify the new size of the mounted file system](#verify-the-new-size-of-the-mounted-file-system)
+            -   [Extending a Logical Volume and EXT4 File System](#extending-a-logical-volume-and-ext4-file-system)
+                -   [Extend the file system](#extend-the-file-system-1)
+            -   [Extend a logical volume and swap space](#extend-a-logical-volume-and-swap-space)
+                -   [Verify that volume group has space available](#verify-that-volume-group-has-space-available)
+                -   [Deactivate the swap space](#deactivate-the-swap-space)
+                -   [Extend the logical volume](#extend-the-logical-volume-1)
+                -   [Format the logical volume as swap space](#format-the-logical-volume-as-swap-space)
+                -   [Activate the swap space](#activate-the-swap-space)
+    -   [Implementing Advanced Storage Features](#implementing-advanced-storage-features)
+        -   [Managing Layered Storage with Stratis](#managing-layered-storage-with-stratis)
+            -   [Describing the Architecture of Stratis](#describing-the-architecture-of-stratis)
+            -   [Working with Stratis Storage](#working-with-stratis-storage)
+                -   [Installing and Enabling Stratis](#installing-and-enabling-stratis)
+                -   [Assembling Block Storage into Stratis Pools](#assembling-block-storage-into-stratis-pools)
+                -   [Managing Stratis File Systems](#managing-stratis-file-systems)
+                -   [Persistently Mounting Stratis File Systems](#persistently-mounting-stratis-file-systems)
+        -   [Compressing and Deduplicating Storage with VDO](#compressing-and-deduplicating-storage-with-vdo)
+            -   [Describing Virtual Data Optimizer](#describing-virtual-data-optimizer)
+            -   [Implementing Virtual Data Optimizer](#implementing-virtual-data-optimizer)
+                -   [Enabling VDO](#enabling-vdo)
+                -   [Creating a VDO Volume](#creating-a-vdo-volume)
+                -   [Analyzing a VDO Volume](#analyzing-a-vdo-volume)
+    -   [Mounting Network-Attached Storage with NFS](#mounting-network-attached-storage-with-nfs)
+        -   [Mounting and Unmounting NFS Shares](#mounting-and-unmounting-nfs-shares)
+            -   [Mounting NFS Shares](#mounting-nfs-shares)
+            -   [Unmounting NFS Shares](#unmounting-nfs-shares)
+        -   [Automounting Network Attached Storage](#automounting-network-attached-storage)
+            -   [Mounting NFS Shares with the Automounter](#mounting-nfs-shares-with-the-automounter)
+                -   [Automounter Benefits](#automounter-benefits)
+                -   [Create and Automount](#create-and-automount)
+                -   [Direct Maps](#direct-maps)
+                -   [Indirect Wildcard Maps](#indirect-wildcard-maps)
+    -   [Controlling the Boot Process](#controlling-the-boot-process)
+        -   [Selecting the Boot Target](#selecting-the-boot-target)
+            -   [Describing the Red Hat Enterprise Linux 8 Boot Process](#describing-the-red-hat-enterprise-linux-8-boot-process)
+            -   [Rebooting and Shutting Down](#rebooting-and-shutting-down)
+                -   [Selecting a Systemd Target](#selecting-a-systemd-target)
+                    -   [Selecting Target at Runtime](#selecting-target-at-runtime)
+                    -   [Selecting a different Target at Boot Time](#selecting-a-different-target-at-boot-time)
+        -   [Resetting Root Password](#resetting-root-password)
+            -   [Resetting the Root Password from the Boot Loader](#resetting-the-root-password-from-the-boot-loader)
+            -   [Inspecting Logs](#inspecting-logs)
+            -   [Repairing Systemd Boot Issues](#repairing-systemd-boot-issues)
+                -   [Enabling the Early Debug Shell](#enabling-the-early-debug-shell)
+                -   [Using the Emergency and Rescue Targets](#using-the-emergency-and-rescue-targets)
+                -   [Identifying Stuck Jobs](#identifying-stuck-jobs)
+        -   [Repairing File System Issues at Boot](#repairing-file-system-issues-at-boot)
+            -   [Diagnosing and Fixing File System Issues](#diagnosing-and-fixing-file-system-issues)
+    -   [Server Management in Linux](#server-management-in-linux)
+        -   [Setting up a website in CentOS7](#setting-up-a-website-in-centos7)
+        -   [Automating the Static Website Setup - Infrastucture as a Code (IAAC)](#automating-the-static-website-setup---infrastucture-as-a-code-iaac)
+        -   [Setting up a Wordpress Website using LAMP (Linux, Apache, MySQL, PHP) Stack](#setting-up-a-wordpress-website-using-lamp-linux-apache-mysql-php-stack)
+            -   [Configuring VM and Installing Dependencies](#configuring-vm-and-installing-dependencies)
+            -   [Installing WordPress](#installing-wordpress)
+            -   [Configuring Apache for WordPress](#configuring-apache-for-wordpress)
+            -   [Configuring database](#configuring-database)
+            -   [Configuring Wordpress to connect to the database](#configuring-wordpress-to-connect-to-the-database)
+        -   [Automating Wordpress Website Setup using IAAC](#automating-wordpress-website-setup-using-iaac)
+        -   [Setting up a Nodejs Application](#setting-up-a-nodejs-application)
+            -   [Using Apache2](#using-apache2)
+                -   [Configuring VM](#configuring-vm)
+                -   [Installing and Starting Apache server](#installing-and-starting-apache-server)
+                -   [Installing Nodejs](#installing-nodejs)
+                -   [Setting up MongoDb database](#setting-up-mongodb-database)
+                    -   [Installing MongoDB](#installing-mongodb)
+                    -   [Starting the MongoDB Service and Testing the Database](#starting-the-mongodb-service-and-testing-the-database)
+                -   [Setting up the Node.js application](#setting-up-the-nodejs-application)
+                    -   [Installing PM2](#installing-pm2)
+                    -   [Configuring Apche Server for Node.js](#configuring-apche-server-for-nodejs)
 
 ---
 
@@ -7200,6 +7216,318 @@ To reduce a volume group, perform the following steps :
     <br>
 
 -   When a user attempts to access `/shares/work`, the key `*` (which is work in this example) replaces the ampersand in the source location and `serverb:/shares/work` is mounted. As with the indirect example, the work directory is created and removed automatically by `autofs`.
+
+## Controlling the Boot Process
+
+### Selecting the Boot Target
+
+#### Describing the Red Hat Enterprise Linux 8 Boot Process
+
+-   Modern computer systems are complex combinations of hardware and software.
+-   Starting from an undefined, powered-down state to a running system with a login prompt requires a large number of pieces of hardware and software to work together.
+-   The following list gives a high-level overview of the tasks involved for a physical `x86_64` system booting Red Hat Enterprise Linux 8. The list for `x86_64` virtual machines is roughly the same, but the hypervisor handles some of the hardware-specific steps in software.
+
+    -   The machine is powered on. The system firmware, either modern **UEFI** or older **BIOS**, runs a **Power On Self Test (POST)** and starts to initialize some of the hardware.
+        <br>
+        Configured using the system BIOS or UEFI configuration screens that we typically reach by pressing a specific key combination, such as `F2`, early during the boot process.
+        <br>
+    -   The system firmware searches for a bootable device, either configured in the UEFI boot firmware or by searching for a **Master Boot Record (MBR)** on all disks, in the order configured in the BIOS.
+        <br>
+        Configured using the system BIOS or UEFI configuration screens that we typically reach by pressing a specific key combination, such as `F2`, early during the boot process.
+        <br>
+    -   The system firmware reads a boot loader from disk and then passes control of the system to the boot loader. On a Red Hat Enterprise Linux 8 system, the boot loader is the **GRand Unified Bootloader version 2 (GRUB2)**.
+        <br>
+        Configured using the `grub2-install` command, which installs GRUB2 as the boot loader on the disk.
+        <br>
+    -   GRUB2 loads its configuration from the `/boot/grub2/grub.cfg` file and displays a menu where we can select which kernel to boot.
+        <br>
+    -   Configured using the `/etc/grub.d/` directory, the `/etc/default/grub` file, and the `$ grub2-mkconfig` command to generate the `/boot/grub2/grub.cfg` file.
+        <br>
+    -   After we select a kernel, or the timeout expires, the boot loader loads the kernel and initramfs from disk and places them in memory. An **initramfs** is an archive containing the kernel modules for all the hardware required at boot, initialization scripts, and more. On Red Hat Enterprise Linux 8, the initramfs contains an entire usable system by itself.
+        <br>
+        Configured using the `/etc/dracut.conf.d/` directory, the `dracut` command, and the `lsinitrd` command to inspect the `initramfs` file.
+        <br>
+    -   The boot loader hands control over to the kernel, passing in any options specified on the kernel command line in the boot loader, and the location of the `initramfs` in memory.
+        <br>
+        Configured using the `/etc/grub.d/` directory, the `/etc/default/grub` file, and the `$ grub2-mkconfig` command to generate the `/boot/grub2/grub.cfg` file.
+        <br>
+    -   The kernel initializes all hardware for which it can find a driver in the `initramfs`, then executes `/sbin/init` from the initramfs as PID 1. On Red Hat Enterprise Linux 8, `/sbin/init` is a link to `systemd`.
+        <br>
+        Configured using the `init=` command-line parameter.
+        <br>
+    -   The `systemd` instance from the `initramfs` executes all units for the `initrd.target` target. This includes mounting the root file system on disk on to the `/sysroot` directory.
+        <br>
+        Configured using `/etc/fstab`
+        <br>
+    -   The kernel switches (pivots) the root file system from `initramfs` to the root file system in `/sysroot`. `systemd` then re-executes itself using the copy of `systemd` installed on the disk.
+        <br>
+    -   `systemd` looks for a default target, either passed in from the kernel command line or configured on the system, then starts (and stops) units to comply with the configuration for that target, solving dependencies between units automatically. In essence, a `systemd` target is a set of units that the system should activate to reach the desired state. These targets typically start a text-based login or a graphical login screen.
+        <br>
+        Configured using `/etc/systemd/system/default.target` and `/etc/systemd/system/`.
+
+#### Rebooting and Shutting Down
+
+-   To power off or reboot a running system from the command line, we can use the `systemctl` command.
+    <br>
+
+-   `$ systemctl poweroff` stops all running services, unmounts all file systems (or remounts them read-only when they cannot be unmounted), and then powers down the system.
+    <br>
+
+-   `$ systemctl reboot` stops all running services, unmounts all file systems, and then reboots the system.
+    <br>
+
+-   We can also use the shorter version of these commands, `$ poweroff` and `$ reboot`, which are symbolic links to their `systemctl` equivalents.
+    <br>
+
+-   **Note**
+    -   `$ systemctl halt` and `$ halt` are also available to stop the system, but unlike `$ poweroff`, these commands do not power off the system; they bring a system down to a point where it is safe to power it off manually.
+
+##### Selecting a Systemd Target
+
+-   A `systemd` target is a set of `systemd` units that the system should start to reach a desired state. The following table lists the most important targets.
+
+    | Target              | Purpose                                                                                   |
+    | ------------------- | ----------------------------------------------------------------------------------------- |
+    | `graphical.target`  | System supports multiple users, graphical- and text-based logins.                         |
+    | `multi-user.target` | System supports multiple users, text-based logins only.                                   |
+    | `rescue.target`     | **sulogin** prompt, basic system initialization completed.                                |
+    | `emergency.target`  | **sulogin** prompt, `initramfs` pivot complete, and system root mounted on `/` read only. |
+
+-   A target can be a part of another target. For example, the `graphical.target` includes `multi-user.target`, which in turn depends on `basic.target` and others.
+-   We can view these dependencies with the following command.
+    ```
+    $ systemctl list-dependencies graphical.target | grep target
+    graphical.target
+    * └─multi-user.target
+    *   ├─basic.target
+    *   │ ├─paths.target
+    *   │ ├─slices.target
+    *   │ ├─sockets.target
+    *   │ ├─sysinit.target
+    *   │ │ ├─cryptsetup.target
+    *   │ │ ├─local-fs.target
+    *   │ │ └─swap.target
+    ...output omitted..
+    ```
+-   To list the available targets, use the following command.
+    ```
+    $ systemctl list-units --type=target --all
+    UNIT                      LOAD      ACTIVE   SUB    DESCRIPTION
+    ---------------------------------------------------------------------------
+    basic.target              loaded    active   active Basic System
+    cryptsetup.target         loaded    active   active Local Encrypted Volumes
+    emergency.target          loaded    inactive dead   Emergency Mode
+    getty-pre.target          loaded    inactive dead   Login Prompts (Pre)
+    getty.target              loaded    active   active Login Prompts
+    graphical.target          loaded    inactive dead   Graphical Interface
+    ...output omitted...
+    ```
+
+###### Selecting Target at Runtime
+
+-   On a running system, administrators can switch to a different target using the `systemctl isolate` command. <br> `systemctl isolate multi-user.target`
+    <br>
+    Isolating a target stops all services not required by that target (and its dependencies), and starts any required services not yet started.
+
+-   Not all targets can be isolated. We can only isolate targets that have `AllowIsolate=yes` set in their unit files. For example, we can isolate the graphical target, but not the cryptsetup target.
+
+    ```
+    $ systemctl cat graphical.target
+    # /usr/lib/systemd/system/graphical.target
+    ...output omitted...
+    [Unit]
+    Description=Graphical Interface
+    Documentation=man:systemd.special(7)
+    Requires=multi-user.target
+    Wants=display-manager.service
+    Conflicts=rescue.service rescue.target
+    After=multi-user.target rescue.service rescue.target display-manager.service
+    AllowIsolate=yes
+
+    $ systemctl cat cryptsetup.target
+    # /usr/lib/systemd/system/cryptsetup.target
+    ...output omitted...
+    [Unit]
+    Description=Local Encrypted Volumes
+    Documentation=man:systemd.special(7)
+    ```
+
+-   When the system starts, `systemd` activates the `default.target` target.
+-   Normally the default target in `/etc/systemd/system/` is a symbolic link to either `graphical.target` or `multi-user.target`.
+-   Instead of editing this symbolic link by hand, the `systemctl` command provides two subcommands to manage this link : `get-default` and `set-default`.
+    ```
+    $ systemctl get-default
+    multi-user.target
+    $ systemctl set-default graphical.target
+    Removed /etc/systemd/system/default.target.
+    Created symlink /etc/systemd/system/default.target -> /usr/lib/systemd/system/graphical.target.
+    $ systemctl get-default
+    graphical.target
+    ```
+
+###### Selecting a different Target at Boot Time
+
+-   To select a different target at boot time, append the `systemd.unit=target.target` option to the kernel command line from the boot loader.
+    <br>
+
+-   For example, to boot the system into a rescue shell where we can change the system configuration with almost no services running, append the following option to the kernel command line from the boot loader.
+    ```
+    systemd.unit=rescue.target
+    ```
+    This configuration change only affects a single boot, making it a useful tool for troubleshooting the boot process.
+    <br>
+    To use this method of selecting a different target, use the following procedure :
+    -   Boot or reboot the system.
+    -   Interrupt the boot loader menu countdown by pressing any key (except Enter which would initiate a normal boot).
+    -   Move the cursor to the kernel entry that we want to start.
+    -   Press `e` to edit the current entry.
+    -   Move the cursor to the line that starts with linux. This is the kernel command line.
+    -   Append `systemd.unit=target.target`. For example, `systemd.unit=emergency.target`.
+    -   Press `Ctrl+x` to boot with these changes.
+
+### Resetting Root Password
+
+#### Resetting the Root Password from the Boot Loader
+
+-   One task that every system administrator should be able to accomplish is resetting a lost root password.
+-   If the administrator is still logged in, either as an unprivileged user but with full sudo access, or as root, this task is trivial.
+-   When the administrator is not logged in, this task becomes slightly more involved.
+    <br>
+
+-   Several methods exist to set a new root password.
+-   A system administrator could, for example, boot the system using a Live CD, mount the root file system from there, and edit `/etc/shadow`.
+-   In this section, we explore a method that does not require the use of external media.
+    <br>
+
+-   **Note**
+
+    -   On Red Hat Enterprise Linux 6 and earlier, administrators can boot the system into runlevel 1 to get a root prompt.
+    -   The closest analogs to runlevel 1 on a Red Hat Enterprise Linux 8 machine are the `rescue` and `emergency` targets, both of which require the root password to log in.
+        <br>
+
+-   On Red Hat Enterprise Linux 8, it is possible to have the scripts that run from the `initramfs` pause at certain points, provide a root shell, and then continue when that shell exits.
+-   This is mostly meant for debugging, but we can also use this method to reset a lost root password.
+    <br>
+
+-   To access that `root` shell, follow these steps :
+
+    1. Reboot the system.
+    2. Interrupt the boot loader countdown by pressing any key, except Enter.
+    3. Move the cursor to the kernel entry to boot.
+    4. Press `e` to edit the selected entry.
+    5. Move the cursor to the kernel command line (the line that starts with linux).
+    6. Append `rd.break`. With that option, the system breaks just before the system hands control from the `initramfs` to the actual system.
+    7. Press `Ctrl+x` to boot with the changes.
+       <br>
+
+-   At this point, the system presents a root shell, with the actual root file system on the disk mounted read-only on `/sysroot`.
+-   Because troubleshooting often requires modification to the root file system, we need to change the root file system to read/write.
+-   The following step shows how the `remount,rw` option to the `mount` command remounts the file system with the new option (`rw`) set.
+    <br>
+
+-   **Note**
+
+    -   Prebuilt images may place multiple `console=` arguments to the kernel to support a wide array of implementation scenarios. Those `console=` arguments indicate the devices to use for console output.
+    -   The caveat with `rd.break` is that even though the system sends the kernel messages to all the consoles, the prompt ultimately uses whichever console is given last.
+    -   If we do not get our prompt, we may want to temporarily reorder the `console=` arguments when we edit the kernel command line from the boot loader.
+        <br>
+
+-   **Important**
+
+    -   The system has not yet enabled SELinux, so any file we create does not have an SELinux context.
+    -   Some tools, such as the `passwd` command, first create a temporary file, then move it in place of the file they are intended to edit, effectively creating a new file without an SELinux context.
+    -   For this reason, when we use the `passwd` command with `rd.break`, the `/etc/shadow` file does not get an SELinux context.
+        <br>
+
+-   To reset the root password from this point, use the following procedure :
+
+    1. Remount `/sysroot` as read/write.<br> `switch_root:/# mount -o remount,rw /sysroot`
+    2. Switch into a `chroot` jail, where `/sysroot` is treated as the root of the file-system tree. <br> `switch_root:/# chroot /sysroot`
+    3. Set a new root password. <br> `switch_root:/# passwd root`
+    4. Make sure that all unlabeled files, including `/etc/shadow` at this point, get relabeled during boot. `switch_root:/# touch ./autorelabel`
+    5. Type `exit` twice. The first command exits the `chroot` jail, and the second command exits the `initramfs` debug shell.
+       <br>
+
+-   At this point, the system continues booting, performs a full SELinux relabel, and then reboots again.
+
+#### Inspecting Logs
+
+-   Looking at the logs of previously failed boots can be useful.
+-   If the system journals are persistent across reboots, we can use the `journalctl` tool to inspect those logs.
+    <br>
+
+-   Remember that by default, the system journals are kept in the `/run/log/journal` directory, which means the journals are cleared when the system reboots.
+-   To store journals in the `/var/log/journal` directory, which persists across reboots, set the `Storage` parameter to `persistent` in `/etc/systemd/journald.conf`.
+    ```
+    $ vim /etc/systemd/journald.conf
+    ...output omitted...
+    [Journal]
+    Storage=persistent
+    ...output omitted...
+    $ systemctl restart systemd-journald.service
+    ```
+-   To inspect the logs of a previous boot, use the `-b` option of `journalctl`.
+-   Without any arguments, the `-b` option only displays messages since the last boot.
+-   With a negative number as an argument, it displays the logs of previous boots.
+    `$ journalctl -b -1 -p err`
+    This command shows all messages rated as an error or worse from the previous boot.
+
+#### Repairing Systemd Boot Issues
+
+-   To troubleshoot service startup issues at boot time, Red Hat Enterprise Linux 8 makes the following tools available.
+
+##### Enabling the Early Debug Shell
+
+-   By enabling the `debug-shell` service with `$ systemctl enable debug-shell`.service, the system spawns a `root` shell on `TTY9` (Ctrl+Alt+F9) early during the boot sequence.
+-   This shell is automatically logged in as `root`, so that administrators can debug the system while the operating system is still booting.
+    <br>
+
+-   **Warning**
+    -   Do not forget to disable the `debug-shell.service` service when we are done debugging, because it leaves an unauthenticated root shell open to anyone with local console access.
+
+##### Using the Emergency and Rescue Targets
+
+-   By appending either `systemd.unit=rescue.target` or `systemd.unit=emergency.target` to the kernel command line from the boot loader, the system spawns into a rescue or emergency shell instead of starting normally. Both of these shells require the root password.
+    <br>
+
+-   The **emergency target** keeps the root file system mounted read-only, while the **rescue target** waits for `sysinit.target` to complete, so that more of the system is initialized, such as the logging service or the file systems. The root user at this point can not make changes to `/etc/fstab` until the drive is remounted in a read write state `mount -o remount,rw /`
+    <br>
+
+-   Administrators can use these shells to fix any issues that prevent the system from booting normally; for example, a dependency loop between services, or an incorrect entry in `/etc/fstab`. Exiting from these shells continues with the regular boot process.
+
+##### Identifying Stuck Jobs
+
+-   During startup, `systemd` spawns a number of jobs. If some of these jobs cannot complete, they block other jobs from running.
+-   To inspect the current job list, administrators can use the `systemctl list-jobs` command. Any jobs listed as running must complete before the jobs listed as waiting can continue.
+
+### Repairing File System Issues at Boot
+
+#### Diagnosing and Fixing File System Issues
+
+-   Errors in `/etc/fstab` and corrupt file systems can stop a system from booting.
+-   In most cases, `systemd` drops to an emergency repair shell that requires the `root` password.
+    <br>
+
+-   The following table lists some common errors and their results.
+    | Problem | Result
+    | --- | ---
+    | Corrupt file system | `systemd` attempts to repair the file system. If the problem is too severe for an automatic fix, the system drops the user to an emergency shell.
+    | Nonexistent device or UUID referenced in `/etc/fstab` | `systemd` waits for a set amount of time, waiting for the device to become available. If the device does not become available, the system drops the user to an emergency shell after the timeout.
+    | Nonexistent mount point in `/etc/fstab` | The system drops the user to an emergency shell.
+    | Incorrect mount option specified in `/etc/fstab` | The system drops the user to an emergency shell.
+
+-   In all cases, administrators can also use the emergency target to diagnose and fix the issue, because no file systems are mounted before the emergency shell is displayed.
+    <br>
+
+-   **Note**
+
+    -   When using the emergency shell to address file-system issues, do not forget to run `systemctl daemon-reload` after editing `/etc/fstab`.
+    -   Without this reload, `systemd` may continue using the old version.
+        <br>
+
+-   The `nofail` option in an entry in the `/etc/fstab` file permits the system to boot even if the mount of that file system is not successful.
+-   Do not use this option under normal circumstances.
+-   With `nofail`, an application can start with its storage missing, with possibly severe consequences.
 
 ## Server Management in Linux
 
