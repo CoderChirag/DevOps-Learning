@@ -168,3 +168,110 @@ For a list of available pre-defined zones and intended use, see `firewalld.zones
 
 -   Whenever a process wants to listen on a port, SELinux checks to see whether the label associated with that process (the domain) is allowed to bind that port label.
 -   This can stop a rogue service from taking over ports otherwise used by other (legitimate) network services.
+
+#### Managing SELinux Port Labelling
+
+-   If we decide to run a service on a nonstandard port, SELinux almost certainly will block the traffic.
+-   In this case, we must update SELinux port labels.
+-   In some cases, the targeted policy has already labeled the port with a type that can be used; for example, since port `8008/TCP` is often used for web applications, that port is already labeled with `http_port_t`, the default port type for the web server.
+
+##### Listing Port Labels
+
+-   To get an overview of all the current port label assignments, run the `$ semanage port -l` command. The `-l` option lists all current assignments in this form :
+    ```
+    port_label_t     tcp|udp    comma,separated,list,of,ports
+    ```
+    Example Output :
+    ```
+    $ semanage port -l
+    ...output omitted...
+    http_cache_port_t       tcp   8080, 8118, 8123, 10001-10010
+    http_cache_port_t       udp   3130
+    http_port_t             tcp   80, 81, 443, 488, 8008, 8009, 8443, 9000
+    ...output omitted...
+    ```
+    To refine the search, use the `grep` command :
+    ```
+    $ semanage port -l | grep ftp
+    ftp_data_port_t                tcp      20
+    ftp_port_t                     tcp      21, 989, 990
+    ftp_port_t                     udp      989, 990
+    tftp_port_t                    udp      69
+    ```
+    Note that a port label can appear twice in the output, once for TCP and once for UDP.
+
+##### Managing Port Labels
+
+-   Use the `semanage` command to assign new port labels, remove port labels, or modify existing ones.
+    <br>
+
+-   **Important**
+
+    -   Most standard services available in the Linux distribution provide an SELinux policy module that sets labels on ports.
+    -   We cannot change the labels on those ports using semanage; to change those, we need to replace the policy module.
+        <br>
+
+-   To add a port to an existing port label (type), use the following syntax. The `-a` adds a new port label, the `-t` denotes the type, the `-p` denotes the protocol.
+
+    ```
+    $ semanage -a -t port_label -p tcp|udp PORTNUMBER
+    ```
+
+    For example, to allow a `gopher` service to listen on port `71/TCP` :
+
+    ```
+    $ semanage -a -t gopher_port_t -p tcp 71
+    ```
+
+    To view local changes to the default policy, administrators can add the `-C` option to the semanage command.
+
+    ```
+    $ semanage port -l -C
+    SELinux Port Type              Proto    Port Number
+
+    gopher_port_t                  tcp      71
+    ```
+
+    **Note**
+
+    -   The targeted policy ships with a large number of port types.
+        <br>
+    -   Service specific SELinux man pages found in the `selinux-policy-doc` package include documentation on SELinux types, booleans, and port types.
+    -   If these man pages are not yet installed on your system, follow this procedure :
+        ```
+        $ yum install selinux-policy-doc -y
+        $ man -k _selinux
+        ```
+
+##### Removing Port Labels
+
+-   The syntax for removing a custom port label is the same as the syntax for adding a port label, but instead of using the `-a` option (for Add), use the `-d` option (for Delete).
+    <br>
+
+-   For example, to remove the binding of port `71/TCP` to `gopher_port_t` :
+    ```
+    $ semanage -d -t gopher_port_t -p tcp 71
+    ```
+
+##### Modifying Port Labels
+
+-   To change a port binding, perhaps because requirements changed, use the `-m` (Modify) option. This is a more efficient process than removing the old binding and adding a new one.
+    <br>
+
+-   For example, to modify port `71/TCP` from `gopher_port_t` to `http_port_t`, an administrator can use the following command :
+
+    ```
+    $ semanage -m -t http_port_t -p tcp 71
+
+    $ semanage port -l -c
+    SELinux Port Type              Proto    Port Number
+
+    http_port_t                    tcp      71
+
+    $ semanage port -l | grep http
+    http_cache_port_t              tcp      8080, 8118, 8123, 10001-10010
+    http_cache_port_t              udp      3130
+    http_port_t                    tcp      71, 80, 81, 443, 488, 8008, 8009, 8443, 9000
+    pegasus_http_port_t            tcp      5988
+    pegasus_https_port_t           tcp      5989
+    ```
