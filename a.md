@@ -554,3 +554,228 @@
     quay.io/generic/rhel7                 latest   1d3b6b7d01e4   3 weeks ago   688 MB
     registry.redhat.io/ubi8/ubi           latest   a1f8c9699786   6 weeks ago   211 MB
     ```
+
+### Performing Advanced Container Management
+
+#### Administering Containers with Podman
+
+We can use Podman to run containers with more advanced configuration options and manage running or stopped containers.
+
+#### Configuring Containers
+
+-   We used the `podman run` command to start containers from container images in another exercise.
+-   When we run a container, it starts a process inside the new container.
+-   The process could be an application such as a web or database server.
+-   This application might need to communicate with other systems over the network, and therefore might need configuration.
+    <br>
+
+-   To provide network access to the container, clients must connect to ports on the container host that pass the network traffic through to ports in the container.
+-   To configure the container, we can often pass the container some environment variables with custom settings instead of modifying the container image.
+
+##### Mapping Conainer Host Ports to the Container
+
+-   When we map a network port on the container host to a port in the container, network traffic sent to the host network port is received by the container.
+    <br>
+
+-   For example, we could map `port 8000` on the container host to `port 8080` on the container.
+-   The container might be running an `httpd` process that is listening on `port 8080`.
+-   Therefore, traffic sent to the container host `port 8000` would be received by the web server running in the container.
+    <br>
+
+-   Set up a port mapping with `podman run` by using the `-p` option.
+-   It takes two colon-separated port numbers, the port on the container host, followed by the port in the container.
+    <br>
+
+-   The following example uses the `-d` option to run the container in detached mode (as a daemon).
+-   When using the `-d` option, podman returns only the container ID to the screen.
+-   The `-p 8000:8080` option maps `port 8000` on the container host to `port 8080` in the container.
+-   The container image `registry.redhat.io/rhel8/httpd-24` runs an Apache HTTP Server that listens for connections on `port 8080`.
+    ```
+    $ podman run -d -p 8000:8080 registry.redhat.io/rhel8/httpd-24
+    4a24ee199b909cc7900f2cd73c07e6fce9bd3f53b14e6757e91368c561a8edf4
+    ```
+-   We can use the `podman port` command with a container ID or name to list its port mappings, or with the `-a` option to list all port mappings in use.
+-   The following example lists all port mappings defined on the container host, and the output shows that `port 8000` on the container host is mapped to `port 8080/tcp` on the container that has the ID starting with `4a24ee199b90`.
+    ```
+    $ podman port -a
+    4a24ee199b90    8080/tcp -> 0.0.0.0:8000
+    ```
+-   We must also make sure that the firewall on our container host allows external clients to connect to its mapped port.
+-   In the preceding example, we might also have to add `port 8000/tcp` to our current firewall rules on the container host :
+
+    ```
+    $ firewall-cmd -add-port=8000/tcp
+    success
+    ```
+
+-   **Important**
+
+    -   A rootless container cannot open a port on the container host below `port 1024` (a "privileged port").
+    -   That is, `-p 80:8080` will not normally work for a container being run by a user other than root.
+    -   This is a restriction for users other than root on a Linux system.
+    -   To map a port on the container host below `1024` to a container port, we must run `podman` as `root` or make other adjustments to the system.
+        <br>
+
+    -   We can map a port above `1024` on the container host to a privileged port on the container, even if we are running a rootless container.
+    -   The mapping `-p 8080:80` works if the container provides a service listening on `port 80`.
+
+#### Passing Environment Variables to Configure a Container
+
+-   Configuring a container can be complex because we usually do not want to modify the container image in order to configure.
+-   However, we can pass environment variables to the container, and the container can use the values of these environment variables to configure its application.
+    <br>
+
+-   To get information on what variables are available and what they do, use the `podman inspect` command to inspect the container image.
+-   For example, here is a container image from one of the Red Hat registries :
+
+    ```
+    $ podman inspect registry.redhat.io/rhel8/mariadb-103:1-102
+    [
+        {
+        ...output omitted...
+            "Labels": {
+        ...output omitted...
+            "name": "rhel8/mariadb-103",
+            "release": "102",
+            "summary": "MariaDB 10.3 SQL database server",
+            "url": "https://access.redhat.com/containers/#/registry.access.redhat.com/rhel8/mariadb-103/images/1-102",
+            "usage": "podman run -d -e MYSQL_USER=user -e MYSQL_PASSWORD=pass -e MYSQL_DATABASE=db -p 3306:3306 rhel8/mariadb-103",
+            "vcs-ref": "ab3c3f15b6180b967a312c93e82743e842a4ac7c",
+            "vcs-type": "git",
+            "vendor": "Red Hat, Inc.",
+            "version": "1"
+        },
+        ...output omitted...
+    ```
+
+    -   The `url` label points to a web page in the Red Hat Container Catalog that documents environment variables and other information about how to use the container image. The `usage` label provides an example of a typical `podman` command to run the image.
+        <br>
+
+    -   The page provided in the `url` label documents for this image shows that the container uses `port 3306` for the database server, and that the following environment variables are available to configure the database service :
+        <br>
+
+        -   `MYSQL_USER` : User name for the MySQL account to be created
+        -   `MYSQL_PASSWORD` : Password for the user account
+        -   `MYSQL_DATABASE` : Database name
+        -   `MYSQL_ROOT_PASSWORD` : Password for the root user (optional)
+
+    -   Use the `podman run` command with the `-e` option to pass environment variables to a process inside the container. In the following example, environment and port options apply configuration settings to the container.
+        ```
+        $ podman run -d --name container_name -e MYSQL_USER=user_name -e MYSQL_PASSWORD=user_password -e MYSQL_DATABASE=database_name -e MYSQL_ROOT_PASSWORD=mysql_root_password -p 3306:3306 registry.redhat.io/rhel8/mariadb-103:1-102
+        abcb42ef2ff1b85a50e3cd9bc15877ef823979c8166d0076ce5ebc5ea19c0815
+        ```
+
+#### Managing Containers
+
+-   Creating and starting a container is just the first step of the container's life cycle.
+-   This life cycle also includes stopping, restarting, or removing the container.
+-   Users can also examine the container status and metadata for debugging, updating, or reporting purposes.
+    <br>
+
+-   The `$ podman ps` command lists running containers :
+
+    ````
+    $ podman ps
+    CONTAINER ID IMAGE COMMAND
+    89dd9b6354ba registry.redhat.io/rhel8/mariadb-103:1-102 run-mysqld
+
+        CREATED          STATUS                   PORTS                     NAMES
+        10 minutes ago Up 10 seconds          0.0.0.0:3306->3306/tcp  my-database
+        ```
+        1. Each container, when created, is assigned a unique hexadecimal container ID. The container ID is unrelated to the image ID.
+        2. Container image that was used to start the container.
+        3. Command executed when the container started.
+        4. Date and time the container was started.
+        5. Total container uptime, if still running, or time since terminated.
+        6. Ports that were exposed by the container or any port forwarding that might be configured.
+        7. The container name.
+
+    <br>
+
+    ````
+
+-   By default, Podman does not discard stopped containers immediately.
+-   Podman preserves the local file systems and other states for facilitating postmortem analysis unless we restart the container.
+-   If we start a container using the `--rm` option with `podman run`, then the container will be automatically removed when it exits.
+    <br>
+
+-   The `$ podman ps -a` command lists all containers, including stopped ones :
+
+    ````
+    $ podman ps -a
+    CONTAINER ID IMAGE COMMAND
+    30b743973e98 registry.redhat.io/rhel8/httpd-24:1-105 /bin/bash
+
+        CREATED          STATUS                    PORTS                  NAMES
+        17 minutes ago   Exited (0) 18 minutes ago 80/tcp                 my-httpd
+        ```
+        **Note**
+        - When creating a container, podman aborts if the container name is already in use, even if the container is in a stopped state. This safeguard prevents duplicate container names.
+
+    <br>
+
+    ````
+
+-   The `podman stop` command stops a running container gracefully.
+-   The `stop` command sends a `SIGTERM` signal to terminate a running container.
+-   If the container does not stop after a grace period (10 seconds by default), Podman sends a `SIGKILL` signal.
+    ` podman stop my-httpd-container 77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412 `
+    **Important** - If a container image is used by a container that is stopped, the image cannot be deleted with `podman rmi` or `podman image rm`, unless we include the `-f` option, which will remove all containers using the image first.
+    <br>
+
+-   The `podman rm` command removes a container from the host.
+-   The container must be stopped unless we include the `-f` option, which also removes running containers.
+-   The command `podman rm -a` removes all stopped containers from the host.
+-   The container IDs of any containers that are removed are printed out.
+    ```
+    $ podman rm my-database
+    abcb42ef2ff1b85a50e3cd9bc15877ef823979c8166d0076ce5ebc5ea19c0815
+    ```
+-   The `podman restart` command restarts a stopped container.
+-   The command creates a new container with the same container ID as the stopped container, reusing its state and file system.
+    ```
+    $ podman restart my-httpd-container
+    77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412
+    ```
+-   The `podman kill` command sends UNIX signals to the main process in the container. These are the same signals used by the kill command.
+    <br>
+
+-   This can be useful if the main process in the container can take actions when it receives certain signals, or for troubleshooting purposes.
+-   If no signal is specified, podman kill sends the `SIGKILL` signal, terminating the main process and the container.
+    ```
+    $ podman kill my-httpd-container
+    77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412
+    ```
+-   We specify the signal with the `-s` option :
+    ```
+    $ podman kill -s SIGKILL my-httpd-container
+    77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412
+    ```
+
+#### Running Commands in a Container
+
+-   When a container starts, it executes the container image's entry point command.
+-   However, we might need to execute other commands to manage the running container.
+-   For example, we might want to attach an interactive shell to a running container in order to inspect or debug it.
+    <br>
+
+-   The `podman exec` command starts an additional process inside an already running container :
+    ```
+    $ podman exec 7ed6e671a600 cat /etc/redhat-release
+    Red Hat Enterprise Linux release 8.2 (Ootpa)
+    ```
+-   The previous example uses the container ID to execute the command. It is often easier to use the container name instead.
+-   If we want to attach an interactive shell, then we must specify the `-i` and `-t` options to open an interactive session and allocate a pseudo-terminal for the shell.
+    ```
+    $ podman exec -it my_webserver /bin/bash
+    bash-4.4$ hostname
+    7ed6e671a600
+    bash-4.4$ exit
+    $
+    ```
+-   Podman remembers the last container used in any command.
+-   We can use the `-l` option to replace the former container ID or name in the latest Podman command.
+    ```
+    $ podman exec -l cat /etc/redhat-release
+    Red Hat Enterprise Linux release 8.2 (Ootpa)
+    ```
