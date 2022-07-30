@@ -838,3 +838,178 @@ We can use Podman to run containers with more advanced configuration options and
     ```
     $ podman run -d --name mydb -v /home/user/dbfiles:/var/lib/mysql:Z -e MYSQL_USER=user -e MYSQL_PASSWORD=redhat -e MYSQL_DATABASE=inventory registry.redhat.io/rhel8/mariadb-103:1-102
     ```
+
+### Managing Containers as Services
+
+#### Starting Containers Automatically with the Server
+
+-   When we deploy services such as databases or web servers as containers, we usually want those containers to start automatically with the server.
+    <br>
+
+-   By creating `systemd` user unit files for our rootless containers, we can manage them with `systemctl` commands, similar to regular services.
+-   By enabling those services, we ensure that the associated containers start when the host machine starts.
+-   If our container runs in "rootless" mode, we can manage these services from a non-privileged user account for increased security.
+    <br>
+
+-   For more sophisticated scaling and orchestration of many container-based applications and services, we can use an enterprise orchestration platform based on Kubernetes, such as Red Hat OpenShift Container Platform.
+
+#### Running Systemd Services as a Regular User
+
+-   In addition to managing system services, `systemd` can also manage user services.
+-   With `systemd` user services, users can create unit files for their own services and manage those services with `systemctl` commands, without requiring root access.
+    <br>
+
+-   When we enable a user service as a non-root user, that service automatically starts when we open our first session through the text or graphical consoles or using SSH.
+-   The service stops when we close our last session.
+-   This behavior differs from the system services, which start when the system starts and stop when the system shuts down.
+    <br>
+
+-   However, we can change this default behavior and force our enabled services to start with the server and stop during the shutdown by running the `$ loginctl enable-linger` command.
+-   To revert the operation, use the `$ loginctl disable-linger` command.
+-   To view the current status, use the `$ loginctl show-user username` command with our user name as parameter.
+    ```
+    $ loginctl enable-linger
+    $ loginctl show-user user
+    ...output omitted...
+    Linger=yes
+    $ loginctl disable-linger
+    $ loginctl show-user user
+    ...output omitted...
+    Linger=no
+    ```
+
+#### Creating and Managing Systemd User Services
+
+-   To define `systemd` user services, create the `~/.config/systemd/user/` directory to store our unit files.
+-   The syntax of those files is the same as the system unit files.
+-   For more details, review the `systemd.unit(5)` and `systemd.service(5)` man pages.
+    <br>
+
+-   To control our new user services, use the `systemctl` command with the `--user` option.
+-   The following example lists the unit files in the `~/.config/systemd/user/` directory, forces `systemd` to reload its configuration, and then enables and starts the `myapp` user service.
+    `$ ls ~/.config/systemd/user/ myapp.service $ systemctl --user daemon-reload $ systemctl --user enable myapp.service $ systemctl --user start myapp.service`
+    **Note** - To use `systemctl --user` commands, we must log in at the console or directly through SSH. Using the `sudo` or `su` commands does not work.
+    <br>
+
+        - The `systemctl` command interacts with a per user `systemd --user` process. The system only starts that process when the user logs in for the first time from the console or SSH.
+
+    <br>
+
+-   The following table summarizes the differences between `systemd` system and user services.
+
+    |                                            |                                      |                                                                                                                              |
+    | ------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+    | Storing custom unit files                  | System services<br><br>User Services | `/etc/systemd/system/unit.service`<br><br>`~/.config/systemd/user/unit.service`                                              |
+    | Reloading unit files                       | System services<br><br>User Services | `# systemctl daemon-reload`<br><br>`$ systemctl --user daemon-reload`                                                        |
+    | Starting and stopping a service            | System services<br><br>User Services | `# systemctl start UNIT`<br>`# systemctl stop UNIT`<br><br>`$ systemctl --user start UNIT`<br>`$ systemctl --user stop UNIT` |
+    | Starting a service when the machine starts | System services<br><br>User Services | `# systemctl enable UNIT`<br><br>`$ loginctl enable-linger`<br>`$ systemctl --user enable UNIT`                              |
+
+#### Managing Containers Using Systemd Services
+
+-   If we have a single container host running a small number of containers, then we can set up user-based `systemd` unit files and configure them to start the containers automatically with the server.
+-   This is a simple approach, mainly useful for very basic and small deployments that do not need to scale.
+-   For more practical production installations, consider using Red Hat OpenShift Container Platform, which will be discussed briefly at the end of this section.
+
+#### Creating a Dedicated User Account to Run Containers
+
+-   To simplify the management of the rootless containers, we can create a dedicated user account that you use for all our containers.
+-   This way, we can manage them from a single user account.
+    <br>
+
+-   **Note**
+    -   The account that we create to group all our containers must be a regular user account.
+    -   When we create an account with `useradd`, the command reserves a range of user IDs for the user's containers in the `/etc/subuid` file.
+    -   However, when we create a system account, with the `--system` (or `-r`) option of `useradd`, the command does not reserve a range.
+    -   As a consequence, we cannot start rootless containers with system accounts.
+
+#### Creating the Systemd Unit File
+
+-   From an existing container, the podman command can generate the systemd unit file for us.
+-   The following example uses the `podman generate systemd` command to create the unit file for the existing `web` container :
+    ```
+    $ cd ~/.config/systemd/user
+    $ podman generate systemd --name web --files --new
+    ```
+    -   The `podman generate systemd` command uses a container as a model to create the configuration file.
+    -   After the file is created, we must delete the container because `systemd` expects the container to be absent initially.
+        <br>
+-   The `podman generate systemd` command accepts the following options :
+
+    -   `--name container_name` : The `--name` option specifies the name of an existing container to use as a model to generate the unit file. Podman also uses that name to build the name of the unit file: `container-container_name.service`.
+        <br>
+
+    -   `--files` : The `--files` option instructs Podman to generates the unit file in the current directory. Without the option, Podman displays the file in its standard output.
+        <br>
+
+    -   `--new` : The `--new` option instructs Podman to configure the `systemd` service to create the container when the service starts and delete it when the service stops. In this mode, the container is ephemeral, and we usually need persistent storage to preserve the data. Without the `--new` option, Podman configures the service to start and stop the existing container without deleting it.
+        <br>
+
+-   The following example shows the start and stop directives in the unit file when we run the `podman generate systemd` command with the `--new` option :
+
+    ```
+    $ podman run -d --name web -v /home/user/www:/var/www:Z registry.redhat.io/rhel8/httpd-24:1-105
+    $ podman generate systemd --name web --new
+    ...output omitted...
+    ExecStart=/usr/bin/podman run --conmon-pidfile %t/%n-pid --cidfile %t/%n-cid --cgroups=no-conmon -d --name web -v /home/user/webcontent:/var/www:Z registry.redhat.io/rhel8/httpd-24:1-105
+    ExecStop=/usr/bin/podman stop --ignore --cidfile %t/%n-cid -t 10
+    ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/%n-cid
+    ...output omitted...
+    ```
+
+    1. On start, `systemd` executes the `podman run` command to create and then start a new container.
+    2. On stop, `systemd` executes the `podman stop` command to stop the container.
+    3. After `systemd` has stopped the container, `systemd` removes it using the `podman rm` command.
+       <br>
+
+-   In contrast, the following example shows the start and stop directives when we run the `podman generate systemd` command without the `--new` option :
+    ```
+    $ podman run -d --name web -v /home/user/www:/var/www:Z registry.redhat.io/rhel8/httpd-24:1-105
+    $ podman generate systemd --name web
+    ExecStart=/usr/bin/podman start web
+    ExecStop=/usr/bin/podman stop -t 10 web
+    ...output omitted...
+    ```
+    1. On start, `systemd` executes the `podman start` command to start the existing container.
+    2. On stop, `systemd` executes the `podman stop` command to stop the container. Notice that `systemd` does not delete the container.
+
+#### Starting and Stopping Containers Using Systemd
+
+-   Use the `systemctl` command to control our containers
+    -   Starting the container : <br>`$ systemctl --user start container-web`
+    -   Stopping the container : <br>`$ systemctl --user stop container-web`
+    -   Getting the status of the container : <br>`$ systemctl --user status container-web`
+        **Important**
+        -   Containers managed with the `systemctl` command are controlled by `systemd`. `systemd` monitors container status and restarts them if they fail.
+            <br>
+        -   Do not use the `podman` command to start or stop these containers. Doing so may interfere with `systemd` monitoring.
+
+#### Configuring Containers to Start When the Host Machine Starts
+
+-   By default, enabled `systemd` user services start when a user opens the first session, and stop when the user closes the last session.
+-   For the user services to start automatically with the server, run the `loginctl enable-linger` command : <br> `$ loginctl enable-linger`
+-   To enable a container to start when the host machine starts, use the `systemctl` command : <br> `$ systemctl --user enable container-web`
+-   To disable the start of a container when the host machine starts, use the `systemctl` command with the disable option : <br> `$ systemctl --user disable container-web`
+
+#### Managing Containers Running as Root with Systemd
+
+-   We can also configure containers that we want to run as root to be managed with `Systemd` unit files.
+-   One advantage of this approach is that we can configure those unit files to work exactly like normal system unit files, rather than as a particular user.
+    <br>
+
+-   The procedure to set these up is similar to the one previously outlined for rootless containers, except :
+    -   We do not need to set up a dedicated user.
+    -   When we create the unit file with `podman generate systemd`, do it in the `/etc/systemd/system` directory instead of in the `~/.config/systemd/user` directory.
+    -   When configuring the container's service with `systemctl`, we will not use the `--user` option.
+    -   We do not need to run `loginctl enable-linger` as root.
+
+#### Orchestrating Containers at Scale
+
+-   In this chapter, we learned how to manually configure and manage containers from the command line on a single host, and how to configure `Systemd` so that containers start automatically with the server.
+-   This is useful at a very small scale and to learn more about containers.
+    <br>
+
+-   However, in practice most enterprise deployments need more.
+-   The introduction to this chapter mentioned that **Kubernetes** is generally used to manage complex applications that consist of multiple cooperating containers.
+    <br>
+
+-   **Red Hat OpenShift** is a Kubernetes platform that adds a web-based user interface, monitoring, the ability to run containers anywhere in a cluster of container hosts, autoscaling, logging and auditing, and much more.
