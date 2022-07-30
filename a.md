@@ -167,3 +167,185 @@
     -   To do this, we can install a set of container tools on a Red Hat Enterprise Linux 8 system.
         <br>
     -   This chapter focuses on this use case to help us better understand the core concepts behind containers, how they work, and how they can be useful.
+
+### Running a Basic Container
+
+#### Installing Container Management Tools
+
+-   To get started with running and managing containers on our system, we must install the necessary command-line tools. Install the `container-tools` module with the `yum` command.<br> `$ yum module install container-tools`
+    <br>
+-   The `container-tools` module includes software packages that install several tools.
+    <br>
+
+-   **Note**
+
+    -   By default, the system installs the fast stream tools, `container-tools:rhel8` that rebase on the latest, stable upstream version of the container tools every three months.
+        <br>
+
+    -   Alternative stable streams that lock in a particular version of the tools do not get feature updates. Red Hat plans to release new stable streams once a year that are supported for two years.
+
+#### Selecting Container Images and Registries
+
+-   A container registry is a repository for storing and retrieving container images.
+-   Container images are uploaded, or pushed, to a container registry by a developer.
+-   We download, or pull, those container images from the registry to a local system so that we can use them to run containers.
+    <br>
+
+-   we might use a public registry containing third-party images, or we might use a private registry controlled by our organization.
+-   The source of our container images matters.
+-   Just like any other software package, we must know whether we can trust the code in the container image.
+-   Different registries have different policies about whether and how they provide, evaluate, and test container images submitted to them.
+    <br>
+
+-   Red Hat distributes certified container images through two main container registries that we can access with our Red Hat log in credentials.
+
+    -   `registry.redhat.io` for containers based on official Red Hat products.
+    -   `registry.connect.redhat.com` for containers based on third-party products.
+        <br>
+
+-   Red Hat is gradually phasing out an older registry, `registry.access.redhat.com`.
+    <br>
+
+-   The Red Hat Container Catalog (https://access.redhat.com/containers) provides a web-based interface that we can use to search these registries for certified content.
+
+#### Container Naming Conventions
+
+-   Container images are named based on the following fully qualified image name syntax :
+
+-   `registry_name/user_name/image_name:tag`
+
+    -   The `registry_name` is the name of the registry storing the image. It is usually the fully qualified domain name of the registry.
+
+    -   The `user_name` represents the user or organization to which the image belongs.
+
+    -   The `image_name` must be unique in the user namespace.
+
+    -   The `tag` identifies the image version. If the image name includes no image tag, then latest is assumed.
+
+#### Running Containers
+
+-   To run a container on our local system, we must first pull a container image.
+-   Use Podman to pull an image from a registry.
+-   We should always use the fully qualified image name when pulling images.
+-   The `podman pull` command pulls the image we specify from the registry and saves it locally :
+    ```
+    $ podman pull registry.access.redhat.com/ubi8/ubi:latest
+    Trying to pull registry.access.redhat.com/ubi8/ubi:latest...Getting image source signatures
+    Copying blob 77c58f19bd6e: 70.54 MiB / 70.54 MiB [=========================] 10s
+    Copying blob 47db82df7f3f: 1.68 KiB / 1.68 KiB [===========================] 10s
+    Copying config a1f8c9699786: 4.26 KiB / 4.26 KiB [==========================] 0s
+    Writing manifest to image destination
+    Storing signatures
+    a1f8c969978652a6d1b2dfb265ae0c6c346da69000160cd3ecd5f619e26fa9f3
+    ```
+-   After retrieval, Podman stores images locally and we can list them using the `podman images` command :
+    ```
+    $ podman images
+    REPOSITORY                            TAG      IMAGE ID       CREATED      SIZE
+    registry.access.redhat.com/ubi8/ubi   latest   a1f8c9699786   5 weeks ago  211 MB
+    ```
+-   The preceding output shows that the image tag is `latest` and that the image ID is `a1f8c96699786`.
+    <br>
+
+-   To run a container from this image, use the `podman run` command.
+-   When we execute a `podman run` command, we create and start a new container from a container image.
+-   Use the `-it` options to interact with the container, if required. The `-it` options allocate a terminal to the container and allow us to send keystrokes to it.<br> `$ podman run -it registry.access.redhat.com/ubi8/ubi:latest`
+
+-   **Important**
+    -   If we run a container using the fully qualified image name, but the image is not yet stored locally, then the `podman run` command first pulls the image from the registry, and then runs.
+-   **Note**
+
+    -   Many Podman flags also have an alternative long form; some of these are explained below.
+
+            - `-t` is equivalent to `--tty`, meaning a `pseudo-tty` (pseudo-terminal) is allocated for the container.
+
+            - `-i` is the same as `--interactive`. When this option is used, the container accepts standard input.
+
+            - `-d`, or its long form `--detach`, means the container runs in the background (detached). When this option is used, Podman runs the container in the background and displays its generated container ID.
+
+        <br>
+
+-   When referencing a container, Podman recognizes either the container name or the generated container ID.
+-   Use the `--name` option to set the container name when running the container with Podman.
+-   Container names must be unique. If the podman run command includes no container name, Podman generates a unique random name.
+    <br>
+
+-   The following example assigns the container a name, explicitly starts a Bash terminal inside the container, and interactively runs a command in it :
+    ```
+    [user@host ~]$ podman run -it --name=rhel8 registry.access.redhat.com/ubi8/ubi /bin/bash
+    [root@c20631116955 /]# cat /etc/os-release
+    NAME="Red Hat Enterprise Linux"
+    VERSION="8.2 (Ootpa)"
+    ID="rhel"
+    ID_LIKE="fedora"
+    VERSION_ID="8.2"
+    PLATFORM_ID="platform:el8"
+    PRETTY_NAME="Red Hat Enterprise Linux 8.2 (Ootpa)"
+    ANSI_COLOR="0;31"
+    CPE_NAME="cpe:/o:redhat:enterprise_linux:8.2:GA"
+    HOME_URL="https://www.redhat.com/"
+    BUG_REPORT_URL="https://bugzilla.redhat.com/"
+
+        REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 8"
+        REDHAT_BUGZILLA_PRODUCT_VERSION=8.2
+        REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+        REDHAT_SUPPORT_PRODUCT_VERSION="8.2"
+        [root@c20631116955 /]# exit
+        exit
+        [user@host ~]$
+        ```
+
+    <br>
+
+-   **Note**
+    -   Note that the `latest` tag is assumed when no tag is explicitly specified.
+
+<br>
+
+-   We can also run a quick command in a container without interacting with it, and then remove the container once the command is completed.
+-   To do this, use `podman run --rm` followed by the container image and a command.
+
+    ```
+    $ podman run -rm registry.access.redhat.com/ubi8/ubi cat/etc/os-release
+    NAME="Red Hat Enterprise Linux"
+    VERSION="8.2 (Ootpa)"
+    ID="rhel"
+    ID_LIKE="fedora"
+    VERSION_ID="8.2"
+    PLATFORM_ID="platform:el8"
+    PRETTY_NAME="Red Hat Enterprise Linux 8.2 (Ootpa)"
+    ANSI_COLOR="0;31"
+    CPE_NAME="cpe:/o:redhat:enterprise_linux:8.2:GA"
+    HOME_URL="https://www.redhat.com/"
+    BUG_REPORT_URL="https://bugzilla.redhat.com/"
+
+    REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 8"
+    REDHAT_BUGZILLA_PRODUCT_VERSION=8.2
+    REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+    REDHAT_SUPPORT_PRODUCT_VERSION="8.2"
+    ```
+
+#### Analyzing Container Isolation
+
+-   Containers provide run time isolation of resources.
+-   Containers utilize Linux namespaces to provide separate, isolated environments for resources, such as processes, network communications, and volumes.
+-   Processes running within a container are isolated from all other processes on the host machine.
+    <br>
+
+-   View the processes running inside the container :
+    ```
+    [user@host ~]$ podman run -it registry.access.redhat.com/ubi8/ubi /bin/bash
+    [root@ef2550ed815d /]# ps aux
+    USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+    root           1  4.5  0.1  11840  2904 pts/0    Ss   22:10   0:00 /bin/bash
+    root          15  0.0  0.1  51768  3388 pts/0    R+   22:10   0:00 ps aux
+    ```
+-   Note that the user name and ID inside the container is different from the user name and ID on the host machine :
+    ```
+    [root@ef2550ed815d /]# id
+    uid=0(root) gid=0(root) groups=0(root)
+    [root@ef2550ed815d /]# exit
+    exit
+    [user@host ~]$ id
+    uid=1000(user) gid=1000(user) groups=1000(user),10(wheel)
+    ```
