@@ -271,7 +271,8 @@
     <br>
 
 -   The following example assigns the container a name, explicitly starts a Bash terminal inside the container, and interactively runs a command in it :
-    ```
+
+    ````
     [user@host ~]$ podman run -it --name=rhel8 registry.access.redhat.com/ubi8/ubi /bin/bash
     [root@c20631116955 /]# cat /etc/os-release
     NAME="Red Hat Enterprise Linux"
@@ -296,6 +297,8 @@
         ```
 
     <br>
+
+    ````
 
 -   **Note**
     -   Note that the `latest` tag is assumed when no tag is explicitly specified.
@@ -348,4 +351,206 @@
     exit
     [user@host ~]$ id
     uid=1000(user) gid=1000(user) groups=1000(user),10(wheel)
+    ```
+
+### Finding and Managing Container Images
+
+#### Configuring Container Registries
+
+-   Podman uses a `registries.conf` file on your host system to get information about the container registries it can use.
+
+    ```
+    $  cat /etc/containers/registries.conf
+    # This is a system-wide configuration file used to
+    # keep track of registries for various container backends.
+    # It adheres to TOML format and does not support recursive
+    # lists of registries.
+
+    # The default location for this configuration file is /etc/containers/registries.conf.
+
+    # The only valid categories are: 'registries.search', 'registries.insecure',
+    # and 'registries.block'.
+
+    [registries.search]
+    registries = ['registry.redhat.io', 'quay.io', 'docker.io']
+
+    # If you need to access insecure registries, add the registry's fully-qualified name.
+    # An insecure registry is one that does not have a valid SSL certificate or only does HTTP.
+    [registries.insecure]
+    registries = []
+
+    # If you need to block pull access from a registry, uncomment the section below
+    # and add the registries fully-qualified name.
+    #
+    [registries.block]
+    registries = []
+    ```
+
+-   **Important**
+
+    -   For a regular (rootless) user of Podman, this file is stored in the `$HOME/.config/`containers directory.
+    -   Configuration settings in this file override the system-wide settings in the `/etc/containers/registries.conf` file.
+        <br>
+
+    -   The list of registries that Podman can search are configured in the `[registries.search]` section of this file.
+    -   If we do not specify a fully qualified image on the command line, then Podman will search this section in the order listed to determine how to form a complete image path.
+        <br>
+
+    -   The `podman info` command displays configuration information for Podman, including its configured registries.
+        ```
+        $ podman info
+        ...output omitted...
+        insecure registries:
+        registries: []
+        registries:
+        registries:
+        - registry.redhat.io
+        - quay.io
+        - docker.io
+        ...output omitted...
+        ```
+
+##### Registry Securiity
+
+-   Insecure registries are listed in the `[registries.insecure]` section of the `registries.conf` file.
+-   If a registry is listed as insecure, then connections to that registry are not protected with TLS encryption.
+-   If a registry is both searchable and insecure, then it can be listed in both `[registries.search]` and `[registries.insecure]`.
+    <br>
+
+-   Container registries can also be configured to require authentication.
+-   As previously discussed, we use the `$ podman login` command to log in to a container registry that requires authentication.
+
+#### Finding Container Images
+
+-   Use the `podman search` command to search container registries for a specific container image.
+-   The following example shows how to search the container registry `registry.redhat.io` for all images that include the name `rhel8` :
+    ```
+    $ podman search registry.redhat.io/rhel8
+    INDEX       NAME          DESCRIPTION                STARS   OFFICIAL   AUTOMATED
+    redhat.io   registry.redhat.io/openj9/openj9-8-rhel8      OpenJ9 1.8 OpenShift S2I image for Java Appl...   0
+    redhat.io   registry.redhat.io/openjdk/openjdk-8-rhel8    OpenJDK 1.8 Image for Java Applications base...   0
+    redhat.io   registry.redhat.io/openj9/openj9-11-rhel8     OpenJ9 11 OpenShift S2I image for Java Appli...   0
+    redhat.io   registry.redhat.io/openjdk/openjdk-11-rhel8   OpenJDK S2I image for Java Applications on U...   0
+    redhat.io   registry.redhat.io/rhel8/memcached            Free and open source, high-performance, dist...   0
+    redhat.io   registry.redhat.io/rhel8/llvm-toolset         The LLVM back-end compiler and core librarie...   0
+    redhat.io   registry.redhat.io/rhel8/rust-toolset         Rust and Cargo, which is a build system and ...   0
+    redhat.io   registry.redhat.io/rhel8/go-toolset           Golang compiler which will replace the curre...   0
+    ...output omitted...
+    ```
+-   Run the same command with the `--no-trunc` option to see longer image descriptions :
+
+    ```
+    $ podman search --no-trunc registry.access.redhat.com/rhel8
+    INDEX       NAME          DESCRIPTION                STARS   OFFICIAL   AUTOMATED
+    ...output omitted...
+    redhat.io   registry.redhat.io/rhel8/nodejs-10            Node.js 10 available as container is a base platform for building and running various Node.js 10 applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.          0
+
+    redhat.io   registry.redhat.io/rhel8/python-36            Python 3.6 available as container is a base platform for building and running various Python 3.6 applications and frameworks. Python is an easy to learn, powerful programming language. It has efficient high-level data structures and a simple but effective approach to object-oriented programming.          0
+
+    redhat.io   registry.redhat.io/rhel8/perl-526             Perl 5.26 available as container is a base platform for building and running various Perl 5.26 applications and frameworks. Perl is a high-level programming language with roots in C, sed, awk and shell scripting. Perl is good at handling processes and files, and is especially good at handling text.         0
+    ...output omitted...
+    ```
+
+-   The following table shows some other useful options for the `podman search` command :
+
+| Option                    | Description                                                                                                                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `--limit <number>`        | Limits the number of listed images per registry                                                                                                                                   |
+| `--filter <filter=value>` | Filters output based on conditions provided. Supported filters include : <br> - `stars=<number>` : Show only images with at least this number of stars <br> - `is-automated=<true | false>`: Show only images automatically built. <br> -`is-official=<true                  | false>` : Show only images flagged as official |
+| `--tls-verify <true       | false>`                                                                                                                                                                           | Enables or disables HTTPS certificate validation for all used registries. Default=`true` |
+
+#### Using the Red Hat Container Catalog
+
+-   Red Hat maintains repositories containing certified container images. We can access a web interface to search them at https://access.redhat.com/containers.
+    <br>
+
+-   Using this repository provides customers with a layer of protection and reliability against known vulnerabilities that could potentially be caused by untested images.
+-   The standard `podman` command is compatible with the repositories referenced by the Red Hat Container Catalog.
+
+#### Inspecting Container Images
+
+-   We can view information about an image before downloading it to our system.
+-   The `skopeo inspect` command can inspect a remote container image in a registry and display information about it.
+    <br>
+
+-   The following example inspects a container image and returns image information without pulling the image to the local system :
+    ```
+    $ skopeo inspect docker://registry.redhat.io/rhel8/python-36
+    ...output omitted...
+                    "name": "ubi8/python-36",
+                    "release": "107",
+                    "summary": "Platform for building and running Python 3.6 applications",
+    ...output omitted...
+    ```
+-   **Note**
+
+    -   The `skopeo inspect` command can inspect different image formats from different sources, such as remote registries or local directories.
+    -   The `docker://` transport mechanism instructs `skopeo` to query a container image registry.
+        <br>
+
+-   We can also inspect locally stored image information using the `podman inspect` command.
+-   This command might provide more information than the `skopeo inspect` command.
+    <br>
+
+-   List locally stored images :
+    ```
+    $ podman images
+    REPOSITORY                            TAG      IMAGE ID       CREATED       SIZE
+    quay.io/generic/rhel7                 latest   1d3b6b7d01e4   3 weeks ago   688 MB
+    registry.redhat.io/rhel8/python-36    latest   e55cd9a2e0ca   6 weeks ago   811 MB
+    registry.redhat.io/ubi8/ubi           latest   a1f8c9699786   6 weeks ago   211 MB
+    ```
+-   Inspect a locally stored image and return information :
+    ```
+    $ podman inspect registry.redhat.io/rhel8/python-36
+    ...output omitted...
+            "Config": {
+                "User": "1001",
+                "ExposedPorts": {
+                    "8080/tcp": {}
+    ...output omitted...
+                    "name": "ubi8/python-36",
+                    "release": "107",
+                    "summary": "Platform for building and running Python 3.6 applications",
+    ...output omitted...
+    ```
+
+#### Removing Local Container Images
+
+-   Container images are immutable; they do not change.
+-   This means that old images are not updated, so updating software in a container requres a new image that replaces the old one.
+    <br>
+
+-   When an updated image is made available, the publisher changes the latest tag to associate it with the new image.
+-   We can still access an older image by referencing its specific version tag, and we can run containers from it.
+-   We can also remove the older image, pull the latest image, and only use the latest (updated) image to run containers.
+    <br>
+
+-   For example, images provided by Red Hat benefit from the long experience Red Hat has in managing security vulnerabilities and defects in Red Hat Enterprise Linux and other products.
+-   The Red Hat security team hardens and controls these high quality images.
+-   They are rebuilt when new vulnerabilities are discovered and go through a quality assurance process.
+    <br>
+
+-   To remove a locally stored image, use the `podman rmi` command.
+    <br>
+
+-   List locally stored images :
+    ```
+    $ podman images
+    REPOSITORY                            TAG      IMAGE ID       CREATED       SIZE
+    quay.io/generic/rhel7                 latest   1d3b6b7d01e4   3 weeks ago   688 MB
+    registry.redhat.io/rhel8/python-36    latest   e55cd9a2e0ca   6 weeks ago   811 MB
+    registry.redhat.io/ubi8/ubi           latest   a1f8c9699786   6 weeks ago   211 MB
+    ```
+-   Remove the `registry.redhat.io/rhel8/python-36:latest` image.
+    ```
+    $ podman rmi registry.redhat.io/rhel8/python-36:latest
+    e55cd9a2e0ca5f0f4e0249404d1abe3a69d4c6ffa5103d0512dd4263374063ad
+    ```
+-   List locally stored images and verify that it was removed :
+    ```
+    $ podman images
+    REPOSITORY                            TAG      IMAGE ID       CREATED       SIZE
+    quay.io/generic/rhel7                 latest   1d3b6b7d01e4   3 weeks ago   688 MB
+    registry.redhat.io/ubi8/ubi           latest   a1f8c9699786   6 weeks ago   211 MB
     ```
