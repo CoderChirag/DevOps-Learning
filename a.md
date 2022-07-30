@@ -719,7 +719,7 @@ We can use Podman to run containers with more advanced configuration options and
 -   The `podman stop` command stops a running container gracefully.
 -   The `stop` command sends a `SIGTERM` signal to terminate a running container.
 -   If the container does not stop after a grace period (10 seconds by default), Podman sends a `SIGKILL` signal.
-    ` podman stop my-httpd-container 77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412 `
+    `podman stop my-httpd-container 77d4b7b8ed1fd57449163bcb0b78d205e70d2314273263ab941c0c371ad56412`
     **Important** - If a container image is used by a container that is stopped, the image cannot be deleted with `podman rmi` or `podman image rm`, unless we include the `-f` option, which will remove all containers using the image first.
     <br>
 
@@ -778,4 +778,63 @@ We can use Podman to run containers with more advanced configuration options and
     ```
     $ podman exec -l cat /etc/redhat-release
     Red Hat Enterprise Linux release 8.2 (Ootpa)
+    ```
+
+### Attaching Persistent Storage to a Container
+
+#### Preparing Permanent Storage Locations
+
+-   Storage in the container is ephemeral, meaning that its contents are lost after we remove the container.
+    <br>
+
+-   If data used by our container must be preserved when the container is restarted, then ephemeral storage is not sufficient.
+-   For example, our container might be a database server and we must preserve the database itself when the container restarts.
+-   To support containerized applications with this requirement, we must provide the container with persistent storage.
+
+#### Providing Persistent Storage from the Container Host
+
+-   One easy way to provide a container with persistent storage is to use a directory on the container host to store the data.
+-   Podman can mount a host directory inside a running container.
+-   The containerized application sees these host directories as part of the container storage, much like regular applications see a remote network volume as part of the host file system.
+-   When we remove the container, the system does not reclaim the contents of the container host's directory.
+-   A new container can mount it to access the data.
+    <br>
+
+-   For example, a database container can use a host directory to store database files.
+-   If this database container fails, we can create a new container using the same host directory, keeping the database data available to client applications.
+-   It does not matter to the database container where we store this host directory. It can reside anywhere, from a local hard disk partition to a remote networked file system.
+
+#### Preparing the Host Directory
+
+-   When we prepare a host directory, we must configure it so that the processes inside the container can access it. Directory configuration involves :
+
+    -   Configuring the ownership and permissions of the directory.
+    -   Setting the appropriate SELinux context.
+        <br>
+
+-   The user account that the application inside the container uses must have access to the host directory.
+-   Make sure to set the correct permissions on the host directory so that the application can access it.
+    <br>
+
+-   We must also configure the host directory with the appropriate SELinux context type, which is `container_file_t`.
+-   Podman uses the SELinux `container_file_t` context type to control which files on the host system the container is allowed to access.
+-   If there is a security bug in the containerization layer, that extra protection prevents the application running inside the container from accessing host files outside the shared directory.
+-   This protection is particularly important for applications running as the root user inside a root container.
+    <br>
+
+-   Without that additional protection from SELinux, these applications would have root access to all the files on the host system, and would be able to compromise both the host and the other containers.
+-   Podman can set the SELinux context of the host directory for us when we start the container.
+
+#### Mounting a Volume
+
+-   After creating and configuring the host directory, the next step is to mount this directory to a container.
+-   To mount a host directory to a container, add the `--volume` (or `-v`) option to the `podman run` command, specifying the host directory path and the container storage path, separated by a colon :
+    ```
+    --volume host_dir:container_dir:Z
+    ```
+    With the `Z` option, Podman automatically applies the SELinux `container_file_t` context type to the host directory.
+    <br>
+-   For example, to use the `/home/user/dbfiles` host directory for MariaDB database files as `/var/lib/mysql` inside the container, use the following command.
+    ```
+    $ podman run -d --name mydb -v /home/user/dbfiles:/var/lib/mysql:Z -e MYSQL_USER=user -e MYSQL_PASSWORD=redhat -e MYSQL_DATABASE=inventory registry.redhat.io/rhel8/mariadb-103:1-102
     ```
